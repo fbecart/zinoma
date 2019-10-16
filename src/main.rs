@@ -257,7 +257,7 @@ struct RunOptions {
 
 impl Default for RunOptions {
     fn default() -> Self {
-        return RunOptions { incremental: true };
+        RunOptions { incremental: true }
     }
 }
 
@@ -274,7 +274,7 @@ impl Target {
             }
 
             let watch_checksum = hasher.result_str();
-            if does_checksum_match(name, &watch_checksum) {
+            if does_checksum_match(name, &watch_checksum)? {
                 tx.send(BuildResult {
                     target: name,
                     state: BuildResultState::Skip,
@@ -360,34 +360,33 @@ fn calculate_checksum(path: &String) -> Result<String, &'static str> {
         }
     }
 
-    return Ok(hasher.result_str());
+    Ok(hasher.result_str())
 }
 
 const CHECKSUM_DIRECTORY: &'static str = ".buildy";
 
 fn checksum_file_name(target: &String) -> String {
-    return format!("{}/{}.checksum", CHECKSUM_DIRECTORY, target);
+    format!("{}/{}.checksum", CHECKSUM_DIRECTORY, target)
 }
 
-fn does_checksum_match(target: &String, checksum: &String) -> bool {
+fn does_checksum_match(target: &String, checksum: &String) -> Result<bool, String> {
     // Might want to check for some errors like permission denied.
     fs::create_dir(CHECKSUM_DIRECTORY).ok();
     let file_name = checksum_file_name(target);
     match fs::read_to_string(&file_name) {
-        Ok(old_checksum) => {
-            return *checksum == old_checksum;
-        }
+        Ok(old_checksum) => Ok(*checksum == old_checksum),
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
                 // No checksum found.
-                return false;
+                Ok(false)
+            } else {
+                Err(format!(
+                    "Failed reading checksum file {} for target {}: {}",
+                    file_name, target, e
+                ))
             }
-            panic!(
-                "Failed reading checksum file {} for target {}: {}",
-                file_name, target, e
-            );
         }
-    };
+    }
 }
 
 fn write_checksum(target: &String, checksum: &String) -> Result<(), String> {
