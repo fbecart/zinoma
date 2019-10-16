@@ -211,7 +211,6 @@ impl Target {
     }
 
     fn run(&self, tx: mpsc::SyncSender<BuildResult>) {
-        return;
         for command in self.run_list.iter() {
             println!("Running command: {}", command);
             match cmd!("/bin/sh", "-c", command).stderr_to_stdout().run() {
