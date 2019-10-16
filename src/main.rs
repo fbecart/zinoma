@@ -10,22 +10,24 @@ use std::env::current_dir;
 use std::fs;
 use std::io::Write;
 use walkdir::WalkDir;
+use std::any::Any;
 
-fn main() {
+fn main() -> Result<(), String> {
     let file_name = ".buildy.yml";
     let contents = fs::read_to_string(file_name)
-        .expect(&format!("Something went wrong reading {}.", file_name));
+        .map_err(|_| format!("Something went wrong reading {}.", file_name))?;
 
-    let mut targets: HashMap<String, Target> =
-        serde_yaml::from_str(&contents).expect(&format!("Invalid format for {}.", file_name));
+    let mut targets: HashMap<String, Target> = serde_yaml::from_str(&contents)
+        .map_err(|_| format!("Invalid format for {}.", file_name))?;
     for (target_name, target) in targets.iter_mut() {
         target.name = target_name.clone();
     }
     let mut builder = Builder::new(targets);
 
-    builder.sanity_check();
-    builder.build_loop();
+    builder.sanity_check()?;
+    builder.build_loop().map_err(|_| String::from("Failed to start build loop"))?;
     // TODO: Detect cycles.
+    Ok(())
 }
 
 struct BuildResult {
@@ -65,17 +67,18 @@ impl Builder {
         }
     }
 
-    fn sanity_check(&self) {
+    fn sanity_check(&self) -> Result<(), String> {
         for (target_name, target) in self.targets.iter() {
             for dependency in target.depends_on.iter() {
                 if !self.targets.contains_key(dependency.as_str()) {
-                    panic!("Dependency {} not found.", dependency);
+                    return Err(format!("Dependency {} not found.", dependency));
                 }
                 if target_name == dependency {
-                    panic!("Target {} cannot depend on itself.", target_name);
+                    return Err(format!("Target {} cannot depend on itself.", target_name));
                 }
             }
         }
+        Ok(())
     }
 
     fn choose_build_targets(&mut self) {
@@ -104,7 +107,7 @@ impl Builder {
         }
     }
 
-    fn build_loop(&mut self) {
+    fn build_loop(&mut self) -> Result<(), Box<dyn Any + Send>>{
         /* Choose build targets (based on what's already been built, dependency tree, etc)
         Build all of them in parallel
         Wait for things to be built
@@ -113,7 +116,7 @@ impl Builder {
 
         Stop when nothing is still building and there's nothing left to build */
         crossbeam::scope(|scope| {
-            let (_watcher, watcher_rx) = self.setup_watcher();
+            let (_watcher, watcher_rx) = self.setup_watcher().unwrap();
 
             let (tx, rx) = unbounded();
             let working_dir = current_dir().unwrap();
@@ -190,20 +193,20 @@ impl Builder {
                     }
                 }
             }
-        })
-        .unwrap();
+        })?;
+        Ok(())
     }
 
-    fn setup_watcher(&self) -> (RecommendedWatcher, Receiver<RawEvent>) {
+    fn setup_watcher(&self) -> notify::Result<(RecommendedWatcher, Receiver<RawEvent>)> {
         let (watcher_tx, watcher_rx) = unbounded();
-        let mut watcher: RecommendedWatcher = Watcher::new_immediate(watcher_tx).unwrap();
+        let mut watcher: RecommendedWatcher = Watcher::new_immediate(watcher_tx)?;
         for target in self.targets.values() {
             for watch_path in target.watch_list.iter() {
-                watcher.watch(watch_path, RecursiveMode::Recursive).unwrap();
+                watcher.watch(watch_path, RecursiveMode::Recursive)?;
             }
         }
 
-        (watcher, watcher_rx)
+        Ok((watcher, watcher_rx))
     }
 
     fn parse_build_result(&mut self, result: &BuildResult) -> () {
@@ -252,14 +255,14 @@ impl Default for RunOptions {
 }
 
 impl Target {
-    fn build(&self, tx: Sender<BuildResult>) {
+    fn build(&self, tx: Sender<BuildResult>) -> Result<(), String> {
         let mut output_string = String::from("");
 
         let mut hasher = Sha1::new();
 
         if !self.watch_list.is_empty() {
             for path in self.watch_list.iter() {
-                let checksum = calculate_checksum(path);
+                let checksum = calculate_checksum(path).map_err(ToOwned::to_owned)?;
                 hasher.input_str(&checksum);
             }
 
@@ -271,9 +274,9 @@ impl Target {
                     output: output_string,
                 })
                 .unwrap();
-                return;
+                return Ok(());
             }
-            write_checksum(&self.name, &watch_checksum);
+            write_checksum(&self.name, &watch_checksum)?;
         }
 
         for command in self.build_list.iter() {
@@ -281,7 +284,7 @@ impl Target {
             match cmd!("/bin/sh", "-c", command).stderr_to_stdout().run() {
                 Ok(output) => {
                     println!("Ok {}", command);
-                    output_string.push_str(String::from_utf8(output.stdout).unwrap().as_str());
+                    output_string.push_str(String::from_utf8(output.stdout).map_err(|_| String::from("Failed to interpret stdout as utf-8"))?.as_str());
                 }
                 Err(e) => {
                     println!("Err {} {}", e, command);
@@ -291,7 +294,7 @@ impl Target {
                         output: output_string,
                     })
                     .unwrap();
-                    return;
+                    return Ok(());
                 }
             }
         }
@@ -302,6 +305,7 @@ impl Target {
             output: output_string,
         })
         .unwrap();
+        Ok(())
     }
 
     fn run(&self, _tx: Sender<BuildResult>, rx: Receiver<RunSignal>) {
@@ -328,19 +332,23 @@ impl Target {
     }
 }
 
-fn calculate_checksum(path: &String) -> String {
+fn calculate_checksum(path: &String) -> Result<String, &'static str> {
     let mut hasher = Sha1::new();
 
     for entry in WalkDir::new(path) {
-        let entry = entry.unwrap();
+        let entry = entry.map_err(|_| "Failed to traverse directory")?;
 
         if entry.path().is_file() {
-            let contents = fs::read(entry.path().to_str().unwrap()).unwrap();
+            let entry_path = match entry.path().to_str() {
+                Some(s) => s,
+                None => return Err("Failed to convert file path into String"),
+            };
+            let contents = fs::read(entry_path).map_err(|_| "Failed to read file to calculate checksum")?;
             hasher.input(contents.as_slice());
         }
     }
 
-    return hasher.result_str();
+    return Ok(hasher.result_str());
 }
 
 const CHECKSUM_DIRECTORY: &'static str = ".buildy";
@@ -370,14 +378,15 @@ fn does_checksum_match(target: &String, checksum: &String) -> bool {
     };
 }
 
-fn write_checksum(target: &String, checksum: &String) {
+fn write_checksum(target: &String, checksum: &String) -> Result<(), String> {
     let file_name = checksum_file_name(target);
-    let mut file = fs::File::create(&file_name).expect(&format!(
+    let mut file = fs::File::create(&file_name).map_err(|_| format!(
         "Failed to create checksum file {} for target {}",
         file_name, target
-    ));
-    file.write_all(checksum.as_bytes()).expect(&format!(
+    ))?;
+    file.write_all(checksum.as_bytes()).map_err(|_| format!(
         "Failed to write checksum file {} for target {}",
         file_name, target
-    ));
+    ))?;
+    Ok(())
 }
