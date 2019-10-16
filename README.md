@@ -52,3 +52,4 @@ Then, simply run `buildy` in a directory with `.buildy.yml`.
 
 * `run` commands that should be restarted when `watch` paths change need to use `exec` or else they won't terminate properly.
 * Output is not very pretty
+* No unit tests

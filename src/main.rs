@@ -55,7 +55,7 @@ struct Builder {
 }
 
 impl Builder {
-    fn new(targets: HashMap<String, Target>) -> Builder {
+    fn new(targets: HashMap<String, Target>) -> Self {
         Builder {
             targets,
             to_build: vec![],
@@ -79,19 +79,28 @@ impl Builder {
     }
 
     fn choose_build_targets(&mut self) {
-        for (target_name, target) in self.targets.iter() {
+        for target in self.targets.values() {
             let dependencies_satisfied = target
                 .depends_on
                 .iter()
                 .all(|dependency| self.built_targets.contains(dependency));
 
-            if dependencies_satisfied
-                && !self.building.contains(target_name)
-                && (!self.built_targets.contains(target_name)
-                    || self.has_changed_files.contains(target_name))
-            {
-                self.to_build.push(target_name.clone());
+            if !dependencies_satisfied {
+                continue;
             }
+            if self.building.contains(&target.name) {
+                continue;
+            }
+            if self.built_targets.contains(&target.name) {
+                if !target.run_options.incremental {
+                    continue;
+                }
+                if !self.has_changed_files.contains(&target.name) {
+                    continue;
+                }
+            }
+
+            self.to_build.push(target.name.clone());
         }
     }
 
@@ -226,6 +235,22 @@ struct Target {
     build_list: Vec<String>,
     #[serde(default, rename = "run")]
     run_list: Vec<String>,
+    #[serde(default)]
+    run_options: RunOptions,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+struct RunOptions {
+    #[serde(default)]
+    incremental: bool,
+}
+
+impl Default for RunOptions {
+    fn default() -> Self {
+        return RunOptions {
+            incremental: true,
+        }
+    }
 }
 
 impl Target {
