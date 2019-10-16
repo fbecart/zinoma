@@ -107,7 +107,7 @@ impl Builder {
 
         Stop when nothing is still building and there's nothing left to build */
         crossbeam::scope(|scope| {
-            let (_watcher, watcher_rx) = self.setup_watcher().map_err(|e| e.to_string())?;
+            let (_watcher, watcher_rx) = self.setup_watcher()?;
 
             let mut to_build = HashSet::new();
             let mut has_changed_files = HashSet::new();
@@ -115,7 +115,8 @@ impl Builder {
             let mut building = HashSet::new();
 
             let (tx, rx) = unbounded();
-            let working_dir = current_dir().map_err(|e| e.to_string())?;
+            let working_dir =
+                current_dir().map_err(|e| format!("Failed to current current directory: {}", e))?;
             let working_dir = working_dir
                 .to_str()
                 .ok_or_else(|| "Working directory was not valid utf-8".to_owned())?;
@@ -149,7 +150,7 @@ impl Builder {
                     }
                     Err(e) => match e {
                         TryRecvError::Empty => {}
-                        _ => return Err(e.to_string()),
+                        _ => return Err(format!("Receiver error: {}", e)),
                     },
                 }
 
@@ -185,9 +186,9 @@ impl Builder {
                         // If already running, send a kill signal.
                         match run_tx_channels.get(result.target) {
                             None => {}
-                            Some(run_tx) => {
-                                run_tx.send(RunSignal::Kill).map_err(|e| e.to_string())?
-                            }
+                            Some(run_tx) => run_tx.send(RunSignal::Kill).map_err(|e| {
+                                format!("Failed to send kill signal to program: {}", e)
+                            })?,
                         }
 
                         let (run_tx, run_rx) = unbounded();
@@ -198,7 +199,7 @@ impl Builder {
                     }
                     Err(e) => {
                         if e != TryRecvError::Empty {
-                            panic!("{}", e);
+                            return Err(format!("Receiver error: {}", e));
                         }
                     }
                 }
@@ -209,12 +210,15 @@ impl Builder {
         Ok(())
     }
 
-    fn setup_watcher(&self) -> notify::Result<(RecommendedWatcher, Receiver<RawEvent>)> {
+    fn setup_watcher(&self) -> Result<(RecommendedWatcher, Receiver<RawEvent>), String> {
         let (watcher_tx, watcher_rx) = unbounded();
-        let mut watcher: RecommendedWatcher = Watcher::new_immediate(watcher_tx)?;
+        let mut watcher: RecommendedWatcher = Watcher::new_immediate(watcher_tx)
+            .map_err(|e| format!("Failed to create file watcher: {}", e))?;
         for target in self.targets.values() {
             for watch_path in target.watch_list.iter() {
-                watcher.watch(watch_path, RecursiveMode::Recursive)?;
+                watcher
+                    .watch(watch_path, RecursiveMode::Recursive)
+                    .map_err(|e| format!("Failed to set up watcher for {}: {}", watch_path, e))?;
             }
         }
 
@@ -288,7 +292,7 @@ impl Target {
                     state: BuildResultState::Skip,
                     output: output_string,
                 })
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| format!("Sender error: {}", e))?;
                 return Ok(());
             }
             write_checksum(name, &watch_checksum)?;
@@ -312,7 +316,7 @@ impl Target {
                         state: BuildResultState::Fail,
                         output: output_string,
                     })
-                    .map_err(|e| e.to_string())?;
+                    .map_err(|e| format!("Sender error: {}", e))?;
                     return Ok(());
                 }
             }
@@ -323,7 +327,7 @@ impl Target {
             state: BuildResultState::Success,
             output: output_string,
         })
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("Sender error: {}", e))?;
         Ok(())
     }
 
