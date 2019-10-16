@@ -17,11 +17,8 @@ fn main() -> Result<(), String> {
     let contents = fs::read_to_string(file_name)
         .map_err(|_| format!("Something went wrong reading {}.", file_name))?;
 
-    let mut targets: HashMap<String, Target> = serde_yaml::from_str(&contents)
+    let targets: HashMap<String, Target> = serde_yaml::from_str(&contents)
         .map_err(|_| format!("Invalid format for {}.", file_name))?;
-    for (target_name, target) in targets.iter_mut() {
-        target.name = target_name.clone();
-    }
     let mut builder = Builder::new(targets);
 
     builder.sanity_check()?;
@@ -82,7 +79,7 @@ impl Builder {
     }
 
     fn choose_build_targets(&mut self) {
-        for target in self.targets.values() {
+        for (target_name, target) in self.targets.iter() {
             let dependencies_satisfied = target
                 .depends_on
                 .iter()
@@ -91,19 +88,19 @@ impl Builder {
             if !dependencies_satisfied {
                 continue;
             }
-            if self.building.contains(&target.name) {
+            if self.building.contains(target_name) {
                 continue;
             }
-            if self.built_targets.contains(&target.name) {
+            if self.built_targets.contains(target_name) {
                 if !target.run_options.incremental {
                     continue;
                 }
-                if !self.has_changed_files.contains(&target.name) {
+                if !self.has_changed_files.contains(target_name) {
                     continue;
                 }
             }
 
-            self.to_build.push(target.name.clone());
+            self.to_build.push(target_name.clone());
         }
     }
 
@@ -133,13 +130,13 @@ impl Builder {
                         // TODO: This won't work with symlinks.
                         let relative_path = &absolute_path[working_dir.len() + 1..];
 
-                        for target in self.targets.values() {
+                        for (target_name, target) in self.targets.iter() {
                             if target
                                 .watch_list
                                 .iter()
                                 .any(|watch_path| relative_path.starts_with(watch_path))
                             {
-                                self.has_changed_files.insert(target.name.clone());
+                                self.has_changed_files.insert(target_name.clone());
                             }
                         }
                     }
@@ -164,7 +161,7 @@ impl Builder {
                     self.has_changed_files.remove(&target_to_build);
                     let tx_clone = tx.clone();
                     let target = self.targets.get(&target_to_build).unwrap().clone();
-                    scope.spawn(move |_| target.build(tx_clone));
+                    scope.spawn(move |_| target.build(&target_to_build, tx_clone));
                 }
                 self.to_build.clear();
 
@@ -175,13 +172,13 @@ impl Builder {
                         let target = self.targets.get(&result.target).unwrap().clone();
 
                         // If already running, send a kill signal.
-                        match run_tx_channels.get(&target.name) {
+                        match run_tx_channels.get(&result.target) {
                             None => {}
                             Some(run_tx) => run_tx.send(RunSignal::Kill).unwrap(),
                         }
 
                         let (run_tx, run_rx) = unbounded();
-                        run_tx_channels.insert(target.name.clone(), run_tx);
+                        run_tx_channels.insert(result.target.clone(), run_tx);
 
                         let tx_clone = tx.clone();
                         scope.spawn(move |_| target.run(tx_clone, run_rx));
@@ -228,8 +225,6 @@ impl Builder {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 struct Target {
-    #[serde(skip)]
-    name: String,
     #[serde(default)]
     depends_on: Vec<String>,
     #[serde(default, rename = "watch")]
@@ -255,7 +250,7 @@ impl Default for RunOptions {
 }
 
 impl Target {
-    fn build(&self, tx: Sender<BuildResult>) -> Result<(), String> {
+    fn build(&self, name: &String, tx: Sender<BuildResult>) -> Result<(), String> {
         let mut output_string = String::from("");
 
         let mut hasher = Sha1::new();
@@ -267,16 +262,16 @@ impl Target {
             }
 
             let watch_checksum = hasher.result_str();
-            if does_checksum_match(&self.name, &watch_checksum) {
+            if does_checksum_match(name, &watch_checksum) {
                 tx.send(BuildResult {
-                    target: self.name.clone(),
+                    target: name.clone(),
                     state: BuildResultState::Skip,
                     output: output_string,
                 })
                 .unwrap();
                 return Ok(());
             }
-            write_checksum(&self.name, &watch_checksum)?;
+            write_checksum(name, &watch_checksum)?;
         }
 
         for command in self.build_list.iter() {
@@ -289,7 +284,7 @@ impl Target {
                 Err(e) => {
                     println!("Err {} {}", e, command);
                     tx.send(BuildResult {
-                        target: self.name.clone(),
+                        target: name.clone(),
                         state: BuildResultState::Fail,
                         output: output_string,
                     })
@@ -300,7 +295,7 @@ impl Target {
         }
 
         tx.send(BuildResult {
-            target: self.name.clone(),
+            target: name.clone(),
             state: BuildResultState::Success,
             output: output_string,
         })
