@@ -247,9 +247,7 @@ struct RunOptions {
 
 impl Default for RunOptions {
     fn default() -> Self {
-        return RunOptions {
-            incremental: true,
-        }
+        return RunOptions { incremental: true };
     }
 }
 
@@ -315,7 +313,7 @@ impl Target {
                         Ok(signal) => match signal {
                             RunSignal::Kill => {
                                 match handle.kill() {
-                                    Ok(_) => {},
+                                    Ok(_) => {}
                                     Err(e) => panic!("{}", e),
                                 }
                                 return;
