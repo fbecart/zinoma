@@ -1,6 +1,6 @@
 [package]
 name = "buildy"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Steve Mostovoy <stevemostovoysm@gmail.com>"]
 edition = "2018"
 
@@ -21,3 +21,4 @@ crossbeam = "0.7.2"
 duct = "0.13.1"
 walkdir = "2"
 rust-crypto = "^0.2"
+notify = { version = "=5.0.0-pre.1", features = ["serde"] }

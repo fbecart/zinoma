@@ -47,3 +47,8 @@ Whenever a `target` is rebuilt, its `run` commands are rerun as well, terminatin
 Install with `cargo install buildy`.
 
 Then, simply run `buildy` in a directory with `.buildy.yml`.
+
+## Known Issues
+
+* `run` commands that should be restarted when `watch` paths change need to use `exec` or else they won't terminate properly.
+* Output is not very pretty
