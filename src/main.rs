@@ -179,7 +179,7 @@ impl Builder {
 
                 match rx.try_recv() {
                     Ok(result) => {
-                        self.parse_build_result(&result, &mut building, &mut built_targets);
+                        self.parse_build_result(&result, &mut building, &mut built_targets)?;
 
                         let target = self.targets.get(result.target).unwrap().clone();
 
@@ -195,7 +195,7 @@ impl Builder {
                         run_tx_channels.insert(result.target, run_tx);
 
                         let tx_clone = tx.clone();
-                        scope.spawn(move |_| target.run(tx_clone, run_rx));
+                        scope.spawn(move |_| target.run(tx_clone, run_rx).unwrap());
                     }
                     Err(e) => {
                         if e != TryRecvError::Empty {
@@ -230,13 +230,13 @@ impl Builder {
         result: &BuildResult<'a>,
         building: &mut HashSet<&'a String>,
         built_targets: &mut HashSet<&'a String>,
-    ) {
+    ) -> Result<(), String> {
         match result.state {
             BuildResultState::Success => {
                 println!("DONE {}:\n{}", result.target, result.output);
             }
             BuildResultState::Fail => {
-                panic!("Failed build: {}", result.target);
+                return Err(format!("Failed build: {}", result.target));
             }
             BuildResultState::Skip => {
                 println!("SKIP (Not Modified) {}:\n{}", result.target, result.output);
@@ -244,6 +244,7 @@ impl Builder {
         }
         building.remove(result.target);
         built_targets.insert(result.target);
+        Ok(())
     }
 }
 
@@ -331,27 +332,25 @@ impl Target {
         Ok(())
     }
 
-    fn run(&self, _tx: Sender<BuildResult>, rx: Receiver<RunSignal>) {
+    fn run(&self, _tx: Sender<BuildResult>, rx: Receiver<RunSignal>) -> Result<(), String> {
         for command in self.run_list.iter() {
             println!("Running command: {}", command);
-            match cmd!("/bin/sh", "-c", command).stderr_to_stdout().start() {
-                Ok(handle) => loop {
-                    match rx.recv() {
-                        Ok(signal) => match signal {
-                            RunSignal::Kill => {
-                                match handle.kill() {
-                                    Ok(_) => {}
-                                    Err(e) => panic!("{}", e),
-                                }
-                                return;
-                            }
-                        },
-                        Err(e) => panic!("RUN PANIC {}", e),
+            let handle = cmd!("/bin/sh", "-c", command)
+                .stderr_to_stdout()
+                .start()
+                .map_err(|e| format!("Failed to run command {}: {}", command, e))?;
+            loop {
+                match rx.recv() {
+                    Ok(RunSignal::Kill) => {
+                        return handle
+                            .kill()
+                            .map_err(|e| format!("Failed to kill process {}: {}", command, e))
                     }
-                },
-                Err(e) => panic!("{}", e),
+                    Err(e) => return Err(format!("Receiver error: {}", e)),
+                }
             }
         }
+        Ok(())
     }
 }
 
