@@ -4,6 +4,16 @@ version = "0.0.1"
 authors = ["Steve Mostovoy <stevemostovoysm@gmail.com>"]
 edition = "2018"
 
+categories = ["command-line-utilities", "concurrency", "development-tools", "development-tools::build-utils", "filesystem"]
+documentation = "https://github.com/stovoy/buildy/blob/master/README.md"
+description = "An ultra-fast parallel build system for local iteration"
+homepage = "https://github.com/stovoy/buildy"
+keywords = ["build", "parallel", "incremental", "watch", "tool"]
+license-file = "LICENSE"
+maintenance = { status = "actively-developed" }
+readme = "README.md"
+repository = "https://github.com/stovoy/buildy"
+
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
