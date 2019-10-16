@@ -257,11 +257,13 @@ impl Builder {
                                 .map_err(BuildLoopError::CrossbeamSendError)?,
                         }
 
-                        let (run_tx, run_rx) = unbounded();
-                        run_tx_channels.insert(result.target, run_tx);
+                        if !target.run_list.is_empty() {
+                            let (run_tx, run_rx) = unbounded();
+                            run_tx_channels.insert(result.target, run_tx);
 
-                        let tx_clone = tx.clone();
-                        scope.spawn(move |_| target.run(tx_clone, run_rx).unwrap());
+                            let tx_clone = tx.clone();
+                            scope.spawn(move |_| target.run(tx_clone, run_rx).unwrap());
+                        }
                     }
                     Err(e) => {
                         if e != TryRecvError::Empty {
