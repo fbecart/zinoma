@@ -5,7 +5,6 @@ use crypto::sha1::Sha1;
 use duct::cmd;
 use notify::{RawEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
-use std::any::Any;
 use std::collections::{HashMap, HashSet};
 use std::env::current_dir;
 use std::fs;
@@ -15,16 +14,14 @@ use walkdir::WalkDir;
 fn main() -> Result<(), String> {
     let file_name = ".buildy.yml";
     let contents = fs::read_to_string(file_name)
-        .map_err(|_| format!("Something went wrong reading {}.", file_name))?;
+        .map_err(|e| format!("Something went wrong reading {}: {}", file_name, e))?;
 
     let targets: HashMap<String, Target> = serde_yaml::from_str(&contents)
-        .map_err(|_| format!("Invalid format for {}.", file_name))?;
+        .map_err(|e| format!("Invalid format for {}: {}", file_name, e))?;
     let builder = Builder::new(targets);
 
     builder.sanity_check()?;
-    builder
-        .build_loop()
-        .map_err(|_| String::from("Failed to start build loop"))?;
+    builder.build_loop()?;
     // TODO: Detect cycles.
     Ok(())
 }
@@ -101,7 +98,7 @@ impl Builder {
         }
     }
 
-    fn build_loop(&self) -> Result<(), Box<dyn Any + Send>> {
+    fn build_loop(&self) -> Result<(), String> {
         /* Choose build targets (based on what's already been built, dependency tree, etc)
         Build all of them in parallel
         Wait for things to be built
@@ -110,7 +107,7 @@ impl Builder {
 
         Stop when nothing is still building and there's nothing left to build */
         crossbeam::scope(|scope| {
-            let (_watcher, watcher_rx) = self.setup_watcher().unwrap();
+            let (_watcher, watcher_rx) = self.setup_watcher().map_err(|e| e.to_string())?;
 
             let mut to_build = HashSet::new();
             let mut has_changed_files = HashSet::new();
@@ -118,16 +115,24 @@ impl Builder {
             let mut building = HashSet::new();
 
             let (tx, rx) = unbounded();
-            let working_dir = current_dir().unwrap();
-            let working_dir = working_dir.to_str().unwrap();
+            let working_dir = current_dir().map_err(|e| e.to_string())?;
+            let working_dir = working_dir
+                .to_str()
+                .ok_or_else(|| "Working directory was not valid utf-8".to_owned())?;
 
             let mut run_tx_channels: HashMap<&String, Sender<RunSignal>> = Default::default();
 
             loop {
                 match watcher_rx.try_recv() {
                     Ok(result) => {
-                        let absolute_path = result.path.unwrap();
-                        let absolute_path = absolute_path.to_str().unwrap();
+                        let absolute_path = match result.path {
+                            Some(path) => path,
+                            None => continue,
+                        };
+                        let absolute_path = match absolute_path.to_str() {
+                            Some(s) => s,
+                            None => continue,
+                        };
 
                         // TODO: This won't work with symlinks.
                         let relative_path = &absolute_path[working_dir.len() + 1..];
@@ -142,11 +147,10 @@ impl Builder {
                             }
                         }
                     }
-                    Err(e) => {
-                        if e != TryRecvError::Empty {
-                            panic!("{}", e);
-                        }
-                    }
+                    Err(e) => match e {
+                        TryRecvError::Empty => {}
+                        _ => return Err(e.to_string()),
+                    },
                 }
 
                 self.choose_build_targets(
@@ -181,7 +185,9 @@ impl Builder {
                         // If already running, send a kill signal.
                         match run_tx_channels.get(result.target) {
                             None => {}
-                            Some(run_tx) => run_tx.send(RunSignal::Kill).unwrap(),
+                            Some(run_tx) => {
+                                run_tx.send(RunSignal::Kill).map_err(|e| e.to_string())?
+                            }
                         }
 
                         let (run_tx, run_rx) = unbounded();
@@ -197,7 +203,9 @@ impl Builder {
                     }
                 }
             }
-        })?;
+        })
+        .map_err(|_| "Failed to create crossbeam scope".to_owned())
+        .and_then(|r| r)?;
         Ok(())
     }
 
@@ -269,7 +277,7 @@ impl Target {
 
         if !self.watch_list.is_empty() {
             for path in self.watch_list.iter() {
-                let checksum = calculate_checksum(path).map_err(ToOwned::to_owned)?;
+                let checksum = calculate_checksum(path)?;
                 hasher.input_str(&checksum);
             }
 
@@ -280,7 +288,7 @@ impl Target {
                     state: BuildResultState::Skip,
                     output: output_string,
                 })
-                .unwrap();
+                .map_err(|e| e.to_string())?;
                 return Ok(());
             }
             write_checksum(name, &watch_checksum)?;
@@ -293,7 +301,7 @@ impl Target {
                     println!("Ok {}", command);
                     output_string.push_str(
                         String::from_utf8(output.stdout)
-                            .map_err(|_| String::from("Failed to interpret stdout as utf-8"))?
+                            .map_err(|e| format!("Failed to interpret stdout as utf-8: {}", e))?
                             .as_str(),
                     );
                 }
@@ -304,7 +312,7 @@ impl Target {
                         state: BuildResultState::Fail,
                         output: output_string,
                     })
-                    .unwrap();
+                    .map_err(|e| e.to_string())?;
                     return Ok(());
                 }
             }
@@ -315,7 +323,7 @@ impl Target {
             state: BuildResultState::Success,
             output: output_string,
         })
-        .unwrap();
+        .map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -343,19 +351,19 @@ impl Target {
     }
 }
 
-fn calculate_checksum(path: &String) -> Result<String, &'static str> {
+fn calculate_checksum(path: &String) -> Result<String, String> {
     let mut hasher = Sha1::new();
 
     for entry in WalkDir::new(path) {
-        let entry = entry.map_err(|_| "Failed to traverse directory")?;
+        let entry = entry.map_err(|e| format!("Failed to traverse directory: {}", e))?;
 
         if entry.path().is_file() {
             let entry_path = match entry.path().to_str() {
                 Some(s) => s,
-                None => return Err("Failed to convert file path into String"),
+                None => return Err("Failed to convert file path into String".to_owned()),
             };
-            let contents =
-                fs::read(entry_path).map_err(|_| "Failed to read file to calculate checksum")?;
+            let contents = fs::read(entry_path)
+                .map_err(|e| format!("Failed to read file to calculate checksum: {}", e))?;
             hasher.input(contents.as_slice());
         }
     }
