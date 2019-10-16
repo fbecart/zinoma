@@ -10,7 +10,7 @@ dependencies = [
 
 [[package]]
 name = "buildy"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "crossbeam 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "duct 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)",
