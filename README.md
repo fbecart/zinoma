@@ -1,5 +1,7 @@
 # buildy - An ultra-fast parallel build system for local iteration
 
+**Warning: `buildy` is not yet ready for use**
+
 `buildy` is very simple and configurable. It's meant to facilitate development by watching the file system and rebuilding as necessary.
 
 The core of `buildy` is in it's configuration file. Simply add a file named `.buildy.yml` into the root of the project.
