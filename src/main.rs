@@ -3,7 +3,6 @@ use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use duct::cmd;
-use duct::unix::HandleExt;
 use notify::{RawEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
