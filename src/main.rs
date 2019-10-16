@@ -5,12 +5,12 @@ use crypto::sha1::Sha1;
 use duct::cmd;
 use notify::{RawEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
+use std::any::Any;
 use std::collections::{HashMap, HashSet};
 use std::env::current_dir;
 use std::fs;
 use std::io::Write;
 use walkdir::WalkDir;
-use std::any::Any;
 
 fn main() -> Result<(), String> {
     let file_name = ".buildy.yml";
@@ -19,16 +19,18 @@ fn main() -> Result<(), String> {
 
     let targets: HashMap<String, Target> = serde_yaml::from_str(&contents)
         .map_err(|_| format!("Invalid format for {}.", file_name))?;
-    let mut builder = Builder::new(targets);
+    let builder = Builder::new(targets);
 
     builder.sanity_check()?;
-    builder.build_loop().map_err(|_| String::from("Failed to start build loop"))?;
+    builder
+        .build_loop()
+        .map_err(|_| String::from("Failed to start build loop"))?;
     // TODO: Detect cycles.
     Ok(())
 }
 
-struct BuildResult {
-    target: String,
+struct BuildResult<'a> {
+    target: &'a String,
     state: BuildResultState,
     output: String,
 }
@@ -46,22 +48,11 @@ enum RunSignal {
 
 struct Builder {
     targets: HashMap<String, Target>,
-
-    to_build: Vec<String>,
-    has_changed_files: HashSet<String>,
-    built_targets: HashSet<String>,
-    building: HashSet<String>,
 }
 
 impl Builder {
     fn new(targets: HashMap<String, Target>) -> Self {
-        Builder {
-            targets,
-            to_build: vec![],
-            has_changed_files: Default::default(),
-            built_targets: Default::default(),
-            building: Default::default(),
-        }
+        Builder { targets }
     }
 
     fn sanity_check(&self) -> Result<(), String> {
@@ -78,33 +69,39 @@ impl Builder {
         Ok(())
     }
 
-    fn choose_build_targets(&mut self) {
+    fn choose_build_targets<'a>(
+        &'a self,
+        built_targets: &mut HashSet<&'a String>,
+        building: &mut HashSet<&'a String>,
+        has_changed_files: &mut HashSet<&'a String>,
+        to_build: &mut HashSet<&'a String>,
+    ) {
         for (target_name, target) in self.targets.iter() {
             let dependencies_satisfied = target
                 .depends_on
                 .iter()
-                .all(|dependency| self.built_targets.contains(dependency));
+                .all(|dependency| built_targets.contains(dependency));
 
             if !dependencies_satisfied {
                 continue;
             }
-            if self.building.contains(target_name) {
+            if building.contains(target_name) {
                 continue;
             }
-            if self.built_targets.contains(target_name) {
+            if built_targets.contains(target_name) {
                 if !target.run_options.incremental {
                     continue;
                 }
-                if !self.has_changed_files.contains(target_name) {
+                if !has_changed_files.contains(target_name) {
                     continue;
                 }
             }
 
-            self.to_build.push(target_name.clone());
+            to_build.insert(target_name);
         }
     }
 
-    fn build_loop(&mut self) -> Result<(), Box<dyn Any + Send>>{
+    fn build_loop(&self) -> Result<(), Box<dyn Any + Send>> {
         /* Choose build targets (based on what's already been built, dependency tree, etc)
         Build all of them in parallel
         Wait for things to be built
@@ -115,11 +112,16 @@ impl Builder {
         crossbeam::scope(|scope| {
             let (_watcher, watcher_rx) = self.setup_watcher().unwrap();
 
+            let mut to_build = HashSet::new();
+            let mut has_changed_files = HashSet::new();
+            let mut built_targets = HashSet::new();
+            let mut building = HashSet::new();
+
             let (tx, rx) = unbounded();
             let working_dir = current_dir().unwrap();
             let working_dir = working_dir.to_str().unwrap();
 
-            let mut run_tx_channels: HashMap<String, Sender<RunSignal>> = Default::default();
+            let mut run_tx_channels: HashMap<&String, Sender<RunSignal>> = Default::default();
 
             loop {
                 match watcher_rx.try_recv() {
@@ -136,7 +138,7 @@ impl Builder {
                                 .iter()
                                 .any(|watch_path| relative_path.starts_with(watch_path))
                             {
-                                self.has_changed_files.insert(target_name.clone());
+                                has_changed_files.insert(target_name);
                             }
                         }
                     }
@@ -147,38 +149,43 @@ impl Builder {
                     }
                 }
 
-                self.choose_build_targets();
+                self.choose_build_targets(
+                    &mut built_targets,
+                    &mut building,
+                    &mut has_changed_files,
+                    &mut to_build,
+                );
 
                 // if self.to_build.len() == 0 && self.building.len() == 0 {
                 //    TODO: Exit if nothing to watch.
                 //    break;
                 // }
 
-                let to_build_clone = self.to_build.clone();
-                for target_to_build in to_build_clone {
+                for target_to_build in to_build.iter() {
+                    let target_to_build = target_to_build.clone();
                     println!("Building {}", target_to_build);
-                    self.building.insert(target_to_build.clone());
-                    self.has_changed_files.remove(&target_to_build);
+                    building.insert(target_to_build);
+                    has_changed_files.remove(&target_to_build);
                     let tx_clone = tx.clone();
-                    let target = self.targets.get(&target_to_build).unwrap().clone();
+                    let target = self.targets.get(target_to_build).unwrap().clone();
                     scope.spawn(move |_| target.build(&target_to_build, tx_clone));
                 }
-                self.to_build.clear();
+                to_build.clear();
 
                 match rx.try_recv() {
                     Ok(result) => {
-                        self.parse_build_result(&result);
+                        self.parse_build_result(&result, &mut building, &mut built_targets);
 
-                        let target = self.targets.get(&result.target).unwrap().clone();
+                        let target = self.targets.get(result.target).unwrap().clone();
 
                         // If already running, send a kill signal.
-                        match run_tx_channels.get(&result.target) {
+                        match run_tx_channels.get(result.target) {
                             None => {}
                             Some(run_tx) => run_tx.send(RunSignal::Kill).unwrap(),
                         }
 
                         let (run_tx, run_rx) = unbounded();
-                        run_tx_channels.insert(result.target.clone(), run_tx);
+                        run_tx_channels.insert(result.target, run_tx);
 
                         let tx_clone = tx.clone();
                         scope.spawn(move |_| target.run(tx_clone, run_rx));
@@ -206,7 +213,12 @@ impl Builder {
         Ok((watcher, watcher_rx))
     }
 
-    fn parse_build_result(&mut self, result: &BuildResult) -> () {
+    fn parse_build_result<'a>(
+        &'a self,
+        result: &BuildResult<'a>,
+        building: &mut HashSet<&'a String>,
+        built_targets: &mut HashSet<&'a String>,
+    ) {
         match result.state {
             BuildResultState::Success => {
                 println!("DONE {}:\n{}", result.target, result.output);
@@ -218,8 +230,8 @@ impl Builder {
                 println!("SKIP (Not Modified) {}:\n{}", result.target, result.output);
             }
         }
-        self.building.retain(|x| *x != result.target);
-        self.built_targets.insert(result.target.clone());
+        building.remove(result.target);
+        built_targets.insert(result.target);
     }
 }
 
@@ -250,7 +262,7 @@ impl Default for RunOptions {
 }
 
 impl Target {
-    fn build(&self, name: &String, tx: Sender<BuildResult>) -> Result<(), String> {
+    fn build<'a>(&self, name: &'a String, tx: Sender<BuildResult<'a>>) -> Result<(), String> {
         let mut output_string = String::from("");
 
         let mut hasher = Sha1::new();
@@ -264,7 +276,7 @@ impl Target {
             let watch_checksum = hasher.result_str();
             if does_checksum_match(name, &watch_checksum) {
                 tx.send(BuildResult {
-                    target: name.clone(),
+                    target: name,
                     state: BuildResultState::Skip,
                     output: output_string,
                 })
@@ -279,12 +291,16 @@ impl Target {
             match cmd!("/bin/sh", "-c", command).stderr_to_stdout().run() {
                 Ok(output) => {
                     println!("Ok {}", command);
-                    output_string.push_str(String::from_utf8(output.stdout).map_err(|_| String::from("Failed to interpret stdout as utf-8"))?.as_str());
+                    output_string.push_str(
+                        String::from_utf8(output.stdout)
+                            .map_err(|_| String::from("Failed to interpret stdout as utf-8"))?
+                            .as_str(),
+                    );
                 }
                 Err(e) => {
                     println!("Err {} {}", e, command);
                     tx.send(BuildResult {
-                        target: name.clone(),
+                        target: name,
                         state: BuildResultState::Fail,
                         output: output_string,
                     })
@@ -295,7 +311,7 @@ impl Target {
         }
 
         tx.send(BuildResult {
-            target: name.clone(),
+            target: name,
             state: BuildResultState::Success,
             output: output_string,
         })
@@ -338,7 +354,8 @@ fn calculate_checksum(path: &String) -> Result<String, &'static str> {
                 Some(s) => s,
                 None => return Err("Failed to convert file path into String"),
             };
-            let contents = fs::read(entry_path).map_err(|_| "Failed to read file to calculate checksum")?;
+            let contents =
+                fs::read(entry_path).map_err(|_| "Failed to read file to calculate checksum")?;
             hasher.input(contents.as_slice());
         }
     }
@@ -375,13 +392,17 @@ fn does_checksum_match(target: &String, checksum: &String) -> bool {
 
 fn write_checksum(target: &String, checksum: &String) -> Result<(), String> {
     let file_name = checksum_file_name(target);
-    let mut file = fs::File::create(&file_name).map_err(|_| format!(
-        "Failed to create checksum file {} for target {}",
-        file_name, target
-    ))?;
-    file.write_all(checksum.as_bytes()).map_err(|_| format!(
-        "Failed to write checksum file {} for target {}",
-        file_name, target
-    ))?;
+    let mut file = fs::File::create(&file_name).map_err(|_| {
+        format!(
+            "Failed to create checksum file {} for target {}",
+            file_name, target
+        )
+    })?;
+    file.write_all(checksum.as_bytes()).map_err(|_| {
+        format!(
+            "Failed to write checksum file {} for target {}",
+            file_name, target
+        )
+    })?;
     Ok(())
 }
