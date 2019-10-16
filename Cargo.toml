@@ -10,7 +10,6 @@ description = "An ultra-fast parallel build system for local iteration"
 homepage = "https://github.com/stovoy/buildy"
 keywords = ["build", "parallel", "incremental", "watch", "tool"]
 license = "MIT"
-license-file = "LICENSE"
 maintenance = { status = "actively-developed" }
 readme = "README.md"
 repository = "https://github.com/stovoy/buildy"
