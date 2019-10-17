@@ -1,5 +1,5 @@
 use crossbeam;
-use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
+use crossbeam::channel::{unbounded, Receiver, SendError, Sender, TryRecvError};
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use duct::cmd;
@@ -7,6 +7,7 @@ use notify::{RawEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::env::current_dir;
+use std::fmt;
 use std::fs;
 use std::io::Write;
 use walkdir::WalkDir;
@@ -20,10 +21,68 @@ fn main() -> Result<(), String> {
         .map_err(|e| format!("Invalid format for {}: {}", file_name, e))?;
     let builder = Builder::new(targets);
 
-    builder.sanity_check()?;
-    builder.build_loop()?;
+    builder
+        .sanity_check()
+        .map_err(|e| format!("Failed sanity check: {}", e))?;
+    builder
+        .build_loop()
+        .map_err(|e| format!("Build loop error: {}", e))?;
     // TODO: Detect cycles.
     Ok(())
+}
+
+enum SanityCheckError<'a> {
+    DependencyNotFound(&'a str),
+    DependencyLoop(Vec<&'a str>),
+}
+
+impl fmt::Display for SanityCheckError<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SanityCheckError::DependencyNotFound(dependency) => {
+                write!(f, "Dependency {} not found.", dependency)
+            }
+            SanityCheckError::DependencyLoop(dependencies) => {
+                write!(f, "Dependency loop: [{}]", dependencies.join(", "))
+            }
+        }
+    }
+}
+
+enum BuildLoopError<'a> {
+    BuildFailed(&'a String),
+    UnspecifiedCrossbeamError,
+    CrossbeamSendError(SendError<RunSignal>),
+    CrossbeamRecvError(TryRecvError),
+    WatcherError(notify::Error),
+    CwdIOError(std::io::Error),
+    CwdUtf8Error,
+}
+
+impl fmt::Display for BuildLoopError<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BuildLoopError::BuildFailed(target) => write!(f, "Build failed for target {}", target),
+            BuildLoopError::UnspecifiedCrossbeamError => {
+                write!(f, "Unknown crossbeam parllelism failure")
+            }
+            BuildLoopError::CrossbeamSendError(send_err) => write!(
+                f,
+                "Failed to send run signal '{}' to running process",
+                send_err.0
+            ),
+            BuildLoopError::CrossbeamRecvError(recv_err) => {
+                write!(f, "Crossbeam parallelism failure: {}", recv_err)
+            }
+            BuildLoopError::WatcherError(notify_err) => {
+                write!(f, "File watch error: {}", notify_err)
+            }
+            BuildLoopError::CwdIOError(io_err) => {
+                write!(f, "IO Error while getting current directory: {}", io_err)
+            }
+            BuildLoopError::CwdUtf8Error => write!(f, "Current directory was not valid utf-8"),
+        }
+    }
 }
 
 struct BuildResult<'a> {
@@ -43,6 +102,14 @@ enum RunSignal {
     Kill,
 }
 
+impl fmt::Display for RunSignal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RunSignal::Kill => write!(f, "KILL"),
+        }
+    }
+}
+
 struct Builder {
     targets: HashMap<String, Target>,
 }
@@ -52,14 +119,14 @@ impl Builder {
         Builder { targets }
     }
 
-    fn sanity_check(&self) -> Result<(), String> {
+    fn sanity_check(&self) -> Result<(), SanityCheckError> {
         for (target_name, target) in self.targets.iter() {
             for dependency in target.depends_on.iter() {
                 if !self.targets.contains_key(dependency.as_str()) {
-                    return Err(format!("Dependency {} not found.", dependency));
+                    return Err(SanityCheckError::DependencyNotFound(dependency));
                 }
                 if target_name == dependency {
-                    return Err(format!("Target {} cannot depend on itself.", target_name));
+                    return Err(SanityCheckError::DependencyLoop(vec![target_name]));
                 }
             }
         }
@@ -98,7 +165,7 @@ impl Builder {
         }
     }
 
-    fn build_loop(&self) -> Result<(), String> {
+    fn build_loop(&self) -> Result<(), BuildLoopError> {
         /* Choose build targets (based on what's already been built, dependency tree, etc)
         Build all of them in parallel
         Wait for things to be built
@@ -115,11 +182,10 @@ impl Builder {
             let mut building = HashSet::new();
 
             let (tx, rx) = unbounded();
-            let working_dir =
-                current_dir().map_err(|e| format!("Failed to current current directory: {}", e))?;
+            let working_dir = current_dir().map_err(BuildLoopError::CwdIOError)?;
             let working_dir = working_dir
                 .to_str()
-                .ok_or_else(|| "Working directory was not valid utf-8".to_owned())?;
+                .ok_or_else(|| BuildLoopError::CwdUtf8Error)?;
 
             let mut run_tx_channels: HashMap<&String, Sender<RunSignal>> = Default::default();
 
@@ -150,7 +216,7 @@ impl Builder {
                     }
                     Err(e) => match e {
                         TryRecvError::Empty => {}
-                        _ => return Err(format!("Receiver error: {}", e)),
+                        _ => return Err(BuildLoopError::CrossbeamRecvError(e)),
                     },
                 }
 
@@ -186,9 +252,9 @@ impl Builder {
                         // If already running, send a kill signal.
                         match run_tx_channels.get(result.target) {
                             None => {}
-                            Some(run_tx) => run_tx.send(RunSignal::Kill).map_err(|e| {
-                                format!("Failed to send kill signal to program: {}", e)
-                            })?,
+                            Some(run_tx) => run_tx
+                                .send(RunSignal::Kill)
+                                .map_err(BuildLoopError::CrossbeamSendError)?,
                         }
 
                         let (run_tx, run_rx) = unbounded();
@@ -199,26 +265,26 @@ impl Builder {
                     }
                     Err(e) => {
                         if e != TryRecvError::Empty {
-                            return Err(format!("Receiver error: {}", e));
+                            return Err(BuildLoopError::CrossbeamRecvError(e));
                         }
                     }
                 }
             }
         })
-        .map_err(|_| "Failed to create crossbeam scope".to_owned())
+        .map_err(|_| BuildLoopError::UnspecifiedCrossbeamError)
         .and_then(|r| r)?;
         Ok(())
     }
 
-    fn setup_watcher(&self) -> Result<(RecommendedWatcher, Receiver<RawEvent>), String> {
+    fn setup_watcher(&self) -> Result<(RecommendedWatcher, Receiver<RawEvent>), BuildLoopError> {
         let (watcher_tx, watcher_rx) = unbounded();
-        let mut watcher: RecommendedWatcher = Watcher::new_immediate(watcher_tx)
-            .map_err(|e| format!("Failed to create file watcher: {}", e))?;
+        let mut watcher: RecommendedWatcher =
+            Watcher::new_immediate(watcher_tx).map_err(BuildLoopError::WatcherError)?;
         for target in self.targets.values() {
             for watch_path in target.watch_list.iter() {
                 watcher
                     .watch(watch_path, RecursiveMode::Recursive)
-                    .map_err(|e| format!("Failed to set up watcher for {}: {}", watch_path, e))?;
+                    .map_err(BuildLoopError::WatcherError)?;
             }
         }
 
@@ -230,13 +296,13 @@ impl Builder {
         result: &BuildResult<'a>,
         building: &mut HashSet<&'a String>,
         built_targets: &mut HashSet<&'a String>,
-    ) -> Result<(), String> {
+    ) -> Result<(), BuildLoopError> {
         match result.state {
             BuildResultState::Success => {
                 println!("DONE {}:\n{}", result.target, result.output);
             }
             BuildResultState::Fail => {
-                return Err(format!("Failed build: {}", result.target));
+                return Err(BuildLoopError::BuildFailed(result.target));
             }
             BuildResultState::Skip => {
                 println!("SKIP (Not Modified) {}:\n{}", result.target, result.output);
