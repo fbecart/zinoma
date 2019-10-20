@@ -10,6 +10,8 @@ use std::env::current_dir;
 use std::fmt;
 use std::fs;
 use std::io::Write;
+use std::thread::sleep;
+use std::time::Duration;
 use walkdir::WalkDir;
 
 fn main() -> Result<(), String> {
@@ -271,6 +273,8 @@ impl Builder {
                         }
                     }
                 }
+
+                sleep(Duration::from_millis(10))
             }
         })
         .map_err(|_| BuildLoopError::UnspecifiedCrossbeamError)
