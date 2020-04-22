@@ -9,7 +9,7 @@ The core of `buildy` is in its configuration file. Simply add a file named `buil
 This configuration file tells `buildy` exactly what to do.
 
 ## buildy.yml spec
-```
+```yaml
 server_deps:
   watch:
     - server/package.json
@@ -46,7 +46,13 @@ Whenever a `target` is rebuilt, its `run` commands are rerun as well, terminatin
 
 Install with `cargo install buildy`.
 
-Then, simply run `buildy` in a directory with `buildy.yml`.
+Then, simply run `buildy <TARGETS>...` in a directory with `buildy.yml`.
+
+e.g.
+
+```shell script
+buildy target_1 target_2
+```
 
 ## Known Issues
 

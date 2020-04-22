@@ -16,7 +16,7 @@ use std::time::Duration;
 use walkdir::WalkDir;
 
 fn main() -> Result<(), String> {
-    let matches = App::new("Buildy")
+    let arg_matches = App::new("Buildy")
         .about("An ultra-fast parallel build system for local iteration")
         .arg(
             Arg::with_name("config")
@@ -26,42 +26,38 @@ fn main() -> Result<(), String> {
                 .help("Sets a custom config file")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("targets")
+                .value_name("TARGETS")
+                .multiple(true)
+                .required(true)
+                .help("Targets to build"),
+        )
         .get_matches();
 
-    let file_name = matches.value_of("config").unwrap_or("buildy.yml");
+    let file_name = arg_matches.value_of("config").unwrap_or("buildy.yml");
     let contents = fs::read_to_string(file_name)
         .map_err(|e| format!("Something went wrong reading {}: {}", file_name, e))?;
-
     let targets: HashMap<String, Target> = serde_yaml::from_str(&contents)
         .map_err(|e| format!("Invalid format for {}: {}", file_name, e))?;
-    let builder = Builder::new(targets);
+    check_targets(&targets).map_err(|e| format!("Failed sanity check: {}", e))?;
 
-    builder
-        .sanity_check()
-        .map_err(|e| format!("Failed sanity check: {}", e))?;
-    builder
+    let requested_targets = arg_matches.values_of_lossy("targets").unwrap();
+    let invalid_targets: Vec<String> = requested_targets
+        .iter()
+        .filter(|requested_target| !targets.contains_key(*requested_target))
+        .map(|i| i.to_owned())
+        .collect();
+    if !invalid_targets.is_empty() {
+        return Err(format!("Invalid targets: {}", invalid_targets.join(", ")));
+    }
+    let targets = filter_targets(targets, requested_targets);
+
+    Builder::new(targets)
         .build_loop()
         .map_err(|e| format!("Build loop error: {}", e))?;
     // TODO: Detect cycles.
     Ok(())
-}
-
-enum SanityCheckError<'a> {
-    DependencyNotFound(&'a str),
-    DependencyLoop(Vec<&'a str>),
-}
-
-impl fmt::Display for SanityCheckError<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            SanityCheckError::DependencyNotFound(dependency) => {
-                write!(f, "Dependency {} not found.", dependency)
-            }
-            SanityCheckError::DependencyLoop(dependencies) => {
-                write!(f, "Dependency loop: [{}]", dependencies.join(", "))
-            }
-        }
-    }
 }
 
 enum BuildLoopError<'a> {
@@ -132,20 +128,6 @@ struct Builder {
 impl Builder {
     fn new(targets: HashMap<String, Target>) -> Self {
         Builder { targets }
-    }
-
-    fn sanity_check(&self) -> Result<(), SanityCheckError> {
-        for (target_name, target) in self.targets.iter() {
-            for dependency in target.depends_on.iter() {
-                if !self.targets.contains_key(dependency.as_str()) {
-                    return Err(SanityCheckError::DependencyNotFound(dependency));
-                }
-                if target_name == dependency {
-                    return Err(SanityCheckError::DependencyLoop(vec![target_name]));
-                }
-            }
-        }
-        Ok(())
     }
 
     fn choose_build_targets<'a>(
@@ -439,6 +421,68 @@ impl Target {
     }
 }
 
+enum TargetsCheckError<'a> {
+    DependencyNotFound(&'a str),
+    DependencyLoop(Vec<&'a str>),
+}
+
+impl fmt::Display for TargetsCheckError<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TargetsCheckError::DependencyNotFound(dependency) => {
+                write!(f, "Dependency {} not found.", dependency)
+            }
+            TargetsCheckError::DependencyLoop(dependencies) => {
+                write!(f, "Dependency loop: [{}]", dependencies.join(", "))
+            }
+        }
+    }
+}
+
+fn check_targets(targets: &HashMap<String, Target>) -> Result<(), TargetsCheckError> {
+    for (target_name, target) in targets.iter() {
+        for dependency in target.depends_on.iter() {
+            if !targets.contains_key(dependency.as_str()) {
+                return Err(TargetsCheckError::DependencyNotFound(dependency));
+            }
+            if target_name == dependency {
+                return Err(TargetsCheckError::DependencyLoop(vec![target_name]));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn filter_targets(
+    all_targets: HashMap<String, Target>,
+    requested_targets: Vec<String>,
+) -> HashMap<String, Target> {
+    let mut filtered_targets: HashMap<String, Target> = HashMap::new();
+
+    fn add_target(
+        mut filtered_targets: &mut HashMap<String, Target>,
+        all_targets: &HashMap<String, Target>,
+        target_name: &str,
+    ) {
+        if filtered_targets.contains_key(target_name) {
+            return;
+        }
+
+        let target = all_targets.get(target_name).unwrap();
+        target
+            .depends_on
+            .iter()
+            .for_each(|dependency| add_target(&mut filtered_targets, all_targets, dependency));
+        filtered_targets.insert(target_name.to_owned(), target.clone());
+    };
+
+    requested_targets.iter().for_each(|requested_target| {
+        add_target(&mut filtered_targets, &all_targets, requested_target)
+    });
+
+    filtered_targets
+}
+
 fn calculate_checksum(path: &String) -> Result<String, String> {
     let mut hasher = Sha1::new();
 
@@ -459,7 +503,7 @@ fn calculate_checksum(path: &String) -> Result<String, String> {
     Ok(hasher.result_str())
 }
 
-const CHECKSUM_DIRECTORY: &'static str = ".buildy";
+const CHECKSUM_DIRECTORY: &str = ".buildy";
 
 fn checksum_file_name(target: &String) -> String {
     format!("{}/{}.checksum", CHECKSUM_DIRECTORY, target)
