@@ -17,7 +17,7 @@ repository = "https://github.com/stovoy/buildy"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
-crossbeam = "0.7.2"
+crossbeam = "=0.7.2"
 duct = "0.13.1"
 walkdir = "2"
 rust-crypto = "^0.2"
