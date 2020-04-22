@@ -4,11 +4,11 @@
 
 `buildy` is very simple and configurable. It's meant to facilitate development by watching the file system and rebuilding as necessary.
 
-The core of `buildy` is in it's configuration file. Simply add a file named `.buildy.yml` into the root of the project.
+The core of `buildy` is in its configuration file. Simply add a file named `buildy.yml` into the root of the project.
 
 This configuration file tells `buildy` exactly what to do.
 
-## .buildy.yml spec
+## buildy.yml spec
 ```
 server_deps:
   watch:
@@ -30,11 +30,11 @@ The configuration file is composed of `target`s, which are an entity to build. E
 
 `target`s will be run in parallel as much as possible, waiting to start until their dependencies are built.
 
-The commands in the `build` list under a target are run one after another in a shell working from the directory containing the `.buildy.yml`.
+The commands in the `build` list under a target are run one after another in a shell working from the directory containing the `buildy.yml`.
 
 The `target` will only be rebuilt if either no `watch` paths exist, or any of the contents of the `watch` paths have changed since the last build.
 
-`buildy` maintains a list of checksums in a directory named `.buildy` next to the `.buildy.yml`. This directory should be ignored in version control.
+`buildy` maintains a list of checksums in a directory named `.buildy` next to the `buildy.yml`. This directory should be ignored in version control.
 
 Once a `target` is built, it will be run. The commands in `run` will be executed one after another. They can continue running in the background, which is useful for running programs such as a web server.
 
@@ -46,7 +46,7 @@ Whenever a `target` is rebuilt, its `run` commands are rerun as well, terminatin
 
 Install with `cargo install buildy`.
 
-Then, simply run `buildy` in a directory with `.buildy.yml`.
+Then, simply run `buildy` in a directory with `buildy.yml`.
 
 ## Known Issues
 

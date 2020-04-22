@@ -15,7 +15,7 @@ use std::time::Duration;
 use walkdir::WalkDir;
 
 fn main() -> Result<(), String> {
-    let file_name = ".buildy.yml";
+    let file_name = "buildy.yml";
     let contents = fs::read_to_string(file_name)
         .map_err(|e| format!("Something went wrong reading {}: {}", file_name, e))?;
 
