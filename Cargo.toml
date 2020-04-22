@@ -22,3 +22,4 @@ duct = "0.13.1"
 walkdir = "2"
 rust-crypto = "^0.2"
 notify = { version = "=5.0.0-pre.1", features = ["serde"] }
+clap = "2.33.0"

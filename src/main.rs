@@ -1,3 +1,4 @@
+use clap::{App, Arg};
 use crossbeam;
 use crossbeam::channel::{unbounded, Receiver, SendError, Sender, TryRecvError};
 use crypto::digest::Digest;
@@ -15,7 +16,19 @@ use std::time::Duration;
 use walkdir::WalkDir;
 
 fn main() -> Result<(), String> {
-    let file_name = "buildy.yml";
+    let matches = App::new("Buildy")
+        .about("An ultra-fast parallel build system for local iteration")
+        .arg(
+            Arg::with_name("config")
+                .short("c")
+                .long("config")
+                .value_name("FILE")
+                .help("Sets a custom config file")
+                .takes_value(true),
+        )
+        .get_matches();
+
+    let file_name = matches.value_of("config").unwrap_or("buildy.yml");
     let contents = fs::read_to_string(file_name)
         .map_err(|e| format!("Something went wrong reading {}: {}", file_name, e))?;
 
@@ -416,7 +429,7 @@ impl Target {
                     Ok(RunSignal::Kill) => {
                         return handle
                             .kill()
-                            .map_err(|e| format!("Failed to kill process {}: {}", command, e))
+                            .map_err(|e| format!("Failed to kill process {}: {}", command, e));
                     }
                     Err(e) => return Err(format!("Receiver error: {}", e)),
                 }
