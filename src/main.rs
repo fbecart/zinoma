@@ -60,8 +60,8 @@ fn main() -> Result<(), String> {
     Ok(())
 }
 
-enum BuildLoopError<'a> {
-    BuildFailed(&'a String),
+enum BuildLoopError {
+    BuildFailed(String),
     UnspecifiedCrossbeamError,
     CrossbeamSendError(SendError<RunSignal>),
     CrossbeamRecvError(TryRecvError),
@@ -70,7 +70,7 @@ enum BuildLoopError<'a> {
     CwdUtf8Error,
 }
 
-impl fmt::Display for BuildLoopError<'_> {
+impl fmt::Display for BuildLoopError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             BuildLoopError::BuildFailed(target) => write!(f, "Build failed for target {}", target),
@@ -96,8 +96,8 @@ impl fmt::Display for BuildLoopError<'_> {
     }
 }
 
-struct BuildResult<'a> {
-    target: &'a String,
+struct BuildResult {
+    target: String,
     state: BuildResultState,
     output: String,
 }
@@ -130,36 +130,34 @@ impl Builder {
         Builder { targets }
     }
 
-    fn choose_build_targets<'a>(
-        &'a self,
-        built_targets: &mut HashSet<&'a String>,
-        building: &mut HashSet<&'a String>,
-        has_changed_files: &mut HashSet<&'a String>,
-        to_build: &mut HashSet<&'a String>,
-    ) {
-        for (target_name, target) in self.targets.iter() {
-            let dependencies_satisfied = target
-                .depends_on
-                .iter()
-                .all(|dependency| built_targets.contains(dependency));
+    fn is_target_to_build(
+        target_name: &str,
+        target: &Target,
+        built_targets: &HashSet<String>,
+        building: &HashSet<String>,
+        has_changed_files: &HashSet<String>,
+    ) -> bool {
+        let dependencies_satisfied = target
+            .depends_on
+            .iter()
+            .all(|dependency| built_targets.contains(dependency.as_str()));
 
-            if !dependencies_satisfied {
-                continue;
-            }
-            if building.contains(target_name) {
-                continue;
-            }
-            if built_targets.contains(target_name) {
-                if !target.run_options.incremental {
-                    continue;
-                }
-                if !has_changed_files.contains(target_name) {
-                    continue;
-                }
-            }
-
-            to_build.insert(target_name);
+        if !dependencies_satisfied {
+            return false;
         }
+        if building.contains(target_name) {
+            return false;
+        }
+        if built_targets.contains(target_name) {
+            if !target.run_options.incremental {
+                return false;
+            }
+            if !has_changed_files.contains(target_name) {
+                return false;
+            }
+        }
+
+        true
     }
 
     fn build_loop(&self) -> Result<(), BuildLoopError> {
@@ -184,7 +182,7 @@ impl Builder {
                 .to_str()
                 .ok_or_else(|| BuildLoopError::CwdUtf8Error)?;
 
-            let mut run_tx_channels: HashMap<&String, Sender<RunSignal>> = Default::default();
+            let mut run_tx_channels: HashMap<String, Sender<RunSignal>> = Default::default();
 
             loop {
                 match watcher_rx.try_recv() {
@@ -207,7 +205,7 @@ impl Builder {
                                 .iter()
                                 .any(|watch_path| relative_path.starts_with(watch_path))
                             {
-                                has_changed_files.insert(target_name);
+                                has_changed_files.insert(target_name.to_string());
                             }
                         }
                     }
@@ -217,12 +215,20 @@ impl Builder {
                     },
                 }
 
-                self.choose_build_targets(
-                    &mut built_targets,
-                    &mut building,
-                    &mut has_changed_files,
-                    &mut to_build,
-                );
+                self.targets
+                    .iter()
+                    .filter(|(target_name, target)| {
+                        Self::is_target_to_build(
+                            target_name,
+                            target,
+                            &built_targets,
+                            &building,
+                            &has_changed_files,
+                        )
+                    })
+                    .for_each(|(target_name, _target)| {
+                        to_build.insert(target_name);
+                    });
 
                 // if self.to_build.len() == 0 && self.building.len() == 0 {
                 //    TODO: Exit if nothing to watch.
@@ -232,22 +238,23 @@ impl Builder {
                 for target_to_build in to_build.iter() {
                     let target_to_build = target_to_build.clone();
                     println!("Building {}", target_to_build);
-                    building.insert(target_to_build);
-                    has_changed_files.remove(&target_to_build);
+                    building.insert(target_to_build.to_string());
+                    has_changed_files.remove(target_to_build);
                     let tx_clone = tx.clone();
-                    let target = self.targets.get(target_to_build).unwrap().clone();
+                    let target = self.targets.get(target_to_build.as_str()).unwrap().clone();
                     scope.spawn(move |_| target.build(&target_to_build, tx_clone));
                 }
                 to_build.clear();
 
                 match rx.try_recv() {
                     Ok(result) => {
-                        self.parse_build_result(&result, &mut building, &mut built_targets)?;
+                        let result_target = (&result.target).to_owned();
+                        self.parse_build_result(result, &mut building, &mut built_targets)?;
 
-                        let target = self.targets.get(result.target).unwrap().clone();
+                        let target = self.targets.get(&result_target).unwrap().clone();
 
                         // If already running, send a kill signal.
-                        match run_tx_channels.get(result.target) {
+                        match run_tx_channels.get(&result_target) {
                             None => {}
                             Some(run_tx) => run_tx
                                 .send(RunSignal::Kill)
@@ -256,7 +263,7 @@ impl Builder {
 
                         if !target.run_list.is_empty() {
                             let (run_tx, run_rx) = unbounded();
-                            run_tx_channels.insert(result.target, run_tx);
+                            run_tx_channels.insert(result_target, run_tx);
 
                             let tx_clone = tx.clone();
                             scope.spawn(move |_| target.run(tx_clone, run_rx).unwrap());
@@ -292,11 +299,11 @@ impl Builder {
         Ok((watcher, watcher_rx))
     }
 
-    fn parse_build_result<'a>(
-        &'a self,
-        result: &BuildResult<'a>,
-        building: &mut HashSet<&'a String>,
-        built_targets: &mut HashSet<&'a String>,
+    fn parse_build_result(
+        &self,
+        result: BuildResult,
+        building: &mut HashSet<String>,
+        built_targets: &mut HashSet<String>,
     ) -> Result<(), BuildLoopError> {
         match result.state {
             BuildResultState::Success => {
@@ -309,7 +316,7 @@ impl Builder {
                 println!("SKIP (Not Modified) {}:\n{}", result.target, result.output);
             }
         }
-        building.remove(result.target);
+        building.remove(&result.target);
         built_targets.insert(result.target);
         Ok(())
     }
@@ -342,7 +349,7 @@ impl Default for RunOptions {
 }
 
 impl Target {
-    fn build<'a>(&self, name: &'a String, tx: Sender<BuildResult<'a>>) -> Result<(), String> {
+    fn build(&self, name: &str, tx: Sender<BuildResult>) -> Result<(), String> {
         let mut output_string = String::from("");
 
         let mut hasher = Sha1::new();
@@ -356,7 +363,7 @@ impl Target {
             let watch_checksum = hasher.result_str();
             if does_checksum_match(name, &watch_checksum)? {
                 tx.send(BuildResult {
-                    target: name,
+                    target: name.to_string(),
                     state: BuildResultState::Skip,
                     output: output_string,
                 })
@@ -380,7 +387,7 @@ impl Target {
                 Err(e) => {
                     println!("Err {} {}", e, command);
                     tx.send(BuildResult {
-                        target: name,
+                        target: name.to_string(),
                         state: BuildResultState::Fail,
                         output: output_string,
                     })
@@ -391,7 +398,7 @@ impl Target {
         }
 
         tx.send(BuildResult {
-            target: name,
+            target: name.to_string(),
             state: BuildResultState::Success,
             output: output_string,
         })
@@ -483,7 +490,7 @@ fn filter_targets(
     filtered_targets
 }
 
-fn calculate_checksum(path: &String) -> Result<String, String> {
+fn calculate_checksum(path: &str) -> Result<String, String> {
     let mut hasher = Sha1::new();
 
     for entry in WalkDir::new(path) {
@@ -505,11 +512,11 @@ fn calculate_checksum(path: &String) -> Result<String, String> {
 
 const CHECKSUM_DIRECTORY: &str = ".buildy";
 
-fn checksum_file_name(target: &String) -> String {
+fn checksum_file_name(target: &str) -> String {
     format!("{}/{}.checksum", CHECKSUM_DIRECTORY, target)
 }
 
-fn does_checksum_match(target: &String, checksum: &String) -> Result<bool, String> {
+fn does_checksum_match(target: &str, checksum: &str) -> Result<bool, String> {
     // Might want to check for some errors like permission denied.
     fs::create_dir(CHECKSUM_DIRECTORY).ok();
     let file_name = checksum_file_name(target);
@@ -529,7 +536,7 @@ fn does_checksum_match(target: &String, checksum: &String) -> Result<bool, Strin
     }
 }
 
-fn write_checksum(target: &String, checksum: &String) -> Result<(), String> {
+fn write_checksum(target: &str, checksum: &str) -> Result<(), String> {
     let file_name = checksum_file_name(target);
     let mut file = fs::File::create(&file_name).map_err(|_| {
         format!(
