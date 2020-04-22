@@ -265,8 +265,7 @@ impl Builder {
                             let (run_tx, run_rx) = unbounded();
                             run_tx_channels.insert(result_target, run_tx);
 
-                            let tx_clone = tx.clone();
-                            scope.spawn(move |_| target.run(tx_clone, run_rx).unwrap());
+                            scope.spawn(move |_| target.run(run_rx).unwrap());
                         }
                     }
                     Err(e) => {
@@ -352,15 +351,20 @@ impl Target {
     fn build(&self, name: &str, tx: Sender<BuildResult>) -> Result<(), String> {
         let mut output_string = String::from("");
 
-        let mut hasher = Sha1::new();
+        let watch_checksum = if self.watch_list.is_empty() {
+            None
+        } else {
+            let mut hasher = Sha1::new();
 
-        if !self.watch_list.is_empty() {
             for path in self.watch_list.iter() {
                 let checksum = calculate_checksum(path)?;
                 hasher.input_str(&checksum);
             }
 
-            let watch_checksum = hasher.result_str();
+            Some(hasher.result_str())
+        };
+
+        if let Some(watch_checksum) = &watch_checksum {
             if does_checksum_match(name, &watch_checksum)? {
                 tx.send(BuildResult {
                     target: name.to_string(),
@@ -370,8 +374,9 @@ impl Target {
                 .map_err(|e| format!("Sender error: {}", e))?;
                 return Ok(());
             }
-            write_checksum(name, &watch_checksum)?;
         }
+
+        reset_checksum(name)?;
 
         for command in self.build_list.iter() {
             println!("Running build command: {}", command);
@@ -397,6 +402,10 @@ impl Target {
             }
         }
 
+        if let Some(watch_checksum) = watch_checksum {
+            write_checksum(name, &watch_checksum)?;
+        }
+
         tx.send(BuildResult {
             target: name.to_string(),
             state: BuildResultState::Success,
@@ -406,7 +415,7 @@ impl Target {
         Ok(())
     }
 
-    fn run(&self, _tx: Sender<BuildResult>, rx: Receiver<RunSignal>) -> Result<(), String> {
+    fn run(&self, rx: Receiver<RunSignal>) -> Result<(), String> {
         for command in self.run_list.iter() {
             println!("Running command: {}", command);
             let handle = cmd!("/bin/sh", "-c", command)
@@ -534,6 +543,19 @@ fn does_checksum_match(target: &str, checksum: &str) -> Result<bool, String> {
             }
         }
     }
+}
+
+fn reset_checksum(target: &str) -> Result<(), String> {
+    let file_name = checksum_file_name(target);
+    if std::path::Path::new(&file_name).exists() {
+        fs::remove_file(&file_name).map_err(|_| {
+            format!(
+                "Failed to delete checksum file {} for target {}",
+                file_name, target
+            )
+        })?;
+    }
+    Ok(())
 }
 
 fn write_checksum(target: &str, checksum: &str) -> Result<(), String> {
