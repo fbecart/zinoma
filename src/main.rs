@@ -1,17 +1,17 @@
 mod config;
 mod incremental;
 mod target;
+mod watcher;
 
 use crate::config::Config;
+use crate::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::{Target, TargetId};
+use crate::watcher::{raw_event_to_targets, setup_watcher};
 use clap::{App, Arg};
 use crossbeam;
 use crossbeam::channel::{unbounded, Receiver, SendError, Sender, TryRecvError};
 use duct::cmd;
-use incremental::{IncrementalRunResult, IncrementalRunner};
-use notify::{RawEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::{HashMap, HashSet};
-use std::env::current_dir;
 use std::fmt;
 use std::path::Path;
 use std::thread::sleep;
@@ -56,9 +56,8 @@ enum BuildLoopError {
     UnspecifiedCrossbeamError,
     CrossbeamSendError(SendError<RunSignal>),
     CrossbeamRecvError(TryRecvError),
-    WatcherError(notify::Error),
-    CwdIOError(std::io::Error),
-    CwdUtf8Error,
+    WatcherSetupError(notify::Error),
+    WatcherError(String),
 }
 
 impl fmt::Display for BuildLoopError {
@@ -76,13 +75,10 @@ impl fmt::Display for BuildLoopError {
             BuildLoopError::CrossbeamRecvError(recv_err) => {
                 write!(f, "Crossbeam parallelism failure: {}", recv_err)
             }
-            BuildLoopError::WatcherError(notify_err) => {
+            BuildLoopError::WatcherSetupError(notify_err) => {
                 write!(f, "File watch error: {}", notify_err)
             }
-            BuildLoopError::CwdIOError(io_err) => {
-                write!(f, "IO Error while getting current directory: {}", io_err)
-            }
-            BuildLoopError::CwdUtf8Error => write!(f, "Current directory was not valid utf-8"),
+            BuildLoopError::WatcherError(message) => write!(f, "File watch error: {}", message),
         }
     }
 }
@@ -158,7 +154,8 @@ impl Builder {
 
         Stop when nothing is still building and there's nothing left to build */
         crossbeam::scope(|scope| {
-            let (_watcher, watcher_rx) = self.setup_watcher()?;
+            let (_watcher, watcher_rx) =
+                setup_watcher(&self.targets).map_err(BuildLoopError::WatcherSetupError)?;
 
             let mut to_build: HashSet<TargetId> = HashSet::new();
             let mut has_changed_files: HashSet<TargetId> = HashSet::new();
@@ -166,41 +163,20 @@ impl Builder {
             let mut building: HashSet<TargetId> = HashSet::new();
 
             let (tx, rx) = unbounded();
-            let working_dir = current_dir().map_err(BuildLoopError::CwdIOError)?;
-            let working_dir = working_dir
-                .to_str()
-                .ok_or_else(|| BuildLoopError::CwdUtf8Error)?;
 
             let mut run_tx_channels: HashMap<TargetId, Sender<RunSignal>> = Default::default();
 
             loop {
                 match watcher_rx.try_recv() {
-                    Ok(result) => {
-                        let absolute_path = match result.path {
-                            Some(path) => path,
-                            None => continue,
-                        };
-                        let absolute_path = match absolute_path.to_str() {
-                            Some(s) => s,
-                            None => continue,
-                        };
-
-                        // TODO: This won't work with symlinks.
-                        let relative_path = &absolute_path[working_dir.len() + 1..];
-
-                        for target in self.targets.iter().filter(|target| {
-                            target
-                                .watch_list
-                                .iter()
-                                .any(|watch_path| relative_path.starts_with(watch_path))
-                        }) {
-                            has_changed_files.insert(target.id);
+                    Ok(event) => {
+                        for target_id in raw_event_to_targets(event, &self.targets)
+                            .map_err(BuildLoopError::WatcherError)?
+                        {
+                            has_changed_files.insert(target_id);
                         }
                     }
-                    Err(e) => match e {
-                        TryRecvError::Empty => {}
-                        _ => return Err(BuildLoopError::CrossbeamRecvError(e)),
-                    },
+                    Err(TryRecvError::Empty) => {}
+                    Err(e) => return Err(BuildLoopError::CrossbeamRecvError(e)),
                 }
 
                 for target in self.targets.iter().filter(|target| {
@@ -252,11 +228,8 @@ impl Builder {
                             scope.spawn(move |_| Builder::run(&command, run_rx).unwrap());
                         }
                     }
-                    Err(e) => {
-                        if e != TryRecvError::Empty {
-                            return Err(BuildLoopError::CrossbeamRecvError(e));
-                        }
-                    }
+                    Err(TryRecvError::Empty) => {}
+                    Err(e) => return Err(BuildLoopError::CrossbeamRecvError(e)),
                 }
 
                 sleep(Duration::from_millis(10))
@@ -265,21 +238,6 @@ impl Builder {
         .map_err(|_| BuildLoopError::UnspecifiedCrossbeamError)
         .and_then(|r| r)?;
         Ok(())
-    }
-
-    fn setup_watcher(&self) -> Result<(RecommendedWatcher, Receiver<RawEvent>), BuildLoopError> {
-        let (watcher_tx, watcher_rx) = unbounded();
-        let mut watcher: RecommendedWatcher =
-            Watcher::new_immediate(watcher_tx).map_err(BuildLoopError::WatcherError)?;
-        for target in self.targets.iter() {
-            for watch_path in target.watch_list.iter() {
-                watcher
-                    .watch(watch_path, RecursiveMode::Recursive)
-                    .map_err(BuildLoopError::WatcherError)?;
-            }
-        }
-
-        Ok((watcher, watcher_rx))
     }
 
     fn build(
