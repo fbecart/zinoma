@@ -241,10 +241,9 @@ impl Builder {
                     building.insert(target_to_build.to_string());
                     has_changed_files.remove(&target_to_build);
                     let tx_clone = tx.clone();
-                    let target = self.targets.get(target_to_build.as_str()).unwrap().clone();
+                    let target = self.targets.get(target_to_build.as_str()).unwrap();
                     scope.spawn(move |_| {
-                        target
-                            .build(&target_to_build, tx_clone, &incremental_runner)
+                        Builder::build(&target_to_build, &target, tx_clone, &incremental_runner)
                             .map_err(|e| {
                                 format!("Error building target {}: {}", target_to_build, e)
                             })
@@ -258,7 +257,7 @@ impl Builder {
                         let result_target = result.target.to_string();
                         self.parse_build_result(result, &mut building, &mut built_targets)?;
 
-                        let target = self.targets.get(&result_target).unwrap().clone();
+                        let target = self.targets.get(&result_target).unwrap();
 
                         // If already running, send a kill signal.
                         match run_tx_channels.get(&result_target) {
@@ -268,19 +267,12 @@ impl Builder {
                                 .map_err(BuildLoopError::CrossbeamSendError)?,
                         }
 
-                        if let Some(command) = &target.run_cmd {
+                        if let Some(command) = &target.run {
                             let (run_tx, run_rx) = unbounded();
                             run_tx_channels.insert(result_target.to_owned(), run_tx);
 
                             let command = command.to_string();
-                            scope.spawn(move |_| {
-                                target
-                                    .run(&command, run_rx)
-                                    .map_err(|e| {
-                                        format!("Error running target {}: {}", &result_target, e)
-                                    })
-                                    .unwrap()
-                            });
+                            scope.spawn(move |_| Builder::run(&command, run_rx).unwrap());
                         }
                     }
                     Err(e) => {
@@ -313,65 +305,15 @@ impl Builder {
         Ok((watcher, watcher_rx))
     }
 
-    fn parse_build_result(
-        &self,
-        result: BuildResult,
-        building: &mut HashSet<String>,
-        built_targets: &mut HashSet<String>,
-    ) -> Result<(), BuildLoopError> {
-        match result.state {
-            BuildResultState::Success => {
-                println!("DONE {}", result.target);
-            }
-            BuildResultState::Fail => {
-                return Err(BuildLoopError::BuildFailed(result.target));
-            }
-            BuildResultState::Skip => {
-                println!("SKIP (Not Modified) {}", result.target);
-            }
-        }
-        building.remove(&result.target);
-        built_targets.insert(result.target);
-        Ok(())
-    }
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
-struct Target {
-    #[serde(default)]
-    depends_on: Vec<String>,
-    #[serde(default, rename = "watch")]
-    watch_list: Vec<String>,
-    #[serde(default, rename = "build")]
-    build_list: Vec<String>,
-    #[serde(default, rename = "run")]
-    run_cmd: Option<String>,
-    #[serde(default)]
-    run_options: RunOptions,
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
-struct RunOptions {
-    #[serde(default)]
-    incremental: bool,
-}
-
-impl Default for RunOptions {
-    fn default() -> Self {
-        RunOptions { incremental: true }
-    }
-}
-
-impl Target {
     fn build(
-        &self,
-        name: &str,
+        target_name: &str,
+        target: &Target,
         tx: Sender<BuildResult>,
         incremental_runner: &IncrementalRunner,
     ) -> Result<(), String> {
         let incremental_run_result: IncrementalRunResult<Result<(), String>> = incremental_runner
-            .run(name, &self.watch_list, || {
-                for command in self.build_list.iter() {
+            .run(target_name, &target.watch_list, || {
+                for command in target.build_list.iter() {
                     println!("Running build command: {}", command);
                     let command_output = cmd!("/bin/sh", "-c", command)
                         .stderr_to_stdout()
@@ -394,7 +336,7 @@ impl Target {
             IncrementalRunResult::Run(Err(_)) => BuildResultState::Fail,
         };
         tx.send(BuildResult {
-            target: name.to_string(),
+            target: target_name.to_string(),
             state: build_result_state,
         })
         .map_err(|e| format!("Sender error: {}", e))?;
@@ -402,7 +344,29 @@ impl Target {
         Ok(())
     }
 
-    fn run(&self, command: &str, rx: Receiver<RunSignal>) -> Result<(), String> {
+    fn parse_build_result(
+        &self,
+        result: BuildResult,
+        building: &mut HashSet<String>,
+        built_targets: &mut HashSet<String>,
+    ) -> Result<(), BuildLoopError> {
+        match result.state {
+            BuildResultState::Success => {
+                println!("DONE {}", result.target);
+            }
+            BuildResultState::Fail => {
+                return Err(BuildLoopError::BuildFailed(result.target));
+            }
+            BuildResultState::Skip => {
+                println!("SKIP (Not Modified) {}", result.target);
+            }
+        }
+        building.remove(&result.target);
+        built_targets.insert(result.target);
+        Ok(())
+    }
+
+    fn run(command: &str, rx: Receiver<RunSignal>) -> Result<(), String> {
         println!("Running command: {}", command);
         let handle = cmd!("/bin/sh", "-c", command)
             .stderr_to_stdout()
@@ -415,6 +379,32 @@ impl Target {
                 .map_err(|e| format!("Failed to kill process {}: {}", command, e)),
             Err(e) => Err(format!("Receiver error: {}", e)),
         }
+    }
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+struct Target {
+    #[serde(default)]
+    depends_on: Vec<String>,
+    #[serde(default, rename = "watch")]
+    watch_list: Vec<String>,
+    #[serde(default, rename = "build")]
+    build_list: Vec<String>,
+    #[serde(default)]
+    run: Option<String>,
+    #[serde(default)]
+    run_options: RunOptions,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+struct RunOptions {
+    #[serde(default)]
+    incremental: bool,
+}
+
+impl Default for RunOptions {
+    fn default() -> Self {
+        RunOptions { incremental: true }
     }
 }
 
