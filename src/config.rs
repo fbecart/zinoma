@@ -1,10 +1,10 @@
 use crate::target;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 struct Target {
     #[serde(default)]
     depends_on: Vec<String>,
@@ -18,7 +18,7 @@ struct Target {
     run_options: RunOptions,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 struct RunOptions {
     #[serde(default)]
     incremental: bool,
