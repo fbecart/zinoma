@@ -1,11 +1,9 @@
 mod checksum;
 
-use checksum::{calculate_checksum, does_checksum_match, reset_checksum, write_checksum};
+use checksum::{run_incrementally, IncrementalRunResult};
 use clap::{App, Arg};
 use crossbeam;
 use crossbeam::channel::{unbounded, Receiver, SendError, Sender, TryRecvError};
-use crypto::digest::Digest;
-use crypto::sha1::Sha1;
 use duct::cmd;
 use notify::{RawEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
@@ -100,7 +98,6 @@ impl fmt::Display for BuildLoopError {
 struct BuildResult {
     target: String,
     state: BuildResultState,
-    output: String,
 }
 
 #[derive(Debug)]
@@ -228,7 +225,7 @@ impl Builder {
                         )
                     })
                     .for_each(|(target_name, _target)| {
-                        to_build.insert(target_name);
+                        to_build.insert(target_name.to_string());
                     });
 
                 // if self.to_build.len() == 0 && self.building.len() == 0 {
@@ -240,16 +237,23 @@ impl Builder {
                     let target_to_build = target_to_build.clone();
                     println!("Building {}", target_to_build);
                     building.insert(target_to_build.to_string());
-                    has_changed_files.remove(target_to_build);
+                    has_changed_files.remove(&target_to_build);
                     let tx_clone = tx.clone();
                     let target = self.targets.get(target_to_build.as_str()).unwrap().clone();
-                    scope.spawn(move |_| target.build(&target_to_build, tx_clone));
+                    scope.spawn(move |_| {
+                        target
+                            .build(&target_to_build, tx_clone)
+                            .map_err(|e| {
+                                format!("Error building target {}: {}", target_to_build, e)
+                            })
+                            .unwrap()
+                    });
                 }
                 to_build.clear();
 
                 match rx.try_recv() {
                     Ok(result) => {
-                        let result_target = (&result.target).to_owned();
+                        let result_target = result.target.to_string();
                         self.parse_build_result(result, &mut building, &mut built_targets)?;
 
                         let target = self.targets.get(&result_target).unwrap().clone();
@@ -264,9 +268,16 @@ impl Builder {
 
                         if !target.run_list.is_empty() {
                             let (run_tx, run_rx) = unbounded();
-                            run_tx_channels.insert(result_target, run_tx);
+                            run_tx_channels.insert(result_target.to_owned(), run_tx);
 
-                            scope.spawn(move |_| target.run(run_rx).unwrap());
+                            scope.spawn(move |_| {
+                                target
+                                    .run(run_rx)
+                                    .map_err(|e| {
+                                        format!("Error running target {}: {}", &result_target, e)
+                                    })
+                                    .unwrap()
+                            });
                         }
                     }
                     Err(e) => {
@@ -307,13 +318,13 @@ impl Builder {
     ) -> Result<(), BuildLoopError> {
         match result.state {
             BuildResultState::Success => {
-                println!("DONE {}:\n{}", result.target, result.output);
+                println!("DONE {}", result.target);
             }
             BuildResultState::Fail => {
                 return Err(BuildLoopError::BuildFailed(result.target));
             }
             BuildResultState::Skip => {
-                println!("SKIP (Not Modified) {}:\n{}", result.target, result.output);
+                println!("SKIP (Not Modified) {}", result.target);
             }
         }
         building.remove(&result.target);
@@ -350,69 +361,36 @@ impl Default for RunOptions {
 
 impl Target {
     fn build(&self, name: &str, tx: Sender<BuildResult>) -> Result<(), String> {
-        let mut output_string = String::from("");
-
-        let watch_checksum = if self.watch_list.is_empty() {
-            None
-        } else {
-            let mut hasher = Sha1::new();
-
-            for path in self.watch_list.iter() {
-                let checksum = calculate_checksum(path)?;
-                hasher.input_str(&checksum);
-            }
-
-            Some(hasher.result_str())
-        };
-
-        if let Some(watch_checksum) = &watch_checksum {
-            if does_checksum_match(name, &watch_checksum)? {
-                tx.send(BuildResult {
-                    target: name.to_string(),
-                    state: BuildResultState::Skip,
-                    output: output_string,
-                })
-                .map_err(|e| format!("Sender error: {}", e))?;
-                return Ok(());
-            }
-        }
-
-        reset_checksum(name)?;
-
-        for command in self.build_list.iter() {
-            println!("Running build command: {}", command);
-            match cmd!("/bin/sh", "-c", command).stderr_to_stdout().run() {
-                Ok(output) => {
-                    println!("Ok {}", command);
-                    output_string.push_str(
-                        String::from_utf8(output.stdout)
+        let incremental_run_result: IncrementalRunResult<Result<(), String>> =
+            run_incrementally(name, &self.watch_list, || {
+                for command in self.build_list.iter() {
+                    println!("Running build command: {}", command);
+                    let command_output = cmd!("/bin/sh", "-c", command)
+                        .stderr_to_stdout()
+                        .run()
+                        .map_err(|e| format!("Command execution error: {}", e))?;
+                    println!(
+                        "{}",
+                        String::from_utf8(command_output.stdout)
                             .map_err(|e| format!("Failed to interpret stdout as utf-8: {}", e))?
-                            .as_str(),
                     );
+                    println!("Ok {}", command);
                 }
-                Err(e) => {
-                    println!("Err {} {}", e, command);
-                    tx.send(BuildResult {
-                        target: name.to_string(),
-                        state: BuildResultState::Fail,
-                        output: output_string,
-                    })
-                    .map_err(|e| format!("Sender error: {}", e))?;
-                    return Ok(());
-                }
-            }
-        }
+                Ok(())
+            })
+            .map_err(|e| format!("Incremental build error: {}", e))?;
 
-        if let Some(watch_checksum) = watch_checksum {
-            write_checksum(name, &watch_checksum)?;
-        }
-
+        let build_result_state = match incremental_run_result {
+            IncrementalRunResult::Skipped => BuildResultState::Skip,
+            IncrementalRunResult::Run(Ok(_)) => BuildResultState::Success,
+            IncrementalRunResult::Run(Err(_)) => BuildResultState::Fail,
+        };
         tx.send(BuildResult {
             target: name.to_string(),
-            state: BuildResultState::Success,
-            output: output_string,
+            state: build_result_state,
         })
         .map_err(|e| format!("Sender error: {}", e))?;
+
         Ok(())
     }
 

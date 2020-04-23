@@ -6,7 +6,52 @@ use walkdir::WalkDir;
 
 const CHECKSUM_DIRECTORY: &str = ".buildy";
 
-pub fn calculate_checksum(path: &str) -> Result<String, String> {
+pub enum IncrementalRunResult<T> {
+    Skipped,
+    Run(T),
+}
+
+pub fn run_incrementally<T, E, F>(
+    name: &str,
+    watch_list: &[String],
+    my_fn: F,
+) -> Result<IncrementalRunResult<Result<T, E>>, String>
+where
+    F: Fn() -> Result<T, E>,
+{
+    let watch_checksum = if watch_list.is_empty() {
+        None
+    } else {
+        let mut hasher = Sha1::new();
+
+        for path in watch_list.iter() {
+            let checksum = calculate_checksum(path)?;
+            hasher.input_str(&checksum);
+        }
+
+        Some(hasher.result_str())
+    };
+
+    if let Some(watch_checksum) = &watch_checksum {
+        if does_checksum_match(name, &watch_checksum)? {
+            return Ok(IncrementalRunResult::Skipped);
+        }
+    }
+
+    reset_checksum(name)?;
+
+    let result = my_fn();
+
+    if result.is_ok() {
+        if let Some(watch_checksum) = watch_checksum {
+            write_checksum(name, &watch_checksum)?;
+        }
+    }
+
+    Ok(IncrementalRunResult::Run(result))
+}
+
+fn calculate_checksum(path: &str) -> Result<String, String> {
     let mut hasher = Sha1::new();
 
     for entry in WalkDir::new(path) {
@@ -30,7 +75,7 @@ fn checksum_file_name(target: &str) -> String {
     format!("{}/{}.checksum", CHECKSUM_DIRECTORY, target)
 }
 
-pub fn does_checksum_match(target: &str, checksum: &str) -> Result<bool, String> {
+fn does_checksum_match(target: &str, checksum: &str) -> Result<bool, String> {
     // Might want to check for some errors like permission denied.
     fs::create_dir(CHECKSUM_DIRECTORY).ok();
     let file_name = checksum_file_name(target);
@@ -50,7 +95,7 @@ pub fn does_checksum_match(target: &str, checksum: &str) -> Result<bool, String>
     }
 }
 
-pub fn reset_checksum(target: &str) -> Result<(), String> {
+fn reset_checksum(target: &str) -> Result<(), String> {
     let file_name = checksum_file_name(target);
     if std::path::Path::new(&file_name).exists() {
         fs::remove_file(&file_name).map_err(|_| {
@@ -63,7 +108,7 @@ pub fn reset_checksum(target: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub fn write_checksum(target: &str, checksum: &str) -> Result<(), String> {
+fn write_checksum(target: &str, checksum: &str) -> Result<(), String> {
     let file_name = checksum_file_name(target);
     let mut file = fs::File::create(&file_name).map_err(|_| {
         format!(
