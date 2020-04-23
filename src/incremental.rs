@@ -2,6 +2,7 @@ use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use std::fs;
 use std::io::Write;
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 pub enum IncrementalRunResult<T> {
@@ -9,12 +10,12 @@ pub enum IncrementalRunResult<T> {
     Run(T),
 }
 
-pub struct IncrementalRunner {
-    checksum_dir: String,
+pub struct IncrementalRunner<'a> {
+    checksum_dir: &'a Path,
 }
 
-impl IncrementalRunner {
-    pub fn new(checksum_dir: String) -> Self {
+impl<'a> IncrementalRunner<'a> {
+    pub fn new(checksum_dir: &'a Path) -> Self {
         Self { checksum_dir }
     }
 
@@ -59,8 +60,8 @@ impl IncrementalRunner {
         Ok(IncrementalRunResult::Run(result))
     }
 
-    fn checksum_file_name(&self, target: &str) -> String {
-        format!("{}/{}.checksum", self.checksum_dir, target)
+    fn checksum_file_name(&self, target: &str) -> PathBuf {
+        self.checksum_dir.join(format!("{}.checksum", target))
     }
 
     fn does_checksum_match(&self, target: &str, checksum: &str) -> Result<bool, String> {
@@ -76,7 +77,9 @@ impl IncrementalRunner {
                 } else {
                     Err(format!(
                         "Failed reading checksum file {} for target {}: {}",
-                        file_name, target, e
+                        file_name.display(),
+                        target,
+                        e
                     ))
                 }
             }
@@ -89,7 +92,8 @@ impl IncrementalRunner {
             fs::remove_file(&file_name).map_err(|_| {
                 format!(
                     "Failed to delete checksum file {} for target {}",
-                    file_name, target
+                    file_name.display(),
+                    target
                 )
             })?;
         }
@@ -101,13 +105,15 @@ impl IncrementalRunner {
         let mut file = fs::File::create(&file_name).map_err(|_| {
             format!(
                 "Failed to create checksum file {} for target {}",
-                file_name, target
+                file_name.display(),
+                target
             )
         })?;
         file.write_all(checksum.as_bytes()).map_err(|_| {
             format!(
                 "Failed to write checksum file {} for target {}",
-                file_name, target
+                file_name.display(),
+                target
             )
         })?;
         Ok(())

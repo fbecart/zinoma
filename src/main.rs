@@ -13,6 +13,7 @@ use notify::{RawEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::{HashMap, HashSet};
 use std::env::current_dir;
 use std::fmt;
+use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -38,9 +39,10 @@ fn main() -> Result<(), String> {
 
     let config_file_name = arg_matches.value_of("config").unwrap_or("buildy.yml");
     let requested_targets = arg_matches.values_of_lossy("targets").unwrap();
-    let targets = Config::from_yml_file(config_file_name)?.into_targets(&requested_targets)?;
+    let targets =
+        Config::from_yml_file(Path::new(config_file_name))?.into_targets(&requested_targets)?;
 
-    let incremental_runner = IncrementalRunner::new(".buildy".to_string());
+    let incremental_runner = IncrementalRunner::new(Path::new(".buildy"));
 
     Builder::new(targets)
         .build_loop(&incremental_runner)

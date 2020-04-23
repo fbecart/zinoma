@@ -3,6 +3,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs;
+use std::path::Path;
 
 #[derive(Debug, Deserialize)]
 struct Target {
@@ -53,11 +54,11 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn from_yml_file(file: &str) -> Result<Self, String> {
+    pub fn from_yml_file(file: &Path) -> Result<Self, String> {
         let contents = fs::read_to_string(file)
-            .map_err(|e| format!("Something went wrong reading {}: {}", file, e))?;
+            .map_err(|e| format!("Something went wrong reading {}: {}", file.display(), e))?;
         let targets = serde_yaml::from_str(&contents)
-            .map_err(|e| format!("Invalid format for {}: {}", file, e))?;
+            .map_err(|e| format!("Invalid format for {}: {}", file.display(), e))?;
         Self::check_targets(&targets).map_err(|e| format!("Failed sanity check: {}", e))?;
 
         Ok(Self { targets })
