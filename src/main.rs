@@ -268,13 +268,14 @@ impl Builder {
                                 .map_err(BuildLoopError::CrossbeamSendError)?,
                         }
 
-                        if !target.run_list.is_empty() {
+                        if let Some(command) = &target.run_cmd {
                             let (run_tx, run_rx) = unbounded();
                             run_tx_channels.insert(result_target.to_owned(), run_tx);
 
+                            let command = command.to_string();
                             scope.spawn(move |_| {
                                 target
-                                    .run(run_rx)
+                                    .run(&command, run_rx)
                                     .map_err(|e| {
                                         format!("Error running target {}: {}", &result_target, e)
                                     })
@@ -344,7 +345,7 @@ struct Target {
     #[serde(default, rename = "build")]
     build_list: Vec<String>,
     #[serde(default, rename = "run")]
-    run_list: Vec<String>,
+    run_cmd: Option<String>,
     #[serde(default)]
     run_options: RunOptions,
 }
@@ -401,25 +402,19 @@ impl Target {
         Ok(())
     }
 
-    fn run(&self, rx: Receiver<RunSignal>) -> Result<(), String> {
-        for command in self.run_list.iter() {
-            println!("Running command: {}", command);
-            let handle = cmd!("/bin/sh", "-c", command)
-                .stderr_to_stdout()
-                .start()
-                .map_err(|e| format!("Failed to run command {}: {}", command, e))?;
-            loop {
-                match rx.recv() {
-                    Ok(RunSignal::Kill) => {
-                        return handle
-                            .kill()
-                            .map_err(|e| format!("Failed to kill process {}: {}", command, e));
-                    }
-                    Err(e) => return Err(format!("Receiver error: {}", e)),
-                }
-            }
+    fn run(&self, command: &str, rx: Receiver<RunSignal>) -> Result<(), String> {
+        println!("Running command: {}", command);
+        let handle = cmd!("/bin/sh", "-c", command)
+            .stderr_to_stdout()
+            .start()
+            .map_err(|e| format!("Failed to run command {}: {}", command, e))?;
+
+        match rx.recv() {
+            Ok(RunSignal::Kill) => handle
+                .kill()
+                .map_err(|e| format!("Failed to kill process {}: {}", command, e)),
+            Err(e) => Err(format!("Receiver error: {}", e)),
         }
-        Ok(())
     }
 }
 

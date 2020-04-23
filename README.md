@@ -22,11 +22,10 @@ server:
     - server_deps
   watch:
     - server/src
-  run:
-    - cd server && node src/server.js
+  run: cd server && node src/server.js
 ```
 
-The configuration file is composed of `target`s, which are an entity to build. Each `target` can define its dependencies, files to `watch`, commands to `build`, and commands to `run` after the build completes.
+The configuration file is composed of `target`s, which are an entity to build. Each `target` can define its dependencies, files to `watch`, commands to `build`, and a command to `run` after the build completes.
 
 `target`s will be run in parallel as much as possible, waiting to start until their dependencies are built.
 
@@ -36,11 +35,11 @@ The `target` will only be rebuilt if either no `watch` paths exist, or any of th
 
 `buildy` maintains a list of checksums in a directory named `.buildy` next to the `buildy.yml`. This directory should be ignored in version control.
 
-Once a `target` is built, it will be run. The commands in `run` will be executed one after another. They can continue running in the background, which is useful for running programs such as a web server.
+Once a `target` is built, it will be run. The run command can continue running in the background, which is useful for running programs such as a web server.
 
 Even after everything is built, `buildy` will watch all the paths in the `watch` directories for new changes in the background. When any change is detected, those `target`s are rebuilt. Children `target`s (those that have a dependency on the rebuilt `target`) will only be rerun if their `watch` files changed as well.
 
-Whenever a `target` is rebuilt, its `run` commands are rerun as well, terminating any that may still be running.
+Whenever a `target` is rebuilt, its `run` command is rerun as well, terminating any that may still be running.
 
 ## Usage
 
