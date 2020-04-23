@@ -20,19 +20,19 @@ impl IncrementalRunner {
 
     pub fn run<T, E, F>(
         &self,
-        name: &str,
-        watch_list: &[String],
-        my_fn: F,
+        identifier: &str,
+        input_files: &[String],
+        function: F,
     ) -> Result<IncrementalRunResult<Result<T, E>>, String>
     where
         F: Fn() -> Result<T, E>,
     {
-        let watch_checksum = if watch_list.is_empty() {
+        let watch_checksum = if input_files.is_empty() {
             None
         } else {
             let mut hasher = Sha1::new();
 
-            for path in watch_list.iter() {
+            for path in input_files.iter() {
                 let checksum = calculate_checksum(path)?;
                 hasher.input_str(&checksum);
             }
@@ -41,18 +41,18 @@ impl IncrementalRunner {
         };
 
         if let Some(watch_checksum) = &watch_checksum {
-            if self.does_checksum_match(name, &watch_checksum)? {
+            if self.does_checksum_match(identifier, &watch_checksum)? {
                 return Ok(IncrementalRunResult::Skipped);
             }
         }
 
-        self.reset_checksum(name)?;
+        self.reset_checksum(identifier)?;
 
-        let result = my_fn();
+        let result = function();
 
         if result.is_ok() {
             if let Some(watch_checksum) = watch_checksum {
-                self.write_checksum(name, &watch_checksum)?;
+                self.write_checksum(identifier, &watch_checksum)?;
             }
         }
 
