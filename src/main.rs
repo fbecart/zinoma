@@ -1,10 +1,10 @@
-mod checksum;
+mod incremental;
 
-use checksum::{run_incrementally, IncrementalRunResult};
 use clap::{App, Arg};
 use crossbeam;
 use crossbeam::channel::{unbounded, Receiver, SendError, Sender, TryRecvError};
 use duct::cmd;
+use incremental::{IncrementalRunResult, IncrementalRunner};
 use notify::{RawEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -52,8 +52,10 @@ fn main() -> Result<(), String> {
     }
     let targets = filter_targets(targets, requested_targets);
 
+    let incremental_runner = IncrementalRunner::new(".buildy".to_string());
+
     Builder::new(targets)
-        .build_loop()
+        .build_loop(&incremental_runner)
         .map_err(|e| format!("Build loop error: {}", e))?;
     // TODO: Detect cycles.
     Ok(())
@@ -158,7 +160,7 @@ impl Builder {
         true
     }
 
-    fn build_loop(&self) -> Result<(), BuildLoopError> {
+    fn build_loop(&self, incremental_runner: &IncrementalRunner) -> Result<(), BuildLoopError> {
         /* Choose build targets (based on what's already been built, dependency tree, etc)
         Build all of them in parallel
         Wait for things to be built
@@ -242,7 +244,7 @@ impl Builder {
                     let target = self.targets.get(target_to_build.as_str()).unwrap().clone();
                     scope.spawn(move |_| {
                         target
-                            .build(&target_to_build, tx_clone)
+                            .build(&target_to_build, tx_clone, &incremental_runner)
                             .map_err(|e| {
                                 format!("Error building target {}: {}", target_to_build, e)
                             })
@@ -360,9 +362,14 @@ impl Default for RunOptions {
 }
 
 impl Target {
-    fn build(&self, name: &str, tx: Sender<BuildResult>) -> Result<(), String> {
-        let incremental_run_result: IncrementalRunResult<Result<(), String>> =
-            run_incrementally(name, &self.watch_list, || {
+    fn build(
+        &self,
+        name: &str,
+        tx: Sender<BuildResult>,
+        incremental_runner: &IncrementalRunner,
+    ) -> Result<(), String> {
+        let incremental_run_result: IncrementalRunResult<Result<(), String>> = incremental_runner
+            .run(name, &self.watch_list, || {
                 for command in self.build_list.iter() {
                     println!("Running build command: {}", command);
                     let command_output = cmd!("/bin/sh", "-c", command)
