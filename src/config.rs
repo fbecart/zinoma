@@ -115,6 +115,10 @@ impl Config {
                 .iter()
                 .map(|target_name| *mapping.get(target_name).unwrap())
                 .collect();
+            let watch_list = watch_list
+                .iter()
+                .map(|watch| Path::new(watch).to_path_buf())
+                .collect();
             targets.push(target::Target::new(
                 target_id,
                 target_name.to_string(),

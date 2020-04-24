@@ -22,7 +22,7 @@ impl<'a> IncrementalRunner<'a> {
     pub fn run<T, E, F>(
         &self,
         identifier: &str,
-        input_files: &[String],
+        input_files: &[PathBuf],
         function: F,
     ) -> Result<IncrementalRunResult<Result<T, E>>, String>
     where
@@ -120,7 +120,7 @@ impl<'a> IncrementalRunner<'a> {
     }
 }
 
-fn calculate_checksum(path: &str) -> Result<String, String> {
+fn calculate_checksum(path: &Path) -> Result<String, String> {
     let mut hasher = Sha1::new();
 
     for entry in WalkDir::new(path) {

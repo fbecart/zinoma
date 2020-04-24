@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 pub type TargetId = usize;
 
 #[derive(Clone, Debug)]
@@ -5,7 +7,7 @@ pub struct Target {
     pub id: TargetId,
     pub name: String,
     pub depends_on: Vec<TargetId>,
-    pub watch_list: Vec<String>,
+    pub watch_list: Vec<PathBuf>,
     pub build_list: Vec<String>,
     pub run: Option<String>,
     pub incremental_run: bool,
@@ -16,7 +18,7 @@ impl Target {
         id: TargetId,
         name: String,
         depends_on: Vec<TargetId>,
-        watch_list: Vec<String>,
+        watch_list: Vec<PathBuf>,
         build_list: Vec<String>,
         run: Option<String>,
         incremental_run: bool,

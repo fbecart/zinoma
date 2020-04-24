@@ -45,7 +45,9 @@ impl TargetWatcher {
                 .map_err(|e| {
                     format!(
                         "Error watching path {} for target {}: {}",
-                        watch_path, target.name, e
+                        watch_path.display(),
+                        target.name,
+                        e
                     )
                 })?;
         }
