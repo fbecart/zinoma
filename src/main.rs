@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 fn main() -> Result<(), String> {
     let arg_matches = App::new("Buildy")
@@ -29,6 +29,12 @@ fn main() -> Result<(), String> {
                 .default_value("."),
         )
         .arg(
+            Arg::with_name("verbosity")
+                .short("v")
+                .multiple(true)
+                .help("Increase message verbosity"),
+        )
+        .arg(
             Arg::with_name("targets")
                 .value_name("TARGETS")
                 .multiple(true)
@@ -36,6 +42,12 @@ fn main() -> Result<(), String> {
                 .help("Targets to build"),
         )
         .get_matches();
+
+    stderrlog::new()
+        .module(module_path!())
+        .verbosity(arg_matches.occurrences_of("verbosity") as usize + 2)
+        .init()
+        .unwrap();
 
     let project_dir = Path::new(arg_matches.value_of("project_dir").unwrap());
     let config_file_name = project_dir.join("buildy.yml");
@@ -169,7 +181,6 @@ impl<'a> Builder<'a> {
 
                 for target_id in ready_to_build.iter() {
                     let target = self.targets.get(*target_id).unwrap();
-                    println!("Building {}", &target.name);
                     target_build_states[target.id].build_started();
                     let tx_clone = tx.clone();
                     scope.spawn(move |_| {
@@ -185,9 +196,9 @@ impl<'a> Builder<'a> {
                         let target = self.targets.get(target_id).unwrap();
 
                         match result.state {
-                            BuildResultState::Success => println!("DONE {}", target.name),
+                            BuildResultState::Success => {}
                             BuildResultState::Skip => {
-                                println!("SKIP (Not Modified) {}", target.name)
+                                log::info!("{} - Build skipped (Not Modified)", target.name)
                             }
                             BuildResultState::Fail => {
                                 return Err(format!("Build failed for target {}", target.name));
@@ -212,7 +223,7 @@ impl<'a> Builder<'a> {
                             run_tx_channels.insert(target_id.to_owned(), run_tx);
 
                             let command = command.to_string();
-                            scope.spawn(move |_| self.run(&command, run_rx).unwrap());
+                            scope.spawn(move |_| self.run(target, &command, run_rx).unwrap());
                         }
                     }
                     Err(TryRecvError::Empty) => {}
@@ -236,20 +247,35 @@ impl<'a> Builder<'a> {
         let target = self.targets.get(target_id).unwrap();
         let incremental_run_result: IncrementalRunResult<Result<(), String>> = incremental_runner
             .run(&target.name, &target.watch_list, || {
+                let target_start = Instant::now();
+                log::info!("{} - Building", &target.name);
                 for command in target.build_list.iter() {
-                    println!("Running build command: {}", command);
+                    let command_start = Instant::now();
+                    log::debug!("{} - Command \"{}\" - Executing", target.name, command);
                     let command_output = cmd!("/bin/sh", "-c", command)
                         .dir(&self.project_dir)
-                        .stderr_to_stdout()
+                        // .stderr_to_stdout()
                         .run()
                         .map_err(|e| format!("Command execution error: {}", e))?;
-                    println!(
+                    print!(
                         "{}",
                         String::from_utf8(command_output.stdout)
                             .map_err(|e| format!("Failed to interpret stdout as utf-8: {}", e))?
                     );
-                    println!("Ok {}", command);
+                    let command_execution_duration = command_start.elapsed();
+                    log::debug!(
+                        "{} - Command \"{}\" - Success (took: {}ms)",
+                        target.name,
+                        command,
+                        command_execution_duration.as_millis()
+                    );
                 }
+                let target_build_duration = target_start.elapsed();
+                log::info!(
+                    "{} - Built (took: {}ms)",
+                    target.name,
+                    target_build_duration.as_millis()
+                );
                 Ok(())
             })
             .map_err(|e| format!("Incremental build error: {}", e))?;
@@ -268,8 +294,8 @@ impl<'a> Builder<'a> {
         Ok(())
     }
 
-    fn run(&self, command: &str, rx: Receiver<RunSignal>) -> Result<(), String> {
-        println!("Running command: {}", command);
+    fn run(&self, target: &Target, command: &str, rx: Receiver<RunSignal>) -> Result<(), String> {
+        log::info!("{} - Command: \"{}\" - Run", target.name, command);
         let handle = cmd!("/bin/sh", "-c", command)
             .dir(&self.project_dir)
             .stderr_to_stdout()
@@ -277,9 +303,12 @@ impl<'a> Builder<'a> {
             .map_err(|e| format!("Failed to run command {}: {}", command, e))?;
 
         match rx.recv() {
-            Ok(RunSignal::Kill) => handle
-                .kill()
-                .map_err(|e| format!("Failed to kill process {}: {}", command, e)),
+            Ok(RunSignal::Kill) => {
+                log::trace!("{} - Killing process", target.name);
+                handle
+                    .kill()
+                    .map_err(|e| format!("Failed to kill process {}: {}", command, e))
+            }
             Err(e) => Err(format!("Receiver error: {}", e)),
         }
     }

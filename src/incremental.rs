@@ -3,6 +3,7 @@ use crypto::sha1::Sha1;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 use walkdir::WalkDir;
 
 pub enum IncrementalRunResult<T> {
@@ -31,6 +32,8 @@ impl<'a> IncrementalRunner<'a> {
         let watch_checksum = if input_files.is_empty() {
             None
         } else {
+            let computation_start = Instant::now();
+            log::trace!("{} - Computing checksum", identifier);
             let mut hasher = Sha1::new();
 
             for path in input_files.iter() {
@@ -38,6 +41,12 @@ impl<'a> IncrementalRunner<'a> {
                 hasher.input_str(&checksum);
             }
 
+            let computation_duration = computation_start.elapsed();
+            log::trace!(
+                "{} - Checksum computed (took {}ms)",
+                identifier,
+                computation_duration.as_millis()
+            );
             Some(hasher.result_str())
         };
 
