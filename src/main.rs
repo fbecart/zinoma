@@ -10,7 +10,7 @@ use crate::watcher::TargetsWatcher;
 use clap::{App, Arg};
 use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 use duct::cmd;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
 use std::thread::sleep;
@@ -77,6 +77,39 @@ impl fmt::Display for RunSignal {
     }
 }
 
+#[derive(Clone)]
+struct TargetBuildState {
+    to_build: bool,
+    being_built: bool,
+    built: bool,
+}
+
+impl TargetBuildState {
+    pub fn new() -> Self {
+        Self {
+            to_build: true,
+            being_built: false,
+            built: false,
+        }
+    }
+
+    pub fn build_invalidated(&mut self) {
+        self.to_build = true;
+        self.built = false;
+    }
+
+    pub fn build_started(&mut self) {
+        self.to_build = false;
+        self.being_built = true;
+        self.built = false;
+    }
+
+    pub fn build_finished(&mut self) {
+        self.being_built = false;
+        self.built = !self.to_build;
+    }
+}
+
 struct Builder<'a> {
     project_dir: &'a Path,
     targets: Vec<Target>,
@@ -84,34 +117,10 @@ struct Builder<'a> {
 
 impl<'a> Builder<'a> {
     fn new(project_dir: &'a Path, targets: Vec<Target>) -> Self {
-        Builder {
+        Self {
             project_dir,
             targets,
         }
-    }
-
-    fn is_target_to_build(
-        target: &Target,
-        built_targets: &HashSet<TargetId>,
-        building: &HashSet<TargetId>,
-        has_changed_files: &HashSet<TargetId>,
-    ) -> bool {
-        let dependencies_satisfied = target
-            .depends_on
-            .iter()
-            .all(|dependency_id| built_targets.contains(dependency_id));
-
-        if !dependencies_satisfied {
-            return false;
-        }
-        if building.contains(&target.id) {
-            return false;
-        }
-        if built_targets.contains(&target.id) && !has_changed_files.contains(&target.id) {
-            return false;
-        }
-
-        true
     }
 
     fn build_loop(&self, incremental_runner: &IncrementalRunner) -> Result<(), String> {
@@ -126,10 +135,8 @@ impl<'a> Builder<'a> {
             let watcher = TargetsWatcher::new(&self.targets)
                 .map_err(|e| format!("Failed to set up file watcher: {}", e))?;
 
-            let mut to_build: HashSet<TargetId> = HashSet::new();
-            let mut has_changed_files: HashSet<TargetId> = HashSet::new();
-            let mut built_targets: HashSet<TargetId> = HashSet::new();
-            let mut building: HashSet<TargetId> = HashSet::new();
+            let mut target_build_states: Vec<TargetBuildState> =
+                vec![TargetBuildState::new(); self.targets.len()];
 
             let (tx, rx) = unbounded();
 
@@ -140,44 +147,56 @@ impl<'a> Builder<'a> {
                     .get_invalidated_targets()
                     .map_err(|e| format!("File watch error: {}", e))?
                 {
-                    has_changed_files.insert(target_id);
+                    target_build_states[target_id].build_invalidated();
                 }
 
-                for target in self.targets.iter().filter(|target| {
-                    Self::is_target_to_build(target, &built_targets, &building, &has_changed_files)
-                }) {
-                    to_build.insert(target.id);
-                }
+                let ready_to_build: Vec<TargetId> = target_build_states
+                    .iter()
+                    .enumerate()
+                    .filter(|(_target_id, build_state)| {
+                        build_state.to_build && !build_state.being_built
+                    })
+                    .map(|(target_id, _build_state)| target_id)
+                    .filter(|target_id| {
+                        let target = self.targets.get(*target_id).unwrap();
 
-                // if self.to_build.len() == 0 && self.building.len() == 0 {
-                //    TODO: Exit if nothing to watch.
-                //    break;
-                // }
+                        target
+                            .depends_on
+                            .iter()
+                            .all(|dependency_id| target_build_states[*dependency_id].built)
+                    })
+                    .collect();
 
-                for target_id in to_build.iter() {
-                    let target_id = *target_id;
-                    let target = self.targets.get(target_id).unwrap();
+                for target_id in ready_to_build.iter() {
+                    let target = self.targets.get(*target_id).unwrap();
                     println!("Building {}", &target.name);
-                    building.insert(target_id);
-                    has_changed_files.remove(&target_id);
+                    target_build_states[target.id].build_started();
                     let tx_clone = tx.clone();
                     scope.spawn(move |_| {
-                        self.build(target_id, tx_clone, &incremental_runner)
-                            .map_err(|e| format!("Error building target {}: {}", target_id, e))
+                        self.build(target.id, tx_clone, &incremental_runner)
+                            .map_err(|e| format!("Error building target {}: {}", target.id, e))
                             .unwrap()
                     });
                 }
-                to_build.clear();
 
                 match rx.try_recv() {
                     Ok(result) => {
-                        let result_target_id = result.target_id;
-                        self.parse_build_result(result, &mut building, &mut built_targets)?;
+                        let target_id = result.target_id;
+                        let target = self.targets.get(target_id).unwrap();
 
-                        let target = self.targets.get(result_target_id).unwrap();
+                        match result.state {
+                            BuildResultState::Success => println!("DONE {}", target.name),
+                            BuildResultState::Skip => {
+                                println!("SKIP (Not Modified) {}", target.name)
+                            }
+                            BuildResultState::Fail => {
+                                return Err(format!("Build failed for target {}", target.name));
+                            }
+                        }
+                        target_build_states[target_id].build_finished();
 
                         // If already running, send a kill signal.
-                        match run_tx_channels.get(&result_target_id) {
+                        match run_tx_channels.get(&target_id) {
                             None => {}
                             Some(run_tx) => run_tx.send(RunSignal::Kill).map_err(|e| {
                                 format!(
@@ -190,7 +209,7 @@ impl<'a> Builder<'a> {
 
                         if let Some(command) = &target.run {
                             let (run_tx, run_rx) = unbounded();
-                            run_tx_channels.insert(result_target_id.to_owned(), run_tx);
+                            run_tx_channels.insert(target_id.to_owned(), run_tx);
 
                             let command = command.to_string();
                             scope.spawn(move |_| self.run(&command, run_rx).unwrap());
@@ -246,29 +265,6 @@ impl<'a> Builder<'a> {
         })
         .map_err(|e| format!("Sender error: {}", e))?;
 
-        Ok(())
-    }
-
-    fn parse_build_result(
-        &self,
-        result: BuildResult,
-        building: &mut HashSet<TargetId>,
-        built_targets: &mut HashSet<TargetId>,
-    ) -> Result<(), String> {
-        let target = self.targets.get(result.target_id).unwrap();
-        match result.state {
-            BuildResultState::Success => {
-                println!("DONE {}", target.name);
-            }
-            BuildResultState::Fail => {
-                return Err(format!("Build failed for target {}", target.name));
-            }
-            BuildResultState::Skip => {
-                println!("SKIP (Not Modified) {}", target.name);
-            }
-        }
-        building.remove(&result.target_id);
-        built_targets.insert(result.target_id);
         Ok(())
     }
 
