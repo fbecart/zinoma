@@ -60,15 +60,15 @@ impl<'a> IncrementalRunner<'a> {
         Ok(IncrementalRunResult::Run(result))
     }
 
-    fn checksum_file_name(&self, target: &str) -> PathBuf {
+    fn get_checksum_file(&self, target: &str) -> PathBuf {
         self.checksum_dir.join(format!("{}.checksum", target))
     }
 
     fn does_checksum_match(&self, target: &str, checksum: &str) -> Result<bool, String> {
         // Might want to check for some errors like permission denied.
         fs::create_dir(&self.checksum_dir).ok();
-        let file_name = self.checksum_file_name(target);
-        match fs::read_to_string(&file_name) {
+        let checksum_file = self.get_checksum_file(target);
+        match fs::read_to_string(&checksum_file) {
             Ok(old_checksum) => Ok(*checksum == old_checksum),
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::NotFound {
@@ -77,7 +77,7 @@ impl<'a> IncrementalRunner<'a> {
                 } else {
                     Err(format!(
                         "Failed reading checksum file {} for target {}: {}",
-                        file_name.display(),
+                        checksum_file.display(),
                         target,
                         e
                     ))
@@ -87,12 +87,12 @@ impl<'a> IncrementalRunner<'a> {
     }
 
     fn reset_checksum(&self, target: &str) -> Result<(), String> {
-        let file_name = self.checksum_file_name(target);
-        if std::path::Path::new(&file_name).exists() {
-            fs::remove_file(&file_name).map_err(|_| {
+        let checksum_file = &self.get_checksum_file(target);
+        if checksum_file.exists() {
+            fs::remove_file(&checksum_file).map_err(|_| {
                 format!(
                     "Failed to delete checksum file {} for target {}",
-                    file_name.display(),
+                    checksum_file.display(),
                     target
                 )
             })?;
@@ -101,18 +101,18 @@ impl<'a> IncrementalRunner<'a> {
     }
 
     fn write_checksum(&self, target: &str, checksum: &str) -> Result<(), String> {
-        let file_name = self.checksum_file_name(target);
-        let mut file = fs::File::create(&file_name).map_err(|_| {
+        let checksum_file = self.get_checksum_file(target);
+        let mut file = fs::File::create(&checksum_file).map_err(|_| {
             format!(
                 "Failed to create checksum file {} for target {}",
-                file_name.display(),
+                checksum_file.display(),
                 target
             )
         })?;
         file.write_all(checksum.as_bytes()).map_err(|_| {
             format!(
                 "Failed to write checksum file {} for target {}",
-                file_name.display(),
+                checksum_file.display(),
                 target
             )
         })?;

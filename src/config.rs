@@ -78,7 +78,11 @@ impl Config {
         Ok(())
     }
 
-    pub fn into_targets(self, requested_targets: &[String]) -> Result<Vec<target::Target>, String> {
+    pub fn into_targets(
+        self,
+        project_dir: &Path,
+        requested_targets: &[String],
+    ) -> Result<Vec<target::Target>, String> {
         self.validate_requested_targets(requested_targets)?;
 
         let Self {
@@ -91,6 +95,7 @@ impl Config {
         fn add_target(
             mut targets: &mut Vec<target::Target>,
             mut mapping: &mut HashMap<String, target::TargetId>,
+            project_dir: &Path,
             raw_targets: &mut HashMap<String, Target>,
             target_name: &str,
         ) {
@@ -106,7 +111,13 @@ impl Config {
                 run_options,
             } = raw_targets.remove(target_name).unwrap();
             depends_on.iter().for_each(|dependency| {
-                add_target(&mut targets, &mut mapping, raw_targets, dependency)
+                add_target(
+                    &mut targets,
+                    &mut mapping,
+                    project_dir,
+                    raw_targets,
+                    dependency,
+                )
             });
 
             let target_id = targets.len();
@@ -117,7 +128,7 @@ impl Config {
                 .collect();
             let watch_list = watch_list
                 .iter()
-                .map(|watch| Path::new(watch).to_path_buf())
+                .map(|watch| project_dir.join(watch))
                 .collect();
             targets.push(target::Target::new(
                 target_id,
@@ -134,6 +145,7 @@ impl Config {
             add_target(
                 &mut targets,
                 &mut mapping,
+                project_dir,
                 &mut raw_targets,
                 requested_target,
             )

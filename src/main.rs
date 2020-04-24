@@ -20,12 +20,13 @@ fn main() -> Result<(), String> {
     let arg_matches = App::new("Buildy")
         .about("An ultra-fast parallel build system for local iteration")
         .arg(
-            Arg::with_name("config")
-                .short("c")
-                .long("config")
-                .value_name("FILE")
-                .help("Sets a custom config file")
-                .takes_value(true),
+            Arg::with_name("project_dir")
+                .short("p")
+                .long("project")
+                .value_name("PROJECT_DIR")
+                .help("Directory of the project to build (in which 'buildy.yml' is located)")
+                .takes_value(true)
+                .default_value("."),
         )
         .arg(
             Arg::with_name("targets")
@@ -36,14 +37,16 @@ fn main() -> Result<(), String> {
         )
         .get_matches();
 
-    let config_file_name = arg_matches.value_of("config").unwrap_or("buildy.yml");
+    let project_dir = Path::new(arg_matches.value_of("project_dir").unwrap());
+    let config_file_name = project_dir.join("buildy.yml");
     let requested_targets = arg_matches.values_of_lossy("targets").unwrap();
     let targets =
-        Config::from_yml_file(Path::new(config_file_name))?.into_targets(&requested_targets)?;
+        Config::from_yml_file(&config_file_name)?.into_targets(&project_dir, &requested_targets)?;
 
-    let incremental_runner = IncrementalRunner::new(Path::new(".buildy"));
+    let checksum_dir = project_dir.join(".buildy");
+    let incremental_runner = IncrementalRunner::new(&checksum_dir);
 
-    Builder::new(targets)
+    Builder::new(project_dir, targets)
         .build_loop(&incremental_runner)
         .map_err(|e| format!("Build loop error: {}", e))?;
     // TODO: Detect cycles.
@@ -106,13 +109,17 @@ impl fmt::Display for RunSignal {
     }
 }
 
-struct Builder {
+struct Builder<'a> {
+    project_dir: &'a Path,
     targets: Vec<Target>,
 }
 
-impl Builder {
-    fn new(targets: Vec<Target>) -> Self {
-        Builder { targets }
+impl<'a> Builder<'a> {
+    fn new(project_dir: &'a Path, targets: Vec<Target>) -> Self {
+        Builder {
+            project_dir,
+            targets,
+        }
     }
 
     fn is_target_to_build(
@@ -219,7 +226,7 @@ impl Builder {
                             run_tx_channels.insert(result_target_id.to_owned(), run_tx);
 
                             let command = command.to_string();
-                            scope.spawn(move |_| Builder::run(&command, run_rx).unwrap());
+                            scope.spawn(move |_| self.run(&command, run_rx).unwrap());
                         }
                     }
                     Err(TryRecvError::Empty) => {}
@@ -246,6 +253,7 @@ impl Builder {
                 for command in target.build_list.iter() {
                     println!("Running build command: {}", command);
                     let command_output = cmd!("/bin/sh", "-c", command)
+                        .dir(&self.project_dir)
                         .stderr_to_stdout()
                         .run()
                         .map_err(|e| format!("Command execution error: {}", e))?;
@@ -298,9 +306,10 @@ impl Builder {
         Ok(())
     }
 
-    fn run(command: &str, rx: Receiver<RunSignal>) -> Result<(), String> {
+    fn run(&self, command: &str, rx: Receiver<RunSignal>) -> Result<(), String> {
         println!("Running command: {}", command);
         let handle = cmd!("/bin/sh", "-c", command)
+            .dir(&self.project_dir)
             .stderr_to_stdout()
             .start()
             .map_err(|e| format!("Failed to run command {}: {}", command, e))?;
