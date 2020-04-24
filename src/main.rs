@@ -107,13 +107,8 @@ impl<'a> Builder<'a> {
         if building.contains(&target.id) {
             return false;
         }
-        if built_targets.contains(&target.id) {
-            if !target.incremental_run {
-                return false;
-            }
-            if !has_changed_files.contains(&target.id) {
-                return false;
-            }
+        if built_targets.contains(&target.id) && !has_changed_files.contains(&target.id) {
+            return false;
         }
 
         true

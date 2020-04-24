@@ -15,20 +15,6 @@ struct Target {
     build_list: Vec<String>,
     #[serde(default)]
     run: Option<String>,
-    #[serde(default)]
-    run_options: RunOptions,
-}
-
-#[derive(Debug, Deserialize)]
-struct RunOptions {
-    #[serde(default)]
-    incremental: bool,
-}
-
-impl Default for RunOptions {
-    fn default() -> Self {
-        Self { incremental: true }
-    }
 }
 
 enum TargetsCheckError<'a> {
@@ -108,7 +94,6 @@ impl Config {
                 watch_list,
                 build_list,
                 run,
-                run_options,
             } = raw_targets.remove(target_name).unwrap();
             depends_on.iter().for_each(|dependency| {
                 add_target(
@@ -137,7 +122,6 @@ impl Config {
                 watch_list,
                 build_list,
                 run,
-                run_options.incremental,
             ));
         }
 

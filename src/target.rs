@@ -10,7 +10,6 @@ pub struct Target {
     pub watch_list: Vec<PathBuf>,
     pub build_list: Vec<String>,
     pub run: Option<String>,
-    pub incremental_run: bool,
 }
 
 impl Target {
@@ -21,7 +20,6 @@ impl Target {
         watch_list: Vec<PathBuf>,
         build_list: Vec<String>,
         run: Option<String>,
-        incremental_run: bool,
     ) -> Self {
         Self {
             id,
@@ -30,7 +28,6 @@ impl Target {
             watch_list,
             build_list,
             run,
-            incremental_run,
         }
     }
 }
