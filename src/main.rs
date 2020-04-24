@@ -8,7 +8,7 @@ use crate::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::{Target, TargetId};
 use crate::watcher::TargetsWatcher;
 use clap::{App, Arg};
-use crossbeam::channel::{unbounded, Receiver, SendError, Sender, TryRecvError};
+use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 use duct::cmd;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -51,38 +51,6 @@ fn main() -> Result<(), String> {
         .map_err(|e| format!("Build loop error: {}", e))?;
     // TODO: Detect cycles.
     Ok(())
-}
-
-enum BuildLoopError {
-    BuildFailed(TargetId),
-    UnspecifiedCrossbeamError,
-    CrossbeamSendError(SendError<RunSignal>),
-    CrossbeamRecvError(TryRecvError),
-    WatcherSetupError(String),
-    WatcherError(String),
-}
-
-impl fmt::Display for BuildLoopError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            BuildLoopError::BuildFailed(target) => write!(f, "Build failed for target {}", target),
-            BuildLoopError::UnspecifiedCrossbeamError => {
-                write!(f, "Unknown crossbeam parallelism failure")
-            }
-            BuildLoopError::CrossbeamSendError(send_err) => write!(
-                f,
-                "Failed to send run signal '{}' to running process",
-                send_err.0
-            ),
-            BuildLoopError::CrossbeamRecvError(recv_err) => {
-                write!(f, "Crossbeam parallelism failure: {}", recv_err)
-            }
-            BuildLoopError::WatcherSetupError(notify_err) => {
-                write!(f, "File watch error: {}", notify_err)
-            }
-            BuildLoopError::WatcherError(message) => write!(f, "File watch error: {}", message),
-        }
-    }
 }
 
 struct BuildResult {
@@ -151,7 +119,7 @@ impl<'a> Builder<'a> {
         true
     }
 
-    fn build_loop(&self, incremental_runner: &IncrementalRunner) -> Result<(), BuildLoopError> {
+    fn build_loop(&self, incremental_runner: &IncrementalRunner) -> Result<(), String> {
         /* Choose build targets (based on what's already been built, dependency tree, etc)
         Build all of them in parallel
         Wait for things to be built
@@ -160,8 +128,8 @@ impl<'a> Builder<'a> {
 
         Stop when nothing is still building and there's nothing left to build */
         crossbeam::scope(|scope| {
-            let watcher =
-                TargetsWatcher::new(&self.targets).map_err(BuildLoopError::WatcherSetupError)?;
+            let watcher = TargetsWatcher::new(&self.targets)
+                .map_err(|e| format!("Failed to set up file watcher: {}", e))?;
 
             let mut to_build: HashSet<TargetId> = HashSet::new();
             let mut has_changed_files: HashSet<TargetId> = HashSet::new();
@@ -175,7 +143,7 @@ impl<'a> Builder<'a> {
             loop {
                 for target_id in watcher
                     .get_invalidated_targets()
-                    .map_err(BuildLoopError::WatcherError)?
+                    .map_err(|e| format!("File watch error: {}", e))?
                 {
                     has_changed_files.insert(target_id);
                 }
@@ -216,9 +184,13 @@ impl<'a> Builder<'a> {
                         // If already running, send a kill signal.
                         match run_tx_channels.get(&result_target_id) {
                             None => {}
-                            Some(run_tx) => run_tx
-                                .send(RunSignal::Kill)
-                                .map_err(BuildLoopError::CrossbeamSendError)?,
+                            Some(run_tx) => run_tx.send(RunSignal::Kill).map_err(|e| {
+                                format!(
+                                    "Failed to send run signal '{}' to running process: {}",
+                                    RunSignal::Kill,
+                                    e
+                                )
+                            })?,
                         }
 
                         if let Some(command) = &target.run {
@@ -230,13 +202,13 @@ impl<'a> Builder<'a> {
                         }
                     }
                     Err(TryRecvError::Empty) => {}
-                    Err(e) => return Err(BuildLoopError::CrossbeamRecvError(e)),
+                    Err(e) => return Err(format!("Crossbeam parallelism failure: {}", e)),
                 }
 
                 sleep(Duration::from_millis(10))
             }
         })
-        .map_err(|_| BuildLoopError::UnspecifiedCrossbeamError)
+        .map_err(|_| "Unknown crossbeam parallelism failure (thread panicked)".to_string())
         .and_then(|r| r)?;
         Ok(())
     }
@@ -287,17 +259,16 @@ impl<'a> Builder<'a> {
         result: BuildResult,
         building: &mut HashSet<TargetId>,
         built_targets: &mut HashSet<TargetId>,
-    ) -> Result<(), BuildLoopError> {
+    ) -> Result<(), String> {
+        let target = self.targets.get(result.target_id).unwrap();
         match result.state {
             BuildResultState::Success => {
-                let target = self.targets.get(result.target_id).unwrap();
                 println!("DONE {}", target.name);
             }
             BuildResultState::Fail => {
-                return Err(BuildLoopError::BuildFailed(result.target_id));
+                return Err(format!("Build failed for target {}", target.name));
             }
             BuildResultState::Skip => {
-                let target = self.targets.get(result.target_id).unwrap();
                 println!("SKIP (Not Modified) {}", target.name);
             }
         }
