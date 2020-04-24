@@ -6,7 +6,7 @@ mod watcher;
 use crate::config::Config;
 use crate::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::{Target, TargetId};
-use crate::watcher::TargetWatcher;
+use crate::watcher::TargetsWatcher;
 use clap::{App, Arg};
 use crossbeam::channel::{unbounded, Receiver, SendError, Sender, TryRecvError};
 use duct::cmd;
@@ -154,7 +154,7 @@ impl Builder {
         Stop when nothing is still building and there's nothing left to build */
         crossbeam::scope(|scope| {
             let watcher =
-                TargetWatcher::new(&self.targets).map_err(BuildLoopError::WatcherSetupError)?;
+                TargetsWatcher::new(&self.targets).map_err(BuildLoopError::WatcherSetupError)?;
 
             let mut to_build: HashSet<TargetId> = HashSet::new();
             let mut has_changed_files: HashSet<TargetId> = HashSet::new();
@@ -166,7 +166,10 @@ impl Builder {
             let mut run_tx_channels: HashMap<TargetId, Sender<RunSignal>> = Default::default();
 
             loop {
-                for target_id in watcher.get_invalidated_targets().map_err(BuildLoopError::WatcherError)? {
+                for target_id in watcher
+                    .get_invalidated_targets()
+                    .map_err(BuildLoopError::WatcherError)?
+                {
                     has_changed_files.insert(target_id);
                 }
 
