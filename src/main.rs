@@ -6,9 +6,8 @@ mod watcher;
 use crate::config::Config;
 use crate::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::{Target, TargetId};
-use crate::watcher::{raw_event_to_targets, setup_watcher};
+use crate::watcher::TargetWatcher;
 use clap::{App, Arg};
-use crossbeam;
 use crossbeam::channel::{unbounded, Receiver, SendError, Sender, TryRecvError};
 use duct::cmd;
 use std::collections::{HashMap, HashSet};
@@ -56,7 +55,7 @@ enum BuildLoopError {
     UnspecifiedCrossbeamError,
     CrossbeamSendError(SendError<RunSignal>),
     CrossbeamRecvError(TryRecvError),
-    WatcherSetupError(notify::Error),
+    WatcherSetupError(String),
     WatcherError(String),
 }
 
@@ -154,8 +153,8 @@ impl Builder {
 
         Stop when nothing is still building and there's nothing left to build */
         crossbeam::scope(|scope| {
-            let (_watcher, watcher_rx) =
-                setup_watcher(&self.targets).map_err(BuildLoopError::WatcherSetupError)?;
+            let watcher =
+                TargetWatcher::new(&self.targets).map_err(BuildLoopError::WatcherSetupError)?;
 
             let mut to_build: HashSet<TargetId> = HashSet::new();
             let mut has_changed_files: HashSet<TargetId> = HashSet::new();
@@ -167,16 +166,8 @@ impl Builder {
             let mut run_tx_channels: HashMap<TargetId, Sender<RunSignal>> = Default::default();
 
             loop {
-                match watcher_rx.try_recv() {
-                    Ok(event) => {
-                        for target_id in raw_event_to_targets(event, &self.targets)
-                            .map_err(BuildLoopError::WatcherError)?
-                        {
-                            has_changed_files.insert(target_id);
-                        }
-                    }
-                    Err(TryRecvError::Empty) => {}
-                    Err(e) => return Err(BuildLoopError::CrossbeamRecvError(e)),
+                for target_id in watcher.get_invalidated_targets().map_err(BuildLoopError::WatcherError)? {
+                    has_changed_files.insert(target_id);
                 }
 
                 for target in self.targets.iter().filter(|target| {

@@ -1,14 +1,14 @@
 pub type TargetId = usize;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Target {
-    pub(crate) id: TargetId,
-    pub(crate) name: String,
-    pub(crate) depends_on: Vec<TargetId>,
-    pub(crate) watch_list: Vec<String>,
-    pub(crate) build_list: Vec<String>,
-    pub(crate) run: Option<String>,
-    pub(crate) incremental_run: bool,
+    pub id: TargetId,
+    pub name: String,
+    pub depends_on: Vec<TargetId>,
+    pub watch_list: Vec<String>,
+    pub build_list: Vec<String>,
+    pub run: Option<String>,
+    pub incremental_run: bool,
 }
 
 impl Target {
