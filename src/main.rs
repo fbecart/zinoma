@@ -10,8 +10,6 @@ use crate::watcher::TargetsWatcher;
 use clap::{App, Arg};
 use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 use duct::cmd;
-use std::collections::HashMap;
-use std::fmt;
 use std::path::Path;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
@@ -81,14 +79,6 @@ enum RunSignal {
     Kill,
 }
 
-impl fmt::Display for RunSignal {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RunSignal::Kill => write!(f, "KILL"),
-        }
-    }
-}
-
 #[derive(Clone)]
 struct TargetBuildState {
     to_build: bool,
@@ -152,7 +142,8 @@ impl<'a> Builder<'a> {
 
             let (tx, rx) = unbounded();
 
-            let mut run_tx_channels: HashMap<TargetId, Sender<RunSignal>> = Default::default();
+            let mut service_tx_channels: Vec<Option<Sender<RunSignal>>> =
+                vec![None; self.targets.len()];
 
             loop {
                 for target_id in watcher
@@ -206,24 +197,18 @@ impl<'a> Builder<'a> {
                         }
                         target_build_states[target_id].build_finished();
 
-                        // If already running, send a kill signal.
-                        match run_tx_channels.get(&target_id) {
-                            None => {}
-                            Some(run_tx) => run_tx.send(RunSignal::Kill).map_err(|e| {
-                                format!(
-                                    "Failed to send run signal '{}' to running process: {}",
-                                    RunSignal::Kill,
-                                    e
-                                )
-                            })?,
-                        }
+                        if let Some(command) = &target.service {
+                            // If already running, send a kill signal.
+                            if let Some(service_tx) = &service_tx_channels[target_id] {
+                                service_tx.send(RunSignal::Kill).map_err(|e| {
+                                    format!("Failed to send Kill signal to running process: {}", e)
+                                })?;
+                            }
 
-                        if let Some(command) = &target.run {
-                            let (run_tx, run_rx) = unbounded();
-                            run_tx_channels.insert(target_id.to_owned(), run_tx);
+                            let (service_tx, service_rx) = unbounded();
+                            service_tx_channels[target_id] = Some(service_tx);
 
-                            let command = command.to_string();
-                            scope.spawn(move |_| self.run(target, &command, run_rx).unwrap());
+                            scope.spawn(move |_| self.run(target, command, service_rx).unwrap());
                         }
                     }
                     Err(TryRecvError::Empty) => {}

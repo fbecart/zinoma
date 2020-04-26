@@ -9,7 +9,7 @@ pub struct Target {
     pub depends_on: Vec<TargetId>,
     pub watch_list: Vec<PathBuf>,
     pub build_list: Vec<String>,
-    pub run: Option<String>,
+    pub service: Option<String>,
 }
 
 impl Target {
@@ -19,7 +19,7 @@ impl Target {
         depends_on: Vec<TargetId>,
         watch_list: Vec<PathBuf>,
         build_list: Vec<String>,
-        run: Option<String>,
+        service: Option<String>,
     ) -> Self {
         Self {
             id,
@@ -27,7 +27,7 @@ impl Target {
             depends_on,
             watch_list,
             build_list,
-            run,
+            service,
         }
     }
 }

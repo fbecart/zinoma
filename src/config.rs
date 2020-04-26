@@ -14,7 +14,7 @@ struct Target {
     #[serde(default, rename = "build")]
     build_list: Vec<String>,
     #[serde(default)]
-    run: Option<String>,
+    service: Option<String>,
 }
 
 enum TargetsCheckError<'a> {
@@ -93,7 +93,7 @@ impl Config {
                 depends_on,
                 watch_list,
                 build_list,
-                run,
+                service,
             } = raw_targets.remove(target_name).unwrap();
             depends_on.iter().for_each(|dependency| {
                 add_target(
@@ -121,7 +121,7 @@ impl Config {
                 depends_on,
                 watch_list,
                 build_list,
-                run,
+                service,
             ));
         }
 
