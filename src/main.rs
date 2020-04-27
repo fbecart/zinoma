@@ -162,8 +162,8 @@ impl<'a> Builder<'a> {
                     target_build_states[target_id].build_invalidated();
                 }
 
-                for target_id in self.get_ready_to_build_targets(&target_build_states).iter() {
-                    let target = self.targets.get(*target_id).unwrap();
+                for &target_id in self.get_ready_to_build_targets(&target_build_states).iter() {
+                    let target = self.targets.get(target_id).unwrap();
                     target_build_states[target.id].build_started();
                     let tx_clone = tx.clone();
                     scope.spawn(move |_| {
@@ -232,8 +232,8 @@ impl<'a> Builder<'a> {
                 break Ok(());
             }
 
-            for target_id in self.get_ready_to_build_targets(&target_build_states).iter() {
-                let target = self.targets.get(*target_id).unwrap();
+            for &target_id in self.get_ready_to_build_targets(&target_build_states).iter() {
+                let target = self.targets.get(target_id).unwrap();
                 target_build_states[target.id].build_started();
                 let tx_clone = tx.clone();
                 scope.spawn(move |_| {
@@ -353,7 +353,7 @@ impl<'a> Builder<'a> {
             .enumerate()
             .filter(|(_target_id, build_state)| build_state.to_build && !build_state.being_built)
             .map(|(target_id, _build_state)| target_id)
-            .filter(|target_id| self.has_all_dependencies_built(*target_id, &target_build_states))
+            .filter(|&target_id| self.has_all_dependencies_built(target_id, &target_build_states))
             .collect()
     }
 
@@ -364,9 +364,9 @@ impl<'a> Builder<'a> {
     ) -> bool {
         let target = self.targets.get(target_id).unwrap();
 
-        target
-            .depends_on
-            .iter()
-            .all(|dependency_id| target_build_states[*dependency_id].built)
+        target.depends_on.iter().all(|&dependency_id| {
+            target_build_states[dependency_id].built
+                && self.has_all_dependencies_built(dependency_id, target_build_states)
+        })
     }
 }
