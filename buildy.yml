@@ -1,0 +1,10 @@
+clippy:
+  watch: [ src ]
+  build: [ cargo clippy ]
+
+test:
+  watch: [ src ]
+  build: [ cargo test ]
+
+check:
+  depends_on: [ test, clippy ]

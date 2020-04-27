@@ -1,3 +1,6 @@
+# Buildy
+/.buildy/
+
 /target
 **/*.rs.bk
 .idea/
