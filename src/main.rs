@@ -56,7 +56,7 @@ fn main() -> Result<(), String> {
     let checksum_dir = project_dir.join(".buildy");
     let incremental_runner = IncrementalRunner::new(&checksum_dir);
 
-    let engine = Engine::new(project_dir, targets, incremental_runner);
+    let engine = Engine::new(targets, incremental_runner);
 
     if arg_matches.is_present("watch") {
         engine.watch().map_err(|e| format!("Watch error: {}", e))

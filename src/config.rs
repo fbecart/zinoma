@@ -119,6 +119,7 @@ impl Config {
                 target_id,
                 target_name.to_string(),
                 depends_on,
+                project_dir.to_path_buf(),
                 watch_list,
                 build_list,
                 service,

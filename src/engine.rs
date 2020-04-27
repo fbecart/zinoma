@@ -3,24 +3,17 @@ use crate::target::{Target, TargetId};
 use crate::watcher::TargetsWatcher;
 use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 use duct::cmd;
-use std::path::Path;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 pub struct Engine<'a> {
-    project_dir: &'a Path,
     targets: Vec<Target>,
     incremental_runner: IncrementalRunner<'a>,
 }
 
 impl<'a> Engine<'a> {
-    pub fn new(
-        project_dir: &'a Path,
-        targets: Vec<Target>,
-        incremental_runner: IncrementalRunner<'a>,
-    ) -> Self {
+    pub fn new(targets: Vec<Target>, incremental_runner: IncrementalRunner<'a>) -> Self {
         Self {
-            project_dir,
             targets,
             incremental_runner,
         }
@@ -79,7 +72,10 @@ impl<'a> Engine<'a> {
                                 // If already running, send a kill signal.
                                 if let Some(service_tx) = &service_tx_channels[target_id] {
                                     service_tx.send(RunSignal::Kill).map_err(|e| {
-                                        format!("Failed to send Kill signal to running process: {}", e)
+                                        format!(
+                                            "Failed to send Kill signal to running process: {}",
+                                            e
+                                        )
                                     })?;
                                 }
 
@@ -166,7 +162,7 @@ impl<'a> Engine<'a> {
                     let command_start = Instant::now();
                     log::debug!("{} - Command \"{}\" - Executing", target.name, command);
                     let command_output = cmd!("/bin/sh", "-c", command)
-                        .dir(&self.project_dir)
+                        .dir(&target.path)
                         .stderr_to_stdout()
                         .run()
                         .map_err(|e| format!("Command execution error: {}", e))?;
@@ -217,7 +213,7 @@ impl<'a> Engine<'a> {
     ) -> Result<(), String> {
         log::info!("{} - Command: \"{}\" - Run", target.name, command);
         let handle = cmd!("/bin/sh", "-c", command)
-            .dir(&self.project_dir)
+            .dir(&target.path)
             .stderr_to_stdout()
             .start()
             .map_err(|e| format!("Failed to run command {}: {}", command, e))?;
