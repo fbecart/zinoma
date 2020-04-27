@@ -70,25 +70,27 @@ impl<'a> Engine<'a> {
                         let target = &self.targets[target_id];
 
                         if let BuildResultState::Fail(e) = result.state {
-                            return Err(format!("Build failed for target {}: {}", target.name, e));
-                        }
-                        target_build_states[target_id].build_finished();
+                            log::warn!("{} - Build failed: {}", target.name, e);
+                            target_build_states[target_id].build_failed();
+                        } else {
+                            target_build_states[target_id].build_succeeded();
 
-                        if let Some(command) = &target.service {
-                            // If already running, send a kill signal.
-                            if let Some(service_tx) = &service_tx_channels[target_id] {
-                                service_tx.send(RunSignal::Kill).map_err(|e| {
-                                    format!("Failed to send Kill signal to running process: {}", e)
-                                })?;
+                            if let Some(command) = &target.service {
+                                // If already running, send a kill signal.
+                                if let Some(service_tx) = &service_tx_channels[target_id] {
+                                    service_tx.send(RunSignal::Kill).map_err(|e| {
+                                        format!("Failed to send Kill signal to running process: {}", e)
+                                    })?;
+                                }
+
+                                let (service_tx, service_rx) = unbounded();
+                                service_tx_channels[target_id] = Some(service_tx);
+
+                                scope.spawn(move |_| {
+                                    self.run_target_service(target, command, service_rx)
+                                        .unwrap()
+                                });
                             }
-
-                            let (service_tx, service_rx) = unbounded();
-                            service_tx_channels[target_id] = Some(service_tx);
-
-                            scope.spawn(move |_| {
-                                self.run_target_service(target, command, service_rx)
-                                    .unwrap()
-                            });
                         }
                     }
                     Err(TryRecvError::Empty) => {}
@@ -142,7 +144,7 @@ impl<'a> Engine<'a> {
                     if let BuildResultState::Fail(e) = result.state {
                         return Err(format!("Build failed for target {}: {}", target.name, e));
                     }
-                    target_build_states[target_id].build_finished();
+                    target_build_states[target_id].build_succeeded();
                 }
                 Err(TryRecvError::Empty) => {}
                 Err(e) => return Err(format!("Crossbeam parallelism failure: {}", e)),
@@ -285,9 +287,14 @@ impl TargetBuildState {
         self.built = false;
     }
 
-    pub fn build_finished(&mut self) {
+    pub fn build_succeeded(&mut self) {
         self.being_built = false;
         self.built = !self.to_build;
+    }
+
+    pub fn build_failed(&mut self) {
+        self.being_built = false;
+        self.built = false;
     }
 }
 
