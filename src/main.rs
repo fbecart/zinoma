@@ -60,16 +60,12 @@ fn main() -> Result<(), String> {
     let checksum_dir = project_dir.join(".buildy");
     let incremental_runner = IncrementalRunner::new(&checksum_dir);
 
-    let builder = Builder::new(project_dir, targets);
+    let builder = Builder::new(project_dir, targets, incremental_runner);
 
     if arg_matches.is_present("watch") {
-        builder
-            .watch(&incremental_runner)
-            .map_err(|e| format!("Watch error: {}", e))
+        builder.watch().map_err(|e| format!("Watch error: {}", e))
     } else {
-        builder
-            .build(&incremental_runner)
-            .map_err(|e| format!("Build error: {}", e))
+        builder.build().map_err(|e| format!("Build error: {}", e))
     }
 }
 
@@ -125,17 +121,23 @@ impl TargetBuildState {
 struct Builder<'a> {
     project_dir: &'a Path,
     targets: Vec<Target>,
+    incremental_runner: IncrementalRunner<'a>,
 }
 
 impl<'a> Builder<'a> {
-    fn new(project_dir: &'a Path, targets: Vec<Target>) -> Self {
+    fn new(
+        project_dir: &'a Path,
+        targets: Vec<Target>,
+        incremental_runner: IncrementalRunner<'a>,
+    ) -> Self {
         Self {
             project_dir,
             targets,
+            incremental_runner,
         }
     }
 
-    fn watch(&self, incremental_runner: &IncrementalRunner) -> Result<(), String> {
+    fn watch(&self) -> Result<(), String> {
         /* Choose build targets (based on what's already been built, dependency tree, etc)
         Build all of them in parallel
         Wait for things to be built
@@ -167,7 +169,7 @@ impl<'a> Builder<'a> {
                     target_build_states[target.id].build_started();
                     let tx_clone = tx.clone();
                     scope.spawn(move |_| {
-                        self.build_target(target.id, tx_clone, &incremental_runner)
+                        self.build_target(target.id, tx_clone)
                             .map_err(|e| format!("Error building target {}: {}", target.id, e))
                             .unwrap()
                     });
@@ -210,7 +212,7 @@ impl<'a> Builder<'a> {
         .map_err(|_| "Unknown crossbeam parallelism failure (thread panicked)".to_string())?
     }
 
-    fn build(&self, incremental_runner: &IncrementalRunner) -> Result<(), String> {
+    fn build(&self) -> Result<(), String> {
         /* Choose build targets (based on what's already been built, dependency tree, etc)
         Build all of them in parallel
         Wait for things to be built
@@ -237,7 +239,7 @@ impl<'a> Builder<'a> {
                 target_build_states[target.id].build_started();
                 let tx_clone = tx.clone();
                 scope.spawn(move |_| {
-                    self.build_target(target.id, tx_clone, &incremental_runner)
+                    self.build_target(target.id, tx_clone)
                         .map_err(|e| format!("Error building target {}: {}", target.id, e))
                         .unwrap()
                 });
@@ -262,14 +264,10 @@ impl<'a> Builder<'a> {
         .map_err(|_| "Unknown crossbeam parallelism failure (thread panicked)".to_string())?
     }
 
-    fn build_target(
-        &self,
-        target_id: TargetId,
-        tx: Sender<BuildResult>,
-        incremental_runner: &IncrementalRunner,
-    ) -> Result<(), String> {
+    fn build_target(&self, target_id: TargetId, tx: Sender<BuildResult>) -> Result<(), String> {
         let target = self.targets.get(target_id).unwrap();
-        let incremental_run_result: IncrementalRunResult<Result<(), String>> = incremental_runner
+        let incremental_run_result: IncrementalRunResult<Result<(), String>> = self
+            .incremental_runner
             .run(&target.name, &target.watch_list, || {
                 let target_start = Instant::now();
                 log::info!("{} - Building", &target.name);
