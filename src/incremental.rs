@@ -1,6 +1,6 @@
-use crypto::digest::Digest;
-use crypto::sha1::Sha1;
+use fasthash::XXHasher;
 use std::fs;
+use std::hash::{Hash, Hasher};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -34,12 +34,11 @@ impl<'a> IncrementalRunner<'a> {
         } else {
             let computation_start = Instant::now();
             log::trace!("{} - Computing checksum", identifier);
-            let mut hasher = Sha1::new();
+            let mut hasher: XXHasher = Default::default();
 
             for path in input_files.iter() {
                 let checksum = calculate_path_checksum(path)?;
-                let checksum = checksum.unwrap_or_else(|| "-".to_string());
-                hasher.input_str(&checksum);
+                checksum.unwrap_or(0).hash(&mut hasher);
             }
 
             let computation_duration = computation_start.elapsed();
@@ -48,7 +47,7 @@ impl<'a> IncrementalRunner<'a> {
                 identifier,
                 computation_duration.as_millis()
             );
-            Some(hasher.result_str())
+            Some(hasher.finish().to_string())
         };
 
         if let Some(watch_checksum) = &watch_checksum {
@@ -130,26 +129,22 @@ impl<'a> IncrementalRunner<'a> {
     }
 }
 
-fn calculate_path_checksum(path: &Path) -> Result<Option<String>, String> {
+fn calculate_path_checksum(path: &Path) -> Result<Option<u64>, String> {
     if !path.exists() {
         return Ok(None);
     }
 
-    let mut hasher = Sha1::new();
+    let mut hasher: XXHasher = Default::default();
 
     for entry in WalkDir::new(path) {
         let entry = entry.map_err(|e| format!("Failed to traverse directory: {}", e))?;
 
         if entry.path().is_file() {
-            let entry_path = match entry.path().to_str() {
-                Some(s) => s,
-                None => return Err("Failed to convert file path into String".to_owned()),
-            };
-            let contents = fs::read(entry_path)
+            let contents = fs::read(entry.path())
                 .map_err(|e| format!("Failed to read file to calculate checksum: {}", e))?;
-            hasher.input(contents.as_slice());
+            contents.hash(&mut hasher);
         }
     }
 
-    Ok(Some(hasher.result_str()))
+    Ok(Some(hasher.finish()))
 }
