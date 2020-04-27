@@ -15,31 +15,34 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 fn main() -> Result<(), String> {
-    let arg_matches = App::new("Buildy")
-        .about("An ultra-fast parallel build system for local iteration")
-        .arg(
-            Arg::with_name("project_dir")
-                .short("p")
-                .long("project")
-                .value_name("PROJECT_DIR")
-                .help("Directory of the project to build (in which 'buildy.yml' is located)")
-                .takes_value(true)
-                .default_value("."),
-        )
-        .arg(
-            Arg::with_name("verbosity")
-                .short("v")
-                .multiple(true)
-                .help("Increase message verbosity"),
-        )
-        .arg(
-            Arg::with_name("targets")
-                .value_name("TARGETS")
-                .multiple(true)
-                .required(true)
-                .help("Targets to build"),
-        )
-        .get_matches();
+    let arg_matches =
+        App::new("Buildy")
+            .about("An ultra-fast parallel build system for local iteration")
+            .arg(
+                Arg::with_name("project_dir")
+                    .short("p")
+                    .long("project")
+                    .value_name("PROJECT_DIR")
+                    .help("Directory of the project to build (in which 'buildy.yml' is located)")
+                    .takes_value(true),
+            )
+            .arg(
+                Arg::with_name("verbosity")
+                    .short("v")
+                    .multiple(true)
+                    .help("Increases message verbosity"),
+            )
+            .arg(Arg::with_name("watch").short("w").long("watch").help(
+                "Enable watch mode: rebuild targets and restart services on file system changes",
+            ))
+            .arg(
+                Arg::with_name("targets")
+                    .value_name("TARGETS")
+                    .multiple(true)
+                    .required(true)
+                    .help("Targets to build"),
+            )
+            .get_matches();
 
     stderrlog::new()
         .module(module_path!())
@@ -47,20 +50,27 @@ fn main() -> Result<(), String> {
         .init()
         .unwrap();
 
-    let project_dir = Path::new(arg_matches.value_of("project_dir").unwrap());
+    let project_dir = Path::new(arg_matches.value_of("project_dir").unwrap_or("."));
     let config_file_name = project_dir.join("buildy.yml");
     let requested_targets = arg_matches.values_of_lossy("targets").unwrap();
     let targets =
         Config::from_yml_file(&config_file_name)?.into_targets(&project_dir, &requested_targets)?;
+    // TODO: Detect cycles.
 
     let checksum_dir = project_dir.join(".buildy");
     let incremental_runner = IncrementalRunner::new(&checksum_dir);
 
-    Builder::new(project_dir, targets)
-        .build_loop(&incremental_runner)
-        .map_err(|e| format!("Build loop error: {}", e))?;
-    // TODO: Detect cycles.
-    Ok(())
+    let builder = Builder::new(project_dir, targets);
+
+    if arg_matches.is_present("watch") {
+        builder
+            .watch(&incremental_runner)
+            .map_err(|e| format!("Watch error: {}", e))
+    } else {
+        builder
+            .build(&incremental_runner)
+            .map_err(|e| format!("Build error: {}", e))
+    }
 }
 
 struct BuildResult {
@@ -71,7 +81,7 @@ struct BuildResult {
 #[derive(Debug)]
 enum BuildResultState {
     Success,
-    Fail,
+    Fail(String),
     Skip,
 }
 
@@ -125,26 +135,25 @@ impl<'a> Builder<'a> {
         }
     }
 
-    fn build_loop(&self, incremental_runner: &IncrementalRunner) -> Result<(), String> {
+    fn watch(&self, incremental_runner: &IncrementalRunner) -> Result<(), String> {
         /* Choose build targets (based on what's already been built, dependency tree, etc)
         Build all of them in parallel
         Wait for things to be built
         As things get built, check to see if there's something new we can build
-        If so, start building that in parallel too
+        If so, start building that in parallel too */
 
-        Stop when nothing is still building and there's nothing left to build */
+        let watcher = TargetsWatcher::new(&self.targets)
+            .map_err(|e| format!("Failed to set up file watcher: {}", e))?;
+
+        let mut service_tx_channels: Vec<Option<Sender<RunSignal>>> =
+            vec![None; self.targets.len()];
+
+        let mut target_build_states: Vec<TargetBuildState> =
+            vec![TargetBuildState::new(); self.targets.len()];
+
+        let (tx, rx) = unbounded();
+
         crossbeam::scope(|scope| {
-            let watcher = TargetsWatcher::new(&self.targets)
-                .map_err(|e| format!("Failed to set up file watcher: {}", e))?;
-
-            let mut target_build_states: Vec<TargetBuildState> =
-                vec![TargetBuildState::new(); self.targets.len()];
-
-            let (tx, rx) = unbounded();
-
-            let mut service_tx_channels: Vec<Option<Sender<RunSignal>>> =
-                vec![None; self.targets.len()];
-
             loop {
                 for target_id in watcher
                     .get_invalidated_targets()
@@ -153,29 +162,12 @@ impl<'a> Builder<'a> {
                     target_build_states[target_id].build_invalidated();
                 }
 
-                let ready_to_build: Vec<TargetId> = target_build_states
-                    .iter()
-                    .enumerate()
-                    .filter(|(_target_id, build_state)| {
-                        build_state.to_build && !build_state.being_built
-                    })
-                    .map(|(target_id, _build_state)| target_id)
-                    .filter(|target_id| {
-                        let target = self.targets.get(*target_id).unwrap();
-
-                        target
-                            .depends_on
-                            .iter()
-                            .all(|dependency_id| target_build_states[*dependency_id].built)
-                    })
-                    .collect();
-
-                for target_id in ready_to_build.iter() {
+                for target_id in self.get_ready_to_build_targets(&target_build_states).iter() {
                     let target = self.targets.get(*target_id).unwrap();
                     target_build_states[target.id].build_started();
                     let tx_clone = tx.clone();
                     scope.spawn(move |_| {
-                        self.build(target.id, tx_clone, &incremental_runner)
+                        self.build_target(target.id, tx_clone, &incremental_runner)
                             .map_err(|e| format!("Error building target {}: {}", target.id, e))
                             .unwrap()
                     });
@@ -184,16 +176,10 @@ impl<'a> Builder<'a> {
                 match rx.try_recv() {
                     Ok(result) => {
                         let target_id = result.target_id;
-                        let target = self.targets.get(target_id).unwrap();
+                        let target = &self.targets[target_id];
 
-                        match result.state {
-                            BuildResultState::Success => {}
-                            BuildResultState::Skip => {
-                                log::info!("{} - Build skipped (Not Modified)", target.name)
-                            }
-                            BuildResultState::Fail => {
-                                return Err(format!("Build failed for target {}", target.name));
-                            }
+                        if let BuildResultState::Fail(e) = result.state {
+                            return Err(format!("Build failed for target {}: {}", target.name, e));
                         }
                         target_build_states[target_id].build_finished();
 
@@ -208,7 +194,10 @@ impl<'a> Builder<'a> {
                             let (service_tx, service_rx) = unbounded();
                             service_tx_channels[target_id] = Some(service_tx);
 
-                            scope.spawn(move |_| self.run(target, command, service_rx).unwrap());
+                            scope.spawn(move |_| {
+                                self.run_target_service(target, command, service_rx)
+                                    .unwrap()
+                            });
                         }
                     }
                     Err(TryRecvError::Empty) => {}
@@ -218,12 +207,62 @@ impl<'a> Builder<'a> {
                 sleep(Duration::from_millis(10))
             }
         })
-        .map_err(|_| "Unknown crossbeam parallelism failure (thread panicked)".to_string())
-        .and_then(|r| r)?;
-        Ok(())
+        .map_err(|_| "Unknown crossbeam parallelism failure (thread panicked)".to_string())?
     }
 
-    fn build(
+    fn build(&self, incremental_runner: &IncrementalRunner) -> Result<(), String> {
+        /* Choose build targets (based on what's already been built, dependency tree, etc)
+        Build all of them in parallel
+        Wait for things to be built
+        As things get built, check to see if there's something new we can build
+        If so, start building that in parallel too
+
+        Stop when nothing is still building and there's nothing left to build */
+
+        let mut target_build_states: Vec<TargetBuildState> =
+            vec![TargetBuildState::new(); self.targets.len()];
+
+        let (tx, rx) = unbounded();
+
+        crossbeam::scope(|scope| loop {
+            if target_build_states
+                .iter()
+                .all(|build_state| build_state.built)
+            {
+                break Ok(());
+            }
+
+            for target_id in self.get_ready_to_build_targets(&target_build_states).iter() {
+                let target = self.targets.get(*target_id).unwrap();
+                target_build_states[target.id].build_started();
+                let tx_clone = tx.clone();
+                scope.spawn(move |_| {
+                    self.build_target(target.id, tx_clone, &incremental_runner)
+                        .map_err(|e| format!("Error building target {}: {}", target.id, e))
+                        .unwrap()
+                });
+            }
+
+            match rx.try_recv() {
+                Ok(result) => {
+                    let target_id = result.target_id;
+                    let target = &self.targets[target_id];
+
+                    if let BuildResultState::Fail(e) = result.state {
+                        return Err(format!("Build failed for target {}: {}", target.name, e));
+                    }
+                    target_build_states[target_id].build_finished();
+                }
+                Err(TryRecvError::Empty) => {}
+                Err(e) => return Err(format!("Crossbeam parallelism failure: {}", e)),
+            }
+
+            sleep(Duration::from_millis(10))
+        })
+        .map_err(|_| "Unknown crossbeam parallelism failure (thread panicked)".to_string())?
+    }
+
+    fn build_target(
         &self,
         target_id: TargetId,
         tx: Sender<BuildResult>,
@@ -239,7 +278,7 @@ impl<'a> Builder<'a> {
                     log::debug!("{} - Command \"{}\" - Executing", target.name, command);
                     let command_output = cmd!("/bin/sh", "-c", command)
                         .dir(&self.project_dir)
-                        // .stderr_to_stdout()
+                        .stderr_to_stdout()
                         .run()
                         .map_err(|e| format!("Command execution error: {}", e))?;
                     print!(
@@ -265,21 +304,28 @@ impl<'a> Builder<'a> {
             })
             .map_err(|e| format!("Incremental build error: {}", e))?;
 
+        if incremental_run_result == IncrementalRunResult::Skipped {
+            log::info!("{} - Build skipped (Not Modified)", target.name);
+        }
+
         let build_result_state = match incremental_run_result {
             IncrementalRunResult::Skipped => BuildResultState::Skip,
             IncrementalRunResult::Run(Ok(_)) => BuildResultState::Success,
-            IncrementalRunResult::Run(Err(_)) => BuildResultState::Fail,
+            IncrementalRunResult::Run(Err(e)) => BuildResultState::Fail(e),
         };
         tx.send(BuildResult {
             target_id: target.id,
             state: build_result_state,
         })
-        .map_err(|e| format!("Sender error: {}", e))?;
-
-        Ok(())
+        .map_err(|e| format!("Sender error: {}", e))
     }
 
-    fn run(&self, target: &Target, command: &str, rx: Receiver<RunSignal>) -> Result<(), String> {
+    fn run_target_service(
+        &self,
+        target: &Target,
+        command: &str,
+        rx: Receiver<RunSignal>,
+    ) -> Result<(), String> {
         log::info!("{} - Command: \"{}\" - Run", target.name, command);
         let handle = cmd!("/bin/sh", "-c", command)
             .dir(&self.project_dir)
@@ -296,5 +342,31 @@ impl<'a> Builder<'a> {
             }
             Err(e) => Err(format!("Receiver error: {}", e)),
         }
+    }
+
+    fn get_ready_to_build_targets(
+        &self,
+        target_build_states: &[TargetBuildState],
+    ) -> Vec<TargetId> {
+        target_build_states
+            .iter()
+            .enumerate()
+            .filter(|(_target_id, build_state)| build_state.to_build && !build_state.being_built)
+            .map(|(target_id, _build_state)| target_id)
+            .filter(|target_id| self.has_all_dependencies_built(*target_id, &target_build_states))
+            .collect()
+    }
+
+    fn has_all_dependencies_built(
+        &self,
+        target_id: TargetId,
+        target_build_states: &[TargetBuildState],
+    ) -> bool {
+        let target = self.targets.get(target_id).unwrap();
+
+        target
+            .depends_on
+            .iter()
+            .all(|dependency_id| target_build_states[*dependency_id].built)
     }
 }

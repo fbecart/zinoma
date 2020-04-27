@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::time::Instant;
 use walkdir::WalkDir;
 
+#[derive(PartialEq)]
 pub enum IncrementalRunResult<T> {
     Skipped,
     Run(T),
