@@ -1,6 +1,6 @@
 use crate::target::{Target, TargetId};
 use crossbeam::channel::{unbounded, Receiver, TryRecvError};
-use notify::{RawEvent, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{Error, ErrorKind, RawEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
 
 pub struct TargetsWatcher {
@@ -41,16 +41,27 @@ impl TargetWatcher {
             Watcher::new_immediate(tx).map_err(|e| format!("Error creating watcher: {}", e))?;
 
         for watch_path in target.watch_list.iter() {
-            watcher
-                .watch(watch_path, RecursiveMode::Recursive)
-                .map_err(|e| {
-                    format!(
+            match watcher.watch(watch_path, RecursiveMode::Recursive) {
+                Ok(_) => {}
+                Err(Error {
+                    kind: ErrorKind::PathNotFound,
+                    ..
+                }) => {
+                    log::warn!(
+                        "{} - Skipping watch on non-existing path: {}",
+                        target.name,
+                        watch_path.display(),
+                    );
+                }
+                Err(e) => {
+                    return Err(format!(
                         "Error watching path {} for target {}: {}",
                         watch_path.display(),
                         target.name,
                         e
-                    )
-                })?;
+                    ));
+                }
+            }
         }
 
         Ok(Self {

@@ -37,7 +37,8 @@ impl<'a> IncrementalRunner<'a> {
             let mut hasher = Sha1::new();
 
             for path in input_files.iter() {
-                let checksum = calculate_checksum(path)?;
+                let checksum = calculate_path_checksum(path)?;
+                let checksum = checksum.unwrap_or_else(|| "-".to_string());
                 hasher.input_str(&checksum);
             }
 
@@ -129,7 +130,11 @@ impl<'a> IncrementalRunner<'a> {
     }
 }
 
-fn calculate_checksum(path: &Path) -> Result<String, String> {
+fn calculate_path_checksum(path: &Path) -> Result<Option<String>, String> {
+    if !path.exists() {
+        return Ok(None);
+    }
+
     let mut hasher = Sha1::new();
 
     for entry in WalkDir::new(path) {
@@ -146,5 +151,5 @@ fn calculate_checksum(path: &Path) -> Result<String, String> {
         }
     }
 
-    Ok(hasher.result_str())
+    Ok(Some(hasher.result_str()))
 }

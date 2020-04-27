@@ -3,7 +3,7 @@ clippy:
   build: [ cargo clippy ]
 
 test:
-  watch: [ src ]
+  watch: [ src, test ]
   build: [ cargo test ]
 
 check:
