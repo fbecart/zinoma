@@ -1,12 +1,14 @@
 mod build_state;
+mod service;
 mod watcher;
 
 use crate::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::Target;
 use build_state::{BuildResult, BuildResultState, TargetBuildStates};
-use crossbeam::channel::{unbounded, Receiver, Sender};
+use crossbeam::channel::Sender;
 use crossbeam::thread::Scope;
 use duct::cmd;
+use service::ServicesRunner;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use watcher::TargetsWatcher;
@@ -28,8 +30,7 @@ impl<'a> Engine<'a> {
         let watcher = TargetsWatcher::new(&self.targets)
             .map_err(|e| format!("Failed to set up file watcher: {}", e))?;
 
-        let mut service_tx_channels: Vec<Option<Sender<RunSignal>>> =
-            vec![None; self.targets.len()];
+        let mut services_runner = ServicesRunner::new(&self.targets);
 
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
@@ -47,18 +48,8 @@ impl<'a> Engine<'a> {
                 let target = &self.targets[result.target_id];
                 if let BuildResultState::Fail(e) = result.state {
                     log::warn!("{} - Build failed: {}", target.name, e);
-                } else if target.service.is_some() {
-                    // If already running, send a kill signal.
-                    if let Some(service_tx) = &service_tx_channels[target.id] {
-                        service_tx.send(RunSignal::Kill).map_err(|e| {
-                            format!("Failed to send Kill signal to running process: {}", e)
-                        })?;
-                    }
-
-                    let (service_tx, service_rx) = unbounded();
-                    service_tx_channels[target.id] = Some(service_tx);
-
-                    scope.spawn(move |_| run_target_service(target, service_rx).unwrap());
+                } else {
+                    services_runner.restart_service(scope, target)?;
                 }
             }
 
@@ -158,31 +149,4 @@ fn build_target(
     };
     tx.send(BuildResult::new(target.id, build_result_state))
         .map_err(|e| format!("Sender error: {}", e))
-}
-
-fn run_target_service(target: &Target, rx: Receiver<RunSignal>) -> Result<(), String> {
-    if let Some(command) = &target.service {
-        log::info!("{} - Command: \"{}\" - Run", target.name, command);
-        let handle = cmd!("/bin/sh", "-c", command)
-            .dir(&target.path)
-            .stderr_to_stdout()
-            .start()
-            .map_err(|e| format!("Failed to run command {}: {}", command, e))?;
-
-        match rx.recv() {
-            Ok(RunSignal::Kill) => {
-                log::trace!("{} - Killing process", target.name);
-                handle
-                    .kill()
-                    .map_err(|e| format!("Failed to kill process {}: {}", command, e))
-            }
-            Err(e) => Err(format!("Receiver error: {}", e)),
-        }?
-    }
-
-    Ok(())
-}
-
-enum RunSignal {
-    Kill,
 }
