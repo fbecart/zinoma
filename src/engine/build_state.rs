@@ -1,12 +1,13 @@
-use super::builder::{BuildResult, BuildResultState};
+use super::builder::BuildReport;
+use crate::incremental::IncrementalRunResult;
 use crate::target::{Target, TargetId};
 use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 
 pub struct TargetBuildStates<'a> {
     targets: &'a [Target],
     build_states: Vec<TargetBuildState>,
-    pub tx: Sender<BuildResult>,
-    rx: Receiver<BuildResult>,
+    pub tx: Sender<BuildReport>,
+    rx: Receiver<BuildReport>,
 }
 
 impl<'a> TargetBuildStates<'a> {
@@ -54,11 +55,11 @@ impl<'a> TargetBuildStates<'a> {
             .all(|build_state| build_state.built)
     }
 
-    pub fn get_finished_build(&mut self) -> Result<Option<BuildResult>, String> {
+    pub fn get_finished_build(&mut self) -> Result<Option<BuildReport>, String> {
         match self.rx.try_recv() {
             Ok(result) => {
                 let target_build_state = &mut self.build_states[result.target_id];
-                if let BuildResultState::Fail(_) = &result.state {
+                if let IncrementalRunResult::Run(Err(_)) = &result.result {
                     target_build_state.build_failed();
                 } else {
                     target_build_state.build_succeeded();

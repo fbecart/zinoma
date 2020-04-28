@@ -3,10 +3,10 @@ mod builder;
 mod service;
 mod watcher;
 
-use crate::incremental::IncrementalRunner;
+use crate::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::Target;
 use build_state::TargetBuildStates;
-use builder::{BuildResultState, TargetBuilder};
+use builder::TargetBuilder;
 use crossbeam::thread::Scope;
 use service::ServicesRunner;
 use std::thread::sleep;
@@ -44,7 +44,7 @@ impl<'a> Engine<'a> {
 
             if let Some(result) = target_build_states.get_finished_build()? {
                 let target = &self.targets[result.target_id];
-                if let BuildResultState::Fail(e) = result.state {
+                if let IncrementalRunResult::Run(Err(e)) = result.result {
                     log::warn!("{} - Build failed: {}", target.name, e);
                 } else {
                     services_runner.restart_service(scope, target)?;
@@ -58,15 +58,11 @@ impl<'a> Engine<'a> {
     pub fn build(&'a self, scope: &Scope<'a>) -> Result<(), String> {
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
-        loop {
-            if target_build_states.all_are_built() {
-                break Ok(());
-            }
-
+        while !target_build_states.all_are_built() {
             self.build_ready_targets(scope, &mut target_build_states);
 
             if let Some(result) = target_build_states.get_finished_build()? {
-                if let BuildResultState::Fail(e) = result.state {
+                if let IncrementalRunResult::Run(Err(e)) = result.result {
                     let target = &self.targets[result.target_id];
                     return Err(format!("Build failed for target {}: {}", target.name, e));
                 }
@@ -74,6 +70,8 @@ impl<'a> Engine<'a> {
 
             sleep(Duration::from_millis(10))
         }
+
+        Ok(())
     }
 
     fn build_ready_targets(

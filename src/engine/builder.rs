@@ -14,7 +14,7 @@ impl<'a> TargetBuilder<'a> {
         Self { incremental_runner }
     }
 
-    pub fn build(&'a self, scope: &Scope<'a>, target: &'a Target, tx: &Sender<BuildResult>) {
+    pub fn build(&'a self, scope: &Scope<'a>, target: &'a Target, tx: &Sender<BuildReport>) {
         let tx = tx.clone();
         scope.spawn(move |_| {
             build_target(target, &self.incremental_runner, &tx)
@@ -27,9 +27,9 @@ impl<'a> TargetBuilder<'a> {
 pub fn build_target(
     target: &Target,
     incremental_runner: &IncrementalRunner,
-    tx: &Sender<BuildResult>,
+    tx: &Sender<BuildReport>,
 ) -> Result<(), String> {
-    let incremental_run_result = incremental_runner
+    let result = incremental_runner
         .run(&target.name, &target.watch_list, || {
             let target_start = Instant::now();
             log::info!("{} - Building", &target.name);
@@ -64,33 +64,21 @@ pub fn build_target(
         })
         .map_err(|e| format!("Incremental build error: {}", e))?;
 
-    if incremental_run_result == IncrementalRunResult::Skipped {
+    if result == IncrementalRunResult::Skipped {
         log::info!("{} - Build skipped (Not Modified)", target.name);
     }
 
-    let build_result_state = match incremental_run_result {
-        IncrementalRunResult::Skipped => BuildResultState::Skip,
-        IncrementalRunResult::Run(Ok(_)) => BuildResultState::Success,
-        IncrementalRunResult::Run(Err(e)) => BuildResultState::Fail(e),
-    };
-    tx.send(BuildResult::new(target.id, build_result_state))
+    tx.send(BuildReport::new(target.id, result))
         .map_err(|e| format!("Sender error: {}", e))
 }
 
-pub struct BuildResult {
+pub struct BuildReport {
     pub target_id: TargetId,
-    pub state: BuildResultState,
+    pub result: IncrementalRunResult<Result<(), String>>,
 }
 
-impl BuildResult {
-    pub fn new(target_id: TargetId, state: BuildResultState) -> Self {
-        Self { target_id, state }
+impl BuildReport {
+    pub fn new(target_id: TargetId, result: IncrementalRunResult<Result<(), String>>) -> Self {
+        Self { target_id, result }
     }
-}
-
-#[derive(Debug)]
-pub enum BuildResultState {
-    Success,
-    Fail(String),
-    Skip,
 }
