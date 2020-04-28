@@ -1,3 +1,4 @@
+use super::builder::{BuildResult, BuildResultState};
 use crate::target::{Target, TargetId};
 use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 
@@ -107,22 +108,4 @@ impl TargetBuildState {
         self.being_built = false;
         self.built = false;
     }
-}
-
-pub struct BuildResult {
-    pub target_id: TargetId,
-    pub state: BuildResultState,
-}
-
-impl BuildResult {
-    pub fn new(target_id: TargetId, state: BuildResultState) -> Self {
-        Self { target_id, state }
-    }
-}
-
-#[derive(Debug)]
-pub enum BuildResultState {
-    Success,
-    Fail(String),
-    Skip,
 }
