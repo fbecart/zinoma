@@ -25,12 +25,6 @@ impl<'a> Engine<'a> {
     }
 
     pub fn watch(&'a self, scope: &Scope<'a>) -> Result<(), String> {
-        /* Choose build targets (based on what's already been built, dependency tree, etc)
-        Build all of them in parallel
-        Wait for things to be built
-        As things get built, check to see if there's something new we can build
-        If so, start building that in parallel too */
-
         let watcher = TargetsWatcher::new(&self.targets)
             .map_err(|e| format!("Failed to set up file watcher: {}", e))?;
 
@@ -73,14 +67,6 @@ impl<'a> Engine<'a> {
     }
 
     pub fn build(&'a self, scope: &Scope<'a>) -> Result<(), String> {
-        /* Choose build targets (based on what's already been built, dependency tree, etc)
-        Build all of them in parallel
-        Wait for things to be built
-        As things get built, check to see if there's something new we can build
-        If so, start building that in parallel too
-
-        Stop when nothing is still building and there's nothing left to build */
-
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
         loop {
