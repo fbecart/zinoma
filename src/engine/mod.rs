@@ -49,16 +49,7 @@ impl<'a> Engine<'a> {
                 target_build_states.set_build_invalidated(target_id);
             }
 
-            for &target_id in target_build_states.get_ready_to_build_targets().iter() {
-                let target = self.targets.get(target_id).unwrap();
-                target_build_states.set_build_started(target.id);
-                let tx = tx.clone();
-                scope.spawn(move |_| {
-                    build_target(target, &self.incremental_runner, &tx)
-                        .map_err(|e| format!("Error building target {}: {}", target.id, e))
-                        .unwrap()
-                });
-            }
+            self.build_ready_targets(scope, &mut target_build_states, &tx);
 
             match rx.try_recv() {
                 Ok(result) => {
@@ -112,16 +103,7 @@ impl<'a> Engine<'a> {
                 break Ok(());
             }
 
-            for &target_id in target_build_states.get_ready_to_build_targets().iter() {
-                let target = self.targets.get(target_id).unwrap();
-                target_build_states.set_build_started(target.id);
-                let tx = tx.clone();
-                scope.spawn(move |_| {
-                    build_target(target, &self.incremental_runner, &tx)
-                        .map_err(|e| format!("Error building target {}: {}", target.id, e))
-                        .unwrap()
-                });
-            }
+            self.build_ready_targets(scope, &mut target_build_states, &tx);
 
             match rx.try_recv() {
                 Ok(result) => {
@@ -138,6 +120,24 @@ impl<'a> Engine<'a> {
             }
 
             sleep(Duration::from_millis(10))
+        }
+    }
+
+    fn build_ready_targets(
+        &'a self,
+        scope: &Scope<'a>,
+        target_build_states: &mut TargetBuildStates,
+        tx: &Sender<BuildResult>,
+    ) {
+        for &target_id in target_build_states.get_ready_to_build_targets().iter() {
+            let target = self.targets.get(target_id).unwrap();
+            target_build_states.set_build_started(target.id);
+            let tx = tx.clone();
+            scope.spawn(move |_| {
+                build_target(target, &self.incremental_runner, &tx)
+                    .map_err(|e| format!("Error building target {}: {}", target.id, e))
+                    .unwrap()
+            });
         }
     }
 }
