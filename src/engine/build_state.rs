@@ -1,15 +1,21 @@
 use crate::target::{Target, TargetId};
+use crossbeam::channel::{unbounded, Receiver, Sender};
 
 pub struct TargetBuildStates<'a> {
     targets: &'a [Target],
     build_states: Vec<TargetBuildState>,
+    pub tx: Sender<BuildResult>,
+    pub rx: Receiver<BuildResult>,
 }
 
 impl<'a> TargetBuildStates<'a> {
     pub fn new(targets: &'a [Target]) -> Self {
+        let (tx, rx) = unbounded();
         Self {
             targets,
             build_states: vec![TargetBuildState::new(); targets.len()],
+            tx,
+            rx,
         }
     }
 
@@ -47,7 +53,7 @@ impl<'a> TargetBuildStates<'a> {
         })
     }
 
-    pub fn are_all_built(&self) -> bool {
+    pub fn all_are_built(&self) -> bool {
         self.build_states
             .iter()
             .all(|build_state| build_state.built)
@@ -90,4 +96,22 @@ impl TargetBuildState {
         self.being_built = false;
         self.built = false;
     }
+}
+
+pub struct BuildResult {
+    pub target_id: TargetId,
+    pub state: BuildResultState,
+}
+
+impl BuildResult {
+    pub fn new(target_id: TargetId, state: BuildResultState) -> Self {
+        Self { target_id, state }
+    }
+}
+
+#[derive(Debug)]
+pub enum BuildResultState {
+    Success,
+    Fail(String),
+    Skip,
 }

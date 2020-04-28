@@ -2,8 +2,8 @@ mod build_state;
 mod watcher;
 
 use crate::incremental::{IncrementalRunResult, IncrementalRunner};
-use crate::target::{Target, TargetId};
-use build_state::TargetBuildStates;
+use crate::target::Target;
+use build_state::{BuildResult, BuildResultState, TargetBuildStates};
 use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 use crossbeam::thread::Scope;
 use duct::cmd;
@@ -39,8 +39,6 @@ impl<'a> Engine<'a> {
 
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
-        let (tx, rx) = unbounded();
-
         loop {
             for target_id in watcher
                 .get_invalidated_targets()
@@ -49,9 +47,9 @@ impl<'a> Engine<'a> {
                 target_build_states.set_build_invalidated(target_id);
             }
 
-            self.build_ready_targets(scope, &mut target_build_states, &tx);
+            self.build_ready_targets(scope, &mut target_build_states);
 
-            match rx.try_recv() {
+            match target_build_states.rx.try_recv() {
                 Ok(result) => {
                     let target_id = result.target_id;
                     let target = &self.targets[target_id];
@@ -96,16 +94,14 @@ impl<'a> Engine<'a> {
 
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
-        let (tx, rx) = unbounded();
-
         loop {
-            if target_build_states.are_all_built() {
+            if target_build_states.all_are_built() {
                 break Ok(());
             }
 
-            self.build_ready_targets(scope, &mut target_build_states, &tx);
+            self.build_ready_targets(scope, &mut target_build_states);
 
-            match rx.try_recv() {
+            match target_build_states.rx.try_recv() {
                 Ok(result) => {
                     let target_id = result.target_id;
                     let target = &self.targets[target_id];
@@ -127,12 +123,11 @@ impl<'a> Engine<'a> {
         &'a self,
         scope: &Scope<'a>,
         target_build_states: &mut TargetBuildStates,
-        tx: &Sender<BuildResult>,
     ) {
         for &target_id in target_build_states.get_ready_to_build_targets().iter() {
             let target = self.targets.get(target_id).unwrap();
             target_build_states.set_build_started(target.id);
-            let tx = tx.clone();
+            let tx = target_build_states.tx.clone();
             scope.spawn(move |_| {
                 build_target(target, &self.incremental_runner, &tx)
                     .map_err(|e| format!("Error building target {}: {}", target.id, e))
@@ -191,11 +186,8 @@ fn build_target(
         IncrementalRunResult::Run(Ok(_)) => BuildResultState::Success,
         IncrementalRunResult::Run(Err(e)) => BuildResultState::Fail(e),
     };
-    tx.send(BuildResult {
-        target_id: target.id,
-        state: build_result_state,
-    })
-    .map_err(|e| format!("Sender error: {}", e))
+    tx.send(BuildResult::new(target.id, build_result_state))
+        .map_err(|e| format!("Sender error: {}", e))
 }
 
 fn run_target_service(target: &Target, rx: Receiver<RunSignal>) -> Result<(), String> {
@@ -219,18 +211,6 @@ fn run_target_service(target: &Target, rx: Receiver<RunSignal>) -> Result<(), St
     }
 
     Ok(())
-}
-
-struct BuildResult {
-    target_id: TargetId,
-    state: BuildResultState,
-}
-
-#[derive(Debug)]
-enum BuildResultState {
-    Success,
-    Fail(String),
-    Skip,
 }
 
 enum RunSignal {
