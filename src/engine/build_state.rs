@@ -1,11 +1,11 @@
 use crate::target::{Target, TargetId};
-use crossbeam::channel::{unbounded, Receiver, Sender};
+use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 
 pub struct TargetBuildStates<'a> {
     targets: &'a [Target],
     build_states: Vec<TargetBuildState>,
     pub tx: Sender<BuildResult>,
-    pub rx: Receiver<BuildResult>,
+    rx: Receiver<BuildResult>,
 }
 
 impl<'a> TargetBuildStates<'a> {
@@ -57,6 +57,22 @@ impl<'a> TargetBuildStates<'a> {
         self.build_states
             .iter()
             .all(|build_state| build_state.built)
+    }
+
+    pub fn get_finished_build(&mut self) -> Result<Option<BuildResult>, String> {
+        match self.rx.try_recv() {
+            Ok(result) => {
+                if let BuildResultState::Fail(_) = &result.state {
+                    self.set_build_failed(result.target_id);
+                } else {
+                    self.set_build_succeeded(result.target_id);
+                }
+
+                Ok(Some(result))
+            }
+            Err(TryRecvError::Empty) => Ok(None),
+            Err(e) => Err(format!("Crossbeam parallelism failure: {}", e)),
+        }
     }
 }
 

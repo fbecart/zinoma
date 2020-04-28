@@ -4,7 +4,7 @@ mod watcher;
 use crate::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::Target;
 use build_state::{BuildResult, BuildResultState, TargetBuildStates};
-use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
+use crossbeam::channel::{unbounded, Receiver, Sender};
 use crossbeam::thread::Scope;
 use duct::cmd;
 use std::thread::sleep;
@@ -49,34 +49,23 @@ impl<'a> Engine<'a> {
 
             self.build_ready_targets(scope, &mut target_build_states);
 
-            match target_build_states.rx.try_recv() {
-                Ok(result) => {
-                    let target_id = result.target_id;
-                    let target = &self.targets[target_id];
-
-                    if let BuildResultState::Fail(e) = result.state {
-                        log::warn!("{} - Build failed: {}", target.name, e);
-                        target_build_states.set_build_failed(target_id);
-                    } else {
-                        target_build_states.set_build_succeeded(target_id);
-
-                        if target.service.is_some() {
-                            // If already running, send a kill signal.
-                            if let Some(service_tx) = &service_tx_channels[target_id] {
-                                service_tx.send(RunSignal::Kill).map_err(|e| {
-                                    format!("Failed to send Kill signal to running process: {}", e)
-                                })?;
-                            }
-
-                            let (service_tx, service_rx) = unbounded();
-                            service_tx_channels[target_id] = Some(service_tx);
-
-                            scope.spawn(move |_| run_target_service(target, service_rx).unwrap());
-                        }
+            if let Some(result) = target_build_states.get_finished_build()? {
+                let target = &self.targets[result.target_id];
+                if let BuildResultState::Fail(e) = result.state {
+                    log::warn!("{} - Build failed: {}", target.name, e);
+                } else if target.service.is_some() {
+                    // If already running, send a kill signal.
+                    if let Some(service_tx) = &service_tx_channels[target.id] {
+                        service_tx.send(RunSignal::Kill).map_err(|e| {
+                            format!("Failed to send Kill signal to running process: {}", e)
+                        })?;
                     }
+
+                    let (service_tx, service_rx) = unbounded();
+                    service_tx_channels[target.id] = Some(service_tx);
+
+                    scope.spawn(move |_| run_target_service(target, service_rx).unwrap());
                 }
-                Err(TryRecvError::Empty) => {}
-                Err(e) => return Err(format!("Crossbeam parallelism failure: {}", e)),
             }
 
             sleep(Duration::from_millis(10))
@@ -101,18 +90,13 @@ impl<'a> Engine<'a> {
 
             self.build_ready_targets(scope, &mut target_build_states);
 
-            match target_build_states.rx.try_recv() {
-                Ok(result) => {
-                    let target_id = result.target_id;
-                    let target = &self.targets[target_id];
+            if let Some(result) = target_build_states.get_finished_build()? {
+                let target = &self.targets[result.target_id];
 
-                    if let BuildResultState::Fail(e) = result.state {
-                        return Err(format!("Build failed for target {}: {}", target.name, e));
-                    }
-                    target_build_states.set_build_succeeded(target_id);
+                if let BuildResultState::Fail(e) = result.state {
+                    return Err(format!("Build failed for target {}: {}", target.name, e));
                 }
-                Err(TryRecvError::Empty) => {}
-                Err(e) => return Err(format!("Crossbeam parallelism failure: {}", e)),
+                target_build_states.set_build_succeeded(target.id);
             }
 
             sleep(Duration::from_millis(10))
