@@ -1,6 +1,9 @@
+mod build_state;
+
 use crate::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::{Target, TargetId};
 use crate::watcher::TargetsWatcher;
+use build_state::TargetBuildStates;
 use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 use duct::cmd;
 use std::thread::sleep;
@@ -32,8 +35,7 @@ impl<'a> Engine<'a> {
         let mut service_tx_channels: Vec<Option<Sender<RunSignal>>> =
             vec![None; self.targets.len()];
 
-        let mut target_build_states: Vec<TargetBuildState> =
-            vec![TargetBuildState::new(); self.targets.len()];
+        let mut target_build_states = TargetBuildStates::new(&self.targets);
 
         let (tx, rx) = unbounded();
 
@@ -43,12 +45,12 @@ impl<'a> Engine<'a> {
                     .get_invalidated_targets()
                     .map_err(|e| format!("File watch error: {}", e))?
                 {
-                    target_build_states[target_id].build_invalidated();
+                    target_build_states.set_build_invalidated(target_id);
                 }
 
-                for &target_id in self.get_ready_to_build_targets(&target_build_states).iter() {
+                for &target_id in target_build_states.get_ready_to_build_targets().iter() {
                     let target = self.targets.get(target_id).unwrap();
-                    target_build_states[target.id].build_started();
+                    target_build_states.set_build_started(target.id);
                     let tx = tx.clone();
                     scope.spawn(move |_| {
                         build_target(target, &self.incremental_runner, &tx)
@@ -64,9 +66,9 @@ impl<'a> Engine<'a> {
 
                         if let BuildResultState::Fail(e) = result.state {
                             log::warn!("{} - Build failed: {}", target.name, e);
-                            target_build_states[target_id].build_failed();
+                            target_build_states.set_build_failed(target_id);
                         } else {
-                            target_build_states[target_id].build_succeeded();
+                            target_build_states.set_build_succeeded(target_id);
 
                             if target.service.is_some() {
                                 // If already running, send a kill signal.
@@ -107,22 +109,18 @@ impl<'a> Engine<'a> {
 
         Stop when nothing is still building and there's nothing left to build */
 
-        let mut target_build_states: Vec<TargetBuildState> =
-            vec![TargetBuildState::new(); self.targets.len()];
+        let mut target_build_states = TargetBuildStates::new(&self.targets);
 
         let (tx, rx) = unbounded();
 
         crossbeam::scope(|scope| loop {
-            if target_build_states
-                .iter()
-                .all(|build_state| build_state.built)
-            {
+            if target_build_states.are_all_built() {
                 break Ok(());
             }
 
-            for &target_id in self.get_ready_to_build_targets(&target_build_states).iter() {
+            for &target_id in target_build_states.get_ready_to_build_targets().iter() {
                 let target = self.targets.get(target_id).unwrap();
-                target_build_states[target.id].build_started();
+                target_build_states.set_build_started(target.id);
                 let tx = tx.clone();
                 scope.spawn(move |_| {
                     build_target(target, &self.incremental_runner, &tx)
@@ -139,7 +137,7 @@ impl<'a> Engine<'a> {
                     if let BuildResultState::Fail(e) = result.state {
                         return Err(format!("Build failed for target {}: {}", target.name, e));
                     }
-                    target_build_states[target_id].build_succeeded();
+                    target_build_states.set_build_succeeded(target_id);
                 }
                 Err(TryRecvError::Empty) => {}
                 Err(e) => return Err(format!("Crossbeam parallelism failure: {}", e)),
@@ -148,32 +146,6 @@ impl<'a> Engine<'a> {
             sleep(Duration::from_millis(10))
         })
         .map_err(|_| "Unknown crossbeam parallelism failure (thread panicked)".to_string())?
-    }
-
-    fn get_ready_to_build_targets(
-        &self,
-        target_build_states: &[TargetBuildState],
-    ) -> Vec<TargetId> {
-        target_build_states
-            .iter()
-            .enumerate()
-            .filter(|(_target_id, build_state)| build_state.to_build && !build_state.being_built)
-            .map(|(target_id, _build_state)| target_id)
-            .filter(|&target_id| self.has_all_dependencies_built(target_id, &target_build_states))
-            .collect()
-    }
-
-    fn has_all_dependencies_built(
-        &self,
-        target_id: TargetId,
-        target_build_states: &[TargetBuildState],
-    ) -> bool {
-        let target = self.targets.get(target_id).unwrap();
-
-        target.depends_on.iter().all(|&dependency_id| {
-            target_build_states[dependency_id].built
-                && self.has_all_dependencies_built(dependency_id, target_build_states)
-        })
     }
 }
 
@@ -254,44 +226,6 @@ fn run_target_service(target: &Target, rx: Receiver<RunSignal>) -> Result<(), St
     }
 
     Ok(())
-}
-
-#[derive(Clone)]
-struct TargetBuildState {
-    to_build: bool,
-    being_built: bool,
-    built: bool,
-}
-
-impl TargetBuildState {
-    pub fn new() -> Self {
-        Self {
-            to_build: true,
-            being_built: false,
-            built: false,
-        }
-    }
-
-    pub fn build_invalidated(&mut self) {
-        self.to_build = true;
-        self.built = false;
-    }
-
-    pub fn build_started(&mut self) {
-        self.to_build = false;
-        self.being_built = true;
-        self.built = false;
-    }
-
-    pub fn build_succeeded(&mut self) {
-        self.being_built = false;
-        self.built = !self.to_build;
-    }
-
-    pub fn build_failed(&mut self) {
-        self.being_built = false;
-        self.built = false;
-    }
 }
 
 struct BuildResult {
