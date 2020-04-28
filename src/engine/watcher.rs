@@ -1,6 +1,6 @@
 use crate::target::{Target, TargetId};
 use crossbeam::channel::{unbounded, Receiver, TryRecvError};
-use notify::{Error, ErrorKind, RawEvent, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{Error, ErrorKind, Event, FsEventWatcher, RecursiveMode, Watcher};
 use std::path::Path;
 
 pub struct TargetsWatcher {
@@ -30,15 +30,18 @@ impl TargetsWatcher {
 }
 
 pub struct TargetWatcher {
-    rx: Receiver<RawEvent>,
-    _watcher: RecommendedWatcher,
+    rx: Receiver<notify::Result<Event>>,
+    _watcher: FsEventWatcher,
 }
 
 impl TargetWatcher {
     pub fn new(target: &Target) -> Result<Self, String> {
         let (tx, rx) = unbounded();
-        let mut watcher: RecommendedWatcher =
-            Watcher::new_immediate(tx).map_err(|e| format!("Error creating watcher: {}", e))?;
+        let mut watcher: FsEventWatcher = Watcher::new_immediate(move |e| {
+            tx.send(e)
+                .unwrap_or_else(|e| log::error!("Sender error: {}", e));
+        })
+        .map_err(|e| format!("Error creating watcher: {}", e))?;
 
         for watch_path in target.watch_list.iter() {
             match watcher.watch(watch_path, RecursiveMode::Recursive) {
@@ -73,8 +76,8 @@ impl TargetWatcher {
     pub fn is_invalidated(&self) -> Result<bool, String> {
         match self.rx.try_recv() {
             Ok(event) => {
-                let path = event.path.unwrap();
-                Ok(!is_tmp_editor_file(&path))
+                let paths = event.unwrap().paths;
+                Ok(paths.iter().any(|path| !is_tmp_editor_file(path)))
             }
             Err(TryRecvError::Empty) => Ok(false),
             Err(e) => Err(format!("Watcher received error: {}", e)),
