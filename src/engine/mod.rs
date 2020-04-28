@@ -35,12 +35,10 @@ impl<'a> Engine<'a> {
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
         loop {
-            for target_id in watcher
+            let invalidated_builds = watcher
                 .get_invalidated_targets()
-                .map_err(|e| format!("File watch error: {}", e))?
-            {
-                target_build_states.set_build_invalidated(target_id);
-            }
+                .map_err(|e| format!("File watch error: {}", e))?;
+            target_build_states.set_builds_invalidated(&invalidated_builds);
 
             self.build_ready_targets(scope, &mut target_build_states);
 
@@ -68,12 +66,10 @@ impl<'a> Engine<'a> {
             self.build_ready_targets(scope, &mut target_build_states);
 
             if let Some(result) = target_build_states.get_finished_build()? {
-                let target = &self.targets[result.target_id];
-
                 if let BuildResultState::Fail(e) = result.state {
+                    let target = &self.targets[result.target_id];
                     return Err(format!("Build failed for target {}: {}", target.name, e));
                 }
-                target_build_states.set_build_succeeded(target.id);
             }
 
             sleep(Duration::from_millis(10))

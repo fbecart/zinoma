@@ -19,20 +19,14 @@ impl<'a> TargetBuildStates<'a> {
         }
     }
 
-    pub fn set_build_invalidated(&mut self, target_id: TargetId) {
-        self.build_states[target_id].build_invalidated();
+    pub fn set_builds_invalidated(&mut self, target_ids: &[TargetId]) {
+        for &target_id in target_ids {
+            self.build_states[target_id].build_invalidated();
+        }
     }
 
     pub fn set_build_started(&mut self, target_id: TargetId) {
         self.build_states[target_id].build_started();
-    }
-
-    pub fn set_build_succeeded(&mut self, target_id: TargetId) {
-        self.build_states[target_id].build_succeeded();
-    }
-
-    pub fn set_build_failed(&mut self, target_id: TargetId) {
-        self.build_states[target_id].build_failed();
     }
 
     pub fn get_ready_to_build_targets(&self) -> Vec<TargetId> {
@@ -62,10 +56,11 @@ impl<'a> TargetBuildStates<'a> {
     pub fn get_finished_build(&mut self) -> Result<Option<BuildResult>, String> {
         match self.rx.try_recv() {
             Ok(result) => {
+                let target_build_state = &mut self.build_states[result.target_id];
                 if let BuildResultState::Fail(_) = &result.state {
-                    self.set_build_failed(result.target_id);
+                    target_build_state.build_failed();
                 } else {
-                    self.set_build_succeeded(result.target_id);
+                    target_build_state.build_succeeded();
                 }
 
                 Ok(Some(result))
