@@ -2,7 +2,6 @@ mod config;
 mod engine;
 mod incremental;
 mod target;
-mod watcher;
 
 use crate::config::Config;
 use crate::engine::Engine;

@@ -1,13 +1,14 @@
 mod build_state;
+mod watcher;
 
 use crate::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::{Target, TargetId};
-use crate::watcher::TargetsWatcher;
 use build_state::TargetBuildStates;
 use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 use duct::cmd;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
+use watcher::TargetsWatcher;
 
 pub struct Engine<'a> {
     targets: Vec<Target>,
