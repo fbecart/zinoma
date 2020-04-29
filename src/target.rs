@@ -6,7 +6,7 @@ pub type TargetId = usize;
 pub struct Target {
     pub id: TargetId,
     pub name: String,
-    pub depends_on: Vec<TargetId>,
+    pub dependencies: Vec<TargetId>,
     pub path: PathBuf,
     pub input_paths: Vec<PathBuf>,
     pub build_list: Vec<String>,

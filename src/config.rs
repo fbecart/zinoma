@@ -8,7 +8,7 @@ use std::path::Path;
 #[derive(Debug, Deserialize)]
 struct Target {
     #[serde(default)]
-    depends_on: Vec<String>,
+    dependencies: Vec<String>,
     #[serde(default)]
     input_paths: Vec<String>,
     #[serde(default, rename = "build")]
@@ -34,7 +34,7 @@ impl Config {
 
     fn check_targets(targets: &HashMap<String, Target>) -> Result<()> {
         for (target_name, target) in targets.iter() {
-            for dependency in target.depends_on.iter() {
+            for dependency in target.dependencies.iter() {
                 if !targets.contains_key(dependency.as_str()) {
                     return Err(anyhow!("Dependency {} not found", dependency));
                 }
@@ -72,12 +72,12 @@ impl Config {
             }
 
             let Target {
-                depends_on,
+                dependencies,
                 input_paths,
                 build_list,
                 service,
             } = raw_targets.remove(target_name).unwrap();
-            depends_on.iter().for_each(|dependency| {
+            dependencies.iter().for_each(|dependency| {
                 add_target(
                     &mut targets,
                     &mut mapping,
@@ -89,17 +89,20 @@ impl Config {
 
             let target_id = targets.len();
             mapping.insert(target_name.to_string(), target_id);
-            let depends_on = depends_on
+            let dependencies = dependencies
                 .iter()
                 .map(|target_name| *mapping.get(target_name).unwrap())
                 .collect();
-            let input_paths = input_paths.iter().map(|path| project_dir.join(path)).collect();
+            let input_paths = input_paths
+                .iter()
+                .map(|path| project_dir.join(path))
+                .collect();
             targets.push(target::Target {
                 id: target_id,
                 name: target_name.to_string(),
-                depends_on,
+                dependencies,
                 path: project_dir.to_path_buf(),
-                input_paths: input_paths,
+                input_paths,
                 build_list,
                 service,
             });

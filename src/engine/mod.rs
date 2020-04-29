@@ -65,7 +65,7 @@ impl<'a> Engine<'a> {
             if let Some(build_report) = target_build_states.get_finished_build()? {
                 if let IncrementalRunResult::Run(Err(e)) = build_report.result {
                     let target = &self.targets[build_report.target_id];
-                    Err(e.context(format!("Build failed for target {}", target.name)))?;
+                    return Err(e.context(format!("Build failed for target {}", target.name)));
                 }
             }
 

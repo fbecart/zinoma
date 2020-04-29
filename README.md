@@ -18,16 +18,16 @@ server_deps:
     - cd server && yarn install
 
 server:
-  depends_on:
+  dependencies:
     - server_deps
   input_paths:
     - server/src
   service: cd server && node src/server.js
 ```
 
-The configuration file is composed of `target`s, which are an entity to build. Each `target` can define its dependencies, `input_paths` to watch, commands to `build`, and a `service` command to run after the build completes.
+The configuration file is composed of `target`s, which are an entity to build. Each `target` can define its `dependencies`, `input_paths` to watch, commands to `build`, and a `service` command to run after the build completes.
 
-`target`s will be run in parallel as much as possible, waiting to start until their dependencies are built.
+`target`s will be run in parallel as much as possible, waiting to start until their `dependencies` are built.
 
 The commands in the `build` list under a target are run one after another in a shell working from the directory containing the `buildy.yml`.
 
