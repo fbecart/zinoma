@@ -5,6 +5,7 @@ mod watcher;
 
 use crate::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::Target;
+use anyhow::{Context, Result};
 use build_state::TargetBuildStates;
 use builder::TargetBuilder;
 use crossbeam::thread::Scope;
@@ -26,9 +27,9 @@ impl<'a> Engine<'a> {
         }
     }
 
-    pub fn watch(&'a self, scope: &Scope<'a>) -> Result<(), String> {
-        let watcher = TargetsWatcher::new(&self.targets)
-            .map_err(|e| format!("Failed to set up file watcher: {}", e))?;
+    pub fn watch(&'a self, scope: &Scope<'a>) -> Result<()> {
+        let watcher =
+            TargetsWatcher::new(&self.targets).with_context(|| "Failed to set up file watcher")?;
 
         let mut services_runner = ServicesRunner::new(&self.targets);
 
@@ -37,7 +38,7 @@ impl<'a> Engine<'a> {
         loop {
             let invalidated_builds = watcher
                 .get_invalidated_targets()
-                .map_err(|e| format!("File watch error: {}", e))?;
+                .with_context(|| "File watch error")?;
             target_build_states.set_builds_invalidated(&invalidated_builds);
 
             self.build_ready_targets(scope, &mut target_build_states);
@@ -55,16 +56,16 @@ impl<'a> Engine<'a> {
         }
     }
 
-    pub fn build(&'a self, scope: &Scope<'a>) -> Result<(), String> {
+    pub fn build(&'a self, scope: &Scope<'a>) -> Result<()> {
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
         while !target_build_states.all_are_built() {
             self.build_ready_targets(scope, &mut target_build_states);
 
-            if let Some(result) = target_build_states.get_finished_build()? {
-                if let IncrementalRunResult::Run(Err(e)) = result.result {
-                    let target = &self.targets[result.target_id];
-                    return Err(format!("Build failed for target {}: {}", target.name, e));
+            if let Some(build_report) = target_build_states.get_finished_build()? {
+                if let IncrementalRunResult::Run(Err(e)) = build_report.result {
+                    let target = &self.targets[build_report.target_id];
+                    Err(e.context(format!("Build failed for target {}", target.name)))?;
                 }
             }
 

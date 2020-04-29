@@ -1,7 +1,7 @@
 use crate::target;
+use anyhow::{anyhow, Context, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::fmt;
 use std::fs;
 use std::path::Path;
 
@@ -17,47 +17,29 @@ struct Target {
     service: Option<String>,
 }
 
-enum TargetsCheckError<'a> {
-    DependencyNotFound(&'a str),
-    DependencyLoop(Vec<&'a str>),
-}
-
-impl fmt::Display for TargetsCheckError<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            TargetsCheckError::DependencyNotFound(dependency) => {
-                write!(f, "Dependency {} not found.", dependency)
-            }
-            TargetsCheckError::DependencyLoop(dependencies) => {
-                write!(f, "Dependency loop: [{}]", dependencies.join(", "))
-            }
-        }
-    }
-}
-
 pub struct Config {
     targets: HashMap<String, Target>,
 }
 
 impl Config {
-    pub fn from_yml_file(file: &Path) -> Result<Self, String> {
+    pub fn from_yml_file(file: &Path) -> Result<Self> {
         let contents = fs::read_to_string(file)
-            .map_err(|e| format!("Something went wrong reading {}: {}", file.display(), e))?;
+            .with_context(|| format!("Something went wrong reading {}", file.display()))?;
         let targets = serde_yaml::from_str(&contents)
-            .map_err(|e| format!("Invalid format for {}: {}", file.display(), e))?;
-        Self::check_targets(&targets).map_err(|e| format!("Failed sanity check: {}", e))?;
+            .with_context(|| format!("Invalid format for {}", file.display()))?;
+        Self::check_targets(&targets).with_context(|| "Failed sanity check")?;
 
         Ok(Self { targets })
     }
 
-    fn check_targets(targets: &HashMap<String, Target>) -> Result<(), TargetsCheckError> {
+    fn check_targets(targets: &HashMap<String, Target>) -> Result<()> {
         for (target_name, target) in targets.iter() {
             for dependency in target.depends_on.iter() {
                 if !targets.contains_key(dependency.as_str()) {
-                    return Err(TargetsCheckError::DependencyNotFound(dependency));
+                    return Err(anyhow!("Dependency {} not found", dependency));
                 }
                 if target_name == dependency {
-                    return Err(TargetsCheckError::DependencyLoop(vec![target_name]));
+                    return Err(anyhow!("Dependency loop: {}", target_name)); // TODO Check recursively
                 }
             }
         }
@@ -68,7 +50,7 @@ impl Config {
         self,
         project_dir: &Path,
         requested_targets: &[String],
-    ) -> Result<Vec<target::Target>, String> {
+    ) -> Result<Vec<target::Target>> {
         self.validate_requested_targets(requested_targets)?;
 
         let Self {
@@ -139,17 +121,17 @@ impl Config {
         Ok(targets)
     }
 
-    fn validate_requested_targets(&self, requested_targets: &[String]) -> Result<(), String> {
+    fn validate_requested_targets(&self, requested_targets: &[String]) -> Result<()> {
         let invalid_targets: Vec<String> = requested_targets
             .iter()
             .filter(|requested_target| !self.targets.contains_key(*requested_target))
             .map(|i| i.to_owned())
             .collect();
 
-        if invalid_targets.is_empty() {
-            Ok(())
-        } else {
-            Err(format!("Invalid targets: {}", invalid_targets.join(", ")))
+        if !invalid_targets.is_empty() {
+            return Err(anyhow!("Invalid targets: {}", invalid_targets.join(", ")));
         }
+
+        Ok(())
     }
 }

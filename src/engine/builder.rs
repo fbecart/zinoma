@@ -1,5 +1,6 @@
 use crate::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::{Target, TargetId};
+use anyhow::{Context, Result};
 use crossbeam::channel::Sender;
 use crossbeam::thread::Scope;
 use duct::cmd;
@@ -18,7 +19,7 @@ impl<'a> TargetBuilder<'a> {
         let tx = tx.clone();
         scope.spawn(move |_| {
             build_target(target, &self.incremental_runner, &tx)
-                .map_err(|e| format!("Error building target {}: {}", target.id, e))
+                .with_context(|| format!("Error building target {}", target.id))
                 .unwrap()
         });
     }
@@ -28,7 +29,7 @@ pub fn build_target(
     target: &Target,
     incremental_runner: &IncrementalRunner,
     tx: &Sender<BuildReport>,
-) -> Result<(), String> {
+) -> Result<()> {
     let result = incremental_runner
         .run(&target.name, &target.watch_list, || {
             let target_start = Instant::now();
@@ -40,11 +41,11 @@ pub fn build_target(
                     .dir(&target.path)
                     .stderr_to_stdout()
                     .run()
-                    .map_err(|e| format!("Command execution error: {}", e))?;
+                    .with_context(|| "Command execution error")?;
                 print!(
                     "{}",
                     String::from_utf8(command_output.stdout)
-                        .map_err(|e| format!("Failed to interpret stdout as utf-8: {}", e))?
+                        .with_context(|| "Failed to interpret stdout as utf-8")?
                 );
                 let command_execution_duration = command_start.elapsed();
                 log::debug!(
@@ -62,23 +63,23 @@ pub fn build_target(
             );
             Ok(())
         })
-        .map_err(|e| format!("Incremental build error: {}", e))?;
+        .with_context(|| "Incremental build error")?;
 
-    if result == IncrementalRunResult::Skipped {
+    if let IncrementalRunResult::Skipped = result {
         log::info!("{} - Build skipped (Not Modified)", target.name);
     }
 
     tx.send(BuildReport::new(target.id, result))
-        .map_err(|e| format!("Sender error: {}", e))
+        .with_context(|| "Sender error")
 }
 
 pub struct BuildReport {
     pub target_id: TargetId,
-    pub result: IncrementalRunResult<Result<(), String>>,
+    pub result: IncrementalRunResult<Result<()>>,
 }
 
 impl BuildReport {
-    pub fn new(target_id: TargetId, result: IncrementalRunResult<Result<(), String>>) -> Self {
+    pub fn new(target_id: TargetId, result: IncrementalRunResult<Result<()>>) -> Self {
         Self { target_id, result }
     }
 }

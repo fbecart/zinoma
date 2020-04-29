@@ -1,6 +1,7 @@
 use crate::target::{Target, TargetId};
+use anyhow::{Context, Error, Result};
 use crossbeam::channel::{unbounded, Receiver, TryRecvError};
-use notify::{Error, ErrorKind, Event, FsEventWatcher, RecursiveMode, Watcher};
+use notify::{ErrorKind, Event, FsEventWatcher, RecursiveMode, Watcher};
 use std::path::Path;
 
 pub struct TargetsWatcher {
@@ -8,7 +9,7 @@ pub struct TargetsWatcher {
 }
 
 impl TargetsWatcher {
-    pub fn new(targets: &[Target]) -> Result<Self, String> {
+    pub fn new(targets: &[Target]) -> Result<Self> {
         let mut target_watchers = Vec::new();
         for target in targets.iter() {
             target_watchers.push(TargetWatcher::new(target)?);
@@ -16,7 +17,7 @@ impl TargetsWatcher {
         Ok(Self { target_watchers })
     }
 
-    pub fn get_invalidated_targets(&self) -> Result<Vec<TargetId>, String> {
+    pub fn get_invalidated_targets(&self) -> Result<Vec<TargetId>> {
         let mut invalidated_targets = Vec::new();
 
         for (target_id, target_watcher) in self.target_watchers.iter().enumerate() {
@@ -35,18 +36,16 @@ pub struct TargetWatcher {
 }
 
 impl TargetWatcher {
-    pub fn new(target: &Target) -> Result<Self, String> {
+    pub fn new(target: &Target) -> Result<Self> {
         let (tx, rx) = unbounded();
-        let mut watcher: FsEventWatcher = Watcher::new_immediate(move |e| {
-            tx.send(e)
-                .unwrap_or_else(|e| log::error!("Sender error: {}", e));
-        })
-        .map_err(|e| format!("Error creating watcher: {}", e))?;
+        let mut watcher: FsEventWatcher =
+            Watcher::new_immediate(move |e| tx.send(e).with_context(|| "Sender error").unwrap())
+                .with_context(|| "Error creating watcher")?;
 
         for watch_path in target.watch_list.iter() {
             match watcher.watch(watch_path, RecursiveMode::Recursive) {
                 Ok(_) => {}
-                Err(Error {
+                Err(notify::Error {
                     kind: ErrorKind::PathNotFound,
                     ..
                 }) => {
@@ -57,12 +56,11 @@ impl TargetWatcher {
                     );
                 }
                 Err(e) => {
-                    return Err(format!(
-                        "Error watching path {} for target {}: {}",
+                    return Err(Error::new(e).context(format!(
+                        "Error watching path {} for target {}",
                         watch_path.display(),
                         target.name,
-                        e
-                    ));
+                    )));
                 }
             }
         }
@@ -73,14 +71,14 @@ impl TargetWatcher {
         })
     }
 
-    pub fn is_invalidated(&self) -> Result<bool, String> {
+    pub fn is_invalidated(&self) -> Result<bool> {
         match self.rx.try_recv() {
             Ok(event) => {
                 let paths = event.unwrap().paths;
                 Ok(paths.iter().any(|path| !is_tmp_editor_file(path)))
             }
             Err(TryRecvError::Empty) => Ok(false),
-            Err(e) => Err(format!("Watcher received error: {}", e)),
+            Err(e) => Err(Error::new(e).context("Watcher received error")),
         }
     }
 }

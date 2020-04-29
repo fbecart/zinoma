@@ -6,10 +6,11 @@ mod target;
 use crate::config::Config;
 use crate::engine::Engine;
 use crate::incremental::IncrementalRunner;
+use anyhow::{anyhow, Context, Result};
 use clap::{App, Arg};
 use std::path::Path;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<()> {
     let arg_matches =
         App::new("Buildy")
             .about("An ultra-fast parallel build system for local iteration")
@@ -52,7 +53,6 @@ fn main() -> Result<(), String> {
     let config_file_name = project_dir.join("buildy.yml");
     let targets =
         Config::from_yml_file(&config_file_name)?.into_targets(&project_dir, &requested_targets)?;
-    // TODO: Detect cycles.
 
     let checksum_dir = project_dir.join(".buildy");
     let incremental_runner = IncrementalRunner::new(&checksum_dir);
@@ -60,14 +60,10 @@ fn main() -> Result<(), String> {
 
     crossbeam::scope(|scope| {
         if watch_mode_enabled {
-            engine
-                .watch(scope)
-                .map_err(|e| format!("Watch error: {}", e))
+            engine.watch(scope).with_context(|| "Watch error")
         } else {
-            engine
-                .build(scope)
-                .map_err(|e| format!("Build error: {}", e))
+            engine.build(scope).with_context(|| "Build error")
         }
     })
-    .map_err(|_| "Unknown crossbeam parallelism failure (thread panicked)".to_string())?
+    .map_err(|_| anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
 }

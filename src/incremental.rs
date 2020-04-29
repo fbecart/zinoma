@@ -1,6 +1,8 @@
+use anyhow::{Context, Error, Result};
 use fasthash::XXHasher;
 use std::fs;
 use std::hash::{Hash, Hasher};
+use std::io::ErrorKind;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -26,9 +28,9 @@ impl<'a> IncrementalRunner<'a> {
         identifier: &str,
         input_files: &[PathBuf],
         function: F,
-    ) -> Result<IncrementalRunResult<Result<T, E>>, String>
+    ) -> Result<IncrementalRunResult<std::result::Result<T, E>>>
     where
-        F: Fn() -> Result<T, E>,
+        F: Fn() -> std::result::Result<T, E>,
     {
         let watch_checksum = if input_files.is_empty() {
             None
@@ -74,32 +76,25 @@ impl<'a> IncrementalRunner<'a> {
         self.checksum_dir.join(format!("{}.checksum", target))
     }
 
-    fn does_checksum_match(&self, target: &str, checksum: &str) -> Result<bool, String> {
+    fn does_checksum_match(&self, target: &str, checksum: &str) -> Result<bool> {
         // Might want to check for some errors like permission denied.
         fs::create_dir(&self.checksum_dir).ok();
         let checksum_file = self.get_checksum_file(target);
         match fs::read_to_string(&checksum_file) {
             Ok(old_checksum) => Ok(*checksum == old_checksum),
-            Err(e) => {
-                if e.kind() == std::io::ErrorKind::NotFound {
-                    // No checksum found.
-                    Ok(false)
-                } else {
-                    Err(format!(
-                        "Failed reading checksum file {} for target {}: {}",
-                        checksum_file.display(),
-                        target,
-                        e
-                    ))
-                }
-            }
+            Err(e) if e.kind() == ErrorKind::NotFound => Ok(false),
+            Err(e) => Err(Error::new(e).context(format!(
+                "Failed reading checksum file {} for target {}",
+                checksum_file.display(),
+                target
+            ))),
         }
     }
 
-    fn reset_checksum(&self, target: &str) -> Result<(), String> {
+    fn reset_checksum(&self, target: &str) -> Result<()> {
         let checksum_file = &self.get_checksum_file(target);
         if checksum_file.exists() {
-            fs::remove_file(&checksum_file).map_err(|_| {
+            fs::remove_file(&checksum_file).with_context(|| {
                 format!(
                     "Failed to delete checksum file {} for target {}",
                     checksum_file.display(),
@@ -110,16 +105,16 @@ impl<'a> IncrementalRunner<'a> {
         Ok(())
     }
 
-    fn write_checksum(&self, target: &str, checksum: &str) -> Result<(), String> {
+    fn write_checksum(&self, target: &str, checksum: &str) -> Result<()> {
         let checksum_file = self.get_checksum_file(target);
-        let mut file = fs::File::create(&checksum_file).map_err(|_| {
+        let mut file = fs::File::create(&checksum_file).with_context(|| {
             format!(
                 "Failed to create checksum file {} for target {}",
                 checksum_file.display(),
                 target
             )
         })?;
-        file.write_all(checksum.as_bytes()).map_err(|_| {
+        file.write_all(checksum.as_bytes()).with_context(|| {
             format!(
                 "Failed to write checksum file {} for target {}",
                 checksum_file.display(),
@@ -130,7 +125,7 @@ impl<'a> IncrementalRunner<'a> {
     }
 }
 
-fn calculate_path_checksum(path: &Path) -> Result<Option<u64>, String> {
+fn calculate_path_checksum(path: &Path) -> Result<Option<u64>> {
     if !path.exists() {
         return Ok(None);
     }
@@ -138,11 +133,11 @@ fn calculate_path_checksum(path: &Path) -> Result<Option<u64>, String> {
     let mut hasher: XXHasher = Default::default();
 
     for entry in WalkDir::new(path) {
-        let entry = entry.map_err(|e| format!("Failed to traverse directory: {}", e))?;
+        let entry = entry.with_context(|| "Failed to traverse directory")?;
 
         if entry.path().is_file() {
             let contents = fs::read(entry.path())
-                .map_err(|e| format!("Failed to read file to calculate checksum: {}", e))?;
+                .with_context(|| "Failed to read file to calculate checksum")?;
             contents.hash(&mut hasher);
         }
     }

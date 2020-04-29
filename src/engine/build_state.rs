@@ -1,6 +1,7 @@
 use super::builder::BuildReport;
 use crate::incremental::IncrementalRunResult;
 use crate::target::{Target, TargetId};
+use anyhow::{Error, Result};
 use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 
 pub struct TargetBuildStates<'a> {
@@ -55,7 +56,7 @@ impl<'a> TargetBuildStates<'a> {
             .all(|build_state| build_state.built)
     }
 
-    pub fn get_finished_build(&mut self) -> Result<Option<BuildReport>, String> {
+    pub fn get_finished_build(&mut self) -> Result<Option<BuildReport>> {
         match self.rx.try_recv() {
             Ok(result) => {
                 let target_build_state = &mut self.build_states[result.target_id];
@@ -68,7 +69,7 @@ impl<'a> TargetBuildStates<'a> {
                 Ok(Some(result))
             }
             Err(TryRecvError::Empty) => Ok(None),
-            Err(e) => Err(format!("Crossbeam parallelism failure: {}", e)),
+            Err(e) => Err(Error::new(e).context("Crossbeam parallelism failure")),
         }
     }
 }
