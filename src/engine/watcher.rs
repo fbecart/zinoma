@@ -2,14 +2,14 @@ use crate::target::{Target, TargetId};
 use anyhow::{Context, Error, Result};
 use crossbeam::channel::{unbounded, Receiver, TryRecvError};
 use notify::{ErrorKind, Event, FsEventWatcher, RecursiveMode, Watcher};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-pub struct TargetsWatcher {
-    target_watchers: Vec<TargetWatcher>,
+pub struct TargetsWatcher<'a> {
+    target_watchers: Vec<TargetWatcher<'a>>,
 }
 
-impl TargetsWatcher {
-    pub fn new(targets: &[Target]) -> Result<Self> {
+impl<'a> TargetsWatcher<'a> {
+    pub fn new(targets: &'a [Target]) -> Result<Self> {
         let mut target_watchers = Vec::new();
         for target in targets.iter() {
             target_watchers.push(TargetWatcher::new(target)?);
@@ -30,13 +30,14 @@ impl TargetsWatcher {
     }
 }
 
-pub struct TargetWatcher {
+pub struct TargetWatcher<'a> {
+    target: &'a Target,
     rx: Receiver<notify::Result<Event>>,
     _watcher: FsEventWatcher,
 }
 
-impl TargetWatcher {
-    pub fn new(target: &Target) -> Result<Self> {
+impl<'a> TargetWatcher<'a> {
+    pub fn new(target: &'a Target) -> Result<Self> {
         let (tx, rx) = unbounded();
         let mut watcher: FsEventWatcher =
             Watcher::new_immediate(move |e| tx.send(e).with_context(|| "Sender error").unwrap())
@@ -66,6 +67,7 @@ impl TargetWatcher {
         }
 
         Ok(Self {
+            target,
             rx,
             _watcher: watcher,
         })
@@ -75,7 +77,17 @@ impl TargetWatcher {
         match self.rx.try_recv() {
             Ok(event) => {
                 let paths = event.unwrap().paths;
-                Ok(paths.iter().any(|path| !is_tmp_editor_file(path)))
+                let paths: Vec<&PathBuf> = paths
+                    .iter()
+                    .filter(|&path| !is_tmp_editor_file(path))
+                    .collect();
+
+                let invalidated = !paths.is_empty();
+                if invalidated {
+                    log::trace!("{} - Invalidated by {:?}", self.target.name, paths)
+                }
+
+                Ok(invalidated)
             }
             Err(TryRecvError::Empty) => Ok(false),
             Err(e) => Err(Error::new(e).context("Watcher received error")),
