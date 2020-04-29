@@ -26,20 +26,20 @@ impl<'a> IncrementalRunner<'a> {
     pub fn run<T, E, F>(
         &self,
         identifier: &str,
-        input_files: &[PathBuf],
+        input_paths: &[PathBuf],
         function: F,
     ) -> Result<IncrementalRunResult<std::result::Result<T, E>>>
     where
         F: Fn() -> std::result::Result<T, E>,
     {
-        let watch_checksum = if input_files.is_empty() {
+        let watch_checksum = if input_paths.is_empty() {
             None
         } else {
             let computation_start = Instant::now();
             log::trace!("{} - Computing checksum", identifier);
             let mut hasher: XXHasher = Default::default();
 
-            for path in input_files.iter() {
+            for path in input_paths.iter() {
                 let checksum = calculate_path_checksum(path)?;
                 checksum.unwrap_or(0).hash(&mut hasher);
             }

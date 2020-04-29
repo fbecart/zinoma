@@ -9,8 +9,8 @@ use std::path::Path;
 struct Target {
     #[serde(default)]
     depends_on: Vec<String>,
-    #[serde(default, rename = "watch")]
-    watch_list: Vec<String>,
+    #[serde(default)]
+    input_paths: Vec<String>,
     #[serde(default, rename = "build")]
     build_list: Vec<String>,
     #[serde(default)]
@@ -73,7 +73,7 @@ impl Config {
 
             let Target {
                 depends_on,
-                watch_list,
+                input_paths,
                 build_list,
                 service,
             } = raw_targets.remove(target_name).unwrap();
@@ -93,19 +93,16 @@ impl Config {
                 .iter()
                 .map(|target_name| *mapping.get(target_name).unwrap())
                 .collect();
-            let watch_list = watch_list
-                .iter()
-                .map(|watch| project_dir.join(watch))
-                .collect();
-            targets.push(target::Target::new(
-                target_id,
-                target_name.to_string(),
+            let input_paths = input_paths.iter().map(|path| project_dir.join(path)).collect();
+            targets.push(target::Target {
+                id: target_id,
+                name: target_name.to_string(),
                 depends_on,
-                project_dir.to_path_buf(),
-                watch_list,
+                path: project_dir.to_path_buf(),
+                input_paths: input_paths,
                 build_list,
                 service,
-            ));
+            });
         }
 
         requested_targets.iter().for_each(|requested_target| {

@@ -42,8 +42,8 @@ impl TargetWatcher {
             Watcher::new_immediate(move |e| tx.send(e).with_context(|| "Sender error").unwrap())
                 .with_context(|| "Error creating watcher")?;
 
-        for watch_path in target.watch_list.iter() {
-            match watcher.watch(watch_path, RecursiveMode::Recursive) {
+        for path in target.input_paths.iter() {
+            match watcher.watch(path, RecursiveMode::Recursive) {
                 Ok(_) => {}
                 Err(notify::Error {
                     kind: ErrorKind::PathNotFound,
@@ -52,13 +52,13 @@ impl TargetWatcher {
                     log::warn!(
                         "{} - Skipping watch on non-existing path: {}",
                         target.name,
-                        watch_path.display(),
+                        path.display(),
                     );
                 }
                 Err(e) => {
                     return Err(Error::new(e).context(format!(
                         "Error watching path {} for target {}",
-                        watch_path.display(),
+                        path.display(),
                         target.name,
                     )));
                 }

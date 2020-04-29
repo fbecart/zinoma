@@ -1,20 +1,20 @@
 cargo-check:
-  watch: [ src, test ]
+  input_paths: [ src, test ]
   build: [ cargo check ]
 
 clippy:
   depends_on: [ cargo-check ]
-  watch: [ src ]
+  input_paths: [ src ]
   build: [ cargo clippy ]
 
 test:
   depends_on: [ cargo-check ]
-  watch: [ src, test ]
+  input_paths: [ src, test ]
   build: [ cargo test ]
 
 no-unused-dependencies:
   depends_on: [ cargo-check ]
-  watch: [ Cargo.toml, src, test ]
+  input_paths: [ Cargo.toml, src, test ]
   build: [ cargo +nightly udeps ]
 
 check:
