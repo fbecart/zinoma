@@ -9,6 +9,7 @@ pub struct Target {
     pub dependencies: Vec<TargetId>,
     pub path: PathBuf,
     pub input_paths: Vec<PathBuf>,
+    pub output_paths: Vec<PathBuf>,
     pub build_list: Vec<String>,
     pub service: Option<String>,
 }

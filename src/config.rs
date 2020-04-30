@@ -1,5 +1,5 @@
 use crate::target;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
@@ -11,6 +11,8 @@ struct Target {
     dependencies: Vec<String>,
     #[serde(default)]
     input_paths: Vec<String>,
+    #[serde(default)]
+    output_paths: Vec<String>,
     #[serde(default, rename = "build")]
     build_list: Vec<String>,
     #[serde(default)]
@@ -36,10 +38,11 @@ impl Config {
         for (target_name, target) in targets.iter() {
             for dependency in target.dependencies.iter() {
                 if !targets.contains_key(dependency.as_str()) {
-                    return Err(anyhow!("Dependency {} not found", dependency));
+                    return Err(anyhow::anyhow!("Dependency {} not found", dependency));
                 }
                 if target_name == dependency {
-                    return Err(anyhow!("Dependency loop: {}", target_name)); // TODO Check recursively
+                    return Err(anyhow::anyhow!("Dependency loop: {}", target_name));
+                    // TODO Check recursively
                 }
             }
         }
@@ -74,6 +77,7 @@ impl Config {
             let Target {
                 dependencies,
                 input_paths,
+                output_paths,
                 build_list,
                 service,
             } = raw_targets.remove(target_name).unwrap();
@@ -97,12 +101,17 @@ impl Config {
                 .iter()
                 .map(|path| project_dir.join(path))
                 .collect();
+            let output_paths = output_paths
+                .iter()
+                .map(|path| project_dir.join(path))
+                .collect();
             targets.push(target::Target {
                 id: target_id,
                 name: target_name.to_string(),
                 dependencies,
                 path: project_dir.to_path_buf(),
                 input_paths,
+                output_paths,
                 build_list,
                 service,
             });
@@ -129,7 +138,10 @@ impl Config {
             .collect();
 
         if !invalid_targets.is_empty() {
-            return Err(anyhow!("Invalid targets: {}", invalid_targets.join(", ")));
+            return Err(anyhow::anyhow!(
+                "Invalid targets: {}",
+                invalid_targets.join(", ")
+            ));
         }
 
         Ok(())

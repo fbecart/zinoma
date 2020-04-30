@@ -31,7 +31,7 @@ pub fn build_target(
     tx: &Sender<BuildReport>,
 ) -> Result<()> {
     let result = incremental_runner
-        .run(&target.name, &target.input_paths, || {
+        .run(&target, || {
             let target_start = Instant::now();
             log::info!("{} - Building", &target.name);
             for command in target.build_list.iter() {
