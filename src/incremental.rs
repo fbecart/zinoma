@@ -1,6 +1,7 @@
 use crate::target::Target;
 use anyhow::{Context, Error, Result};
 use fasthash::XXHasher;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::hash::{Hash, Hasher};
 use std::io::ErrorKind;
@@ -28,95 +29,98 @@ impl<'a> IncrementalRunner<'a> {
     where
         F: Fn() -> Result<T>,
     {
-        let inputs_identifier = format!("{}.inputs", target.name);
-        let outputs_identifier = format!("{}.outputs", target.name);
-
-        let inputs_checksum = compute_checksum(&inputs_identifier, &target.input_paths)?;
-        let outputs_checksum = compute_checksum(&outputs_identifier, &target.output_paths)?;
-
-        if self.does_checksum_match(&inputs_identifier, &inputs_checksum)?
-            && self.does_checksum_match(&outputs_identifier, &outputs_checksum)?
-        {
+        let saved_checksums = self.read_target_checksums(target)?;
+        let target_checksums = TargetChecksums {
+            inputs: compute_checksum(&target.name, &target.input_paths)?,
+            outputs: compute_checksum(&target.name, &target.output_paths)?,
+        };
+        if Some(&target_checksums) == saved_checksums.as_ref() {
             return Ok(IncrementalRunResult::Skipped);
-        }
+        };
 
-        self.erase_checksum(&inputs_identifier)?;
-        self.erase_checksum(&outputs_identifier)?;
+        self.erase_target_checksums(&target)?;
 
         let result = function();
 
         if result.is_ok() {
-            self.write_checksum(&inputs_identifier, &inputs_checksum)?;
-
-            let outputs_checksum = compute_checksum(&outputs_identifier, &target.output_paths)?;
-            self.write_checksum(&outputs_identifier, &outputs_checksum)?;
+            let target_checksums = TargetChecksums {
+                outputs: compute_checksum(&target.name, &target.output_paths)?,
+                ..target_checksums
+            };
+            self.write_target_checksums(&target, &target_checksums)?;
         }
 
         Ok(IncrementalRunResult::Run(result))
     }
 
     fn get_checksum_file(&self, identifier: &str) -> PathBuf {
-        self.checksum_dir.join(format!("{}.checksum", identifier))
+        self.checksum_dir
+            .join(format!("{}.checksum.json", identifier))
     }
 
-    fn does_checksum_match(&self, identifier: &str, checksum: &Option<String>) -> Result<bool> {
-        let saved_checksum = self.read_checksum(identifier)?;
-        Ok(checksum == &saved_checksum)
-    }
-
-    fn read_checksum(&self, identifier: &str) -> Result<Option<String>> {
+    fn read_target_checksums(&self, target: &Target) -> Result<Option<TargetChecksums>> {
         // Might want to check for some errors like permission denied.
         fs::create_dir(&self.checksum_dir).ok();
-        let checksum_file = self.get_checksum_file(identifier);
+
+        let checksum_file = self.get_checksum_file(&target.name);
         match fs::read_to_string(&checksum_file) {
-            Ok(checksum) => Ok(Some(checksum)),
+            Ok(file_content) => match serde_json::from_str(&file_content) {
+                Ok(checksums) => Ok(Some(checksums)),
+                Err(e) => {
+                    log::trace!(
+                        "{} - Dropping corrupted checksum file (Error: {})",
+                        &target.name,
+                        e
+                    );
+                    self.erase_target_checksums(&target)?;
+                    Ok(None)
+                }
+            },
             Err(e) if e.kind() == ErrorKind::NotFound => Ok(None),
             Err(e) => Err(Error::new(e).context(format!(
                 "Failed reading checksum file {} for target {}",
                 checksum_file.display(),
-                identifier
+                &target.name
             ))),
         }
     }
 
-    fn erase_checksum(&self, identifier: &str) -> Result<()> {
-        let checksum_file = &self.get_checksum_file(identifier);
+    fn erase_target_checksums(&self, target: &Target) -> Result<()> {
+        let checksum_file = &self.get_checksum_file(&target.name);
         if checksum_file.exists() {
             fs::remove_file(&checksum_file).with_context(|| {
                 format!(
                     "Failed to delete checksum file {} for target {}",
                     checksum_file.display(),
-                    identifier
+                    target.name
                 )
             })?;
         }
         Ok(())
     }
 
-    fn write_checksum(&self, identifier: &str, checksum: &Option<String>) -> Result<()> {
-        if let Some(checksum) = checksum {
-            let checksum_file = self.get_checksum_file(identifier);
-            let mut file = fs::File::create(&checksum_file).with_context(|| {
-                format!(
-                    "Failed to create checksum file {} for target {}",
-                    checksum_file.display(),
-                    identifier
-                )
-            })?;
-            file.write_all(checksum.as_bytes()).with_context(|| {
-                format!(
-                    "Failed to write checksum file {} for target {}",
-                    checksum_file.display(),
-                    identifier
-                )
-            })?;
-        }
-
-        Ok(())
+    fn write_target_checksums(&self, target: &Target, checksums: &TargetChecksums) -> Result<()> {
+        let checksum_file = self.get_checksum_file(&target.name);
+        let mut file = fs::File::create(&checksum_file).with_context(|| {
+            format!(
+                "Failed to create checksum file {} for target {}",
+                checksum_file.display(),
+                target.name
+            )
+        })?;
+        let file_content = serde_json::to_string(checksums)
+            .with_context(|| format!("Failed to serialize checksums for {}", target.name))?;
+        file.write_all(file_content.as_bytes()).with_context(|| {
+            format!(
+                "Failed to write checksum file {} for target {}",
+                checksum_file.display(),
+                target.name
+            )
+        })
     }
 }
 
-fn compute_checksum(identifier: &str, paths: &[PathBuf]) -> Result<Option<String>> {
+fn compute_checksum(identifier: &str, paths: &[PathBuf]) -> Result<Option<u64>> {
     if paths.is_empty() {
         return Ok(None);
     }
@@ -137,7 +141,7 @@ fn compute_checksum(identifier: &str, paths: &[PathBuf]) -> Result<Option<String
         computation_duration.as_millis()
     );
 
-    Ok(Some(hasher.finish().to_string()))
+    Ok(Some(hasher.finish()))
 }
 
 fn calculate_path_checksum(path: &Path) -> Result<Option<u64>> {
@@ -158,4 +162,10 @@ fn calculate_path_checksum(path: &Path) -> Result<Option<u64>> {
     }
 
     Ok(Some(hasher.finish()))
+}
+
+#[derive(Serialize, Deserialize, PartialEq)]
+struct TargetChecksums {
+    inputs: Option<u64>,
+    outputs: Option<u64>,
 }
