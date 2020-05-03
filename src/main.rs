@@ -6,7 +6,7 @@ mod target;
 use crate::config::Config;
 use crate::engine::Engine;
 use crate::incremental::IncrementalRunner;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use clap::{App, Arg};
 use std::path::Path;
 
@@ -50,9 +50,8 @@ fn main() -> Result<()> {
     let requested_targets = arg_matches.values_of_lossy("targets").unwrap();
     let watch_mode_enabled = arg_matches.is_present("watch");
 
-    let config_file_name = project_dir.join("buildy.yml");
-    let targets =
-        Config::from_yml_file(&config_file_name)?.into_targets(&project_dir, &requested_targets)?;
+    let config = Config::load(&project_dir)?;
+    let targets = config.into_targets(&project_dir, &requested_targets)?;
 
     let checksum_dir = project_dir.join(".buildy");
     let incremental_runner = IncrementalRunner::new(&checksum_dir);
@@ -65,5 +64,5 @@ fn main() -> Result<()> {
             engine.build(scope).with_context(|| "Build error")
         }
     })
-    .map_err(|_| anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
+    .map_err(|_| anyhow::anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
 }

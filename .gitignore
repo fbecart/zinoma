@@ -1,5 +1,5 @@
 # Buildy
-/.buildy/
+.buildy/
 
 /target
 **/*.rs.bk
