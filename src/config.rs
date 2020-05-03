@@ -27,25 +27,43 @@ impl Config {
     pub fn from_yml_file(file: &Path) -> Result<Self> {
         let contents = fs::read_to_string(file)
             .with_context(|| format!("Something went wrong reading {}", file.display()))?;
-        let targets = serde_yaml::from_str(&contents)
+        let targets: HashMap<String, Target> = serde_yaml::from_str(&contents)
             .with_context(|| format!("Invalid format for {}", file.display()))?;
-        Self::check_targets(&targets).with_context(|| "Failed sanity check")?;
+
+        for target_name in targets.keys() {
+            Self::validate_target(target_name, &[], &targets)
+                .with_context(|| format!("Invalid configuration in file {}", file.display()))?;
+        }
 
         Ok(Self { targets })
     }
 
-    fn check_targets(targets: &HashMap<String, Target>) -> Result<()> {
-        for (target_name, target) in targets.iter() {
-            for dependency in target.dependencies.iter() {
-                if !targets.contains_key(dependency.as_str()) {
-                    return Err(anyhow::anyhow!("Dependency {} not found", dependency));
-                }
-                if target_name == dependency {
-                    return Err(anyhow::anyhow!("Dependency loop: {}", target_name));
-                    // TODO Check recursively
-                }
-            }
+    /// Checks the validity of the provided target.
+    ///
+    /// Ensures that all target dependencies (both direct and transitive) exist,
+    /// and that the dependency graph has no circular dependency.
+    fn validate_target(
+        target_name: &str,
+        parent_targets: &[&str],
+        targets: &HashMap<String, Target>,
+    ) -> Result<()> {
+        let target = targets
+            .get(target_name)
+            .ok_or_else(|| anyhow::anyhow!("Target {} not found", target_name))?;
+
+        if parent_targets.contains(&target_name) {
+            return Err(anyhow::anyhow!(
+                "Circular dependency: {} -> {}",
+                parent_targets.join(" -> "),
+                target_name
+            ));
         }
+
+        let targets_chain = [parent_targets, &[target_name]].concat();
+        for dependency in target.dependencies.iter() {
+            Self::validate_target(dependency, &targets_chain, &targets)?;
+        }
+
         Ok(())
     }
 
@@ -145,5 +163,64 @@ impl Config {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{Config, Target};
+    use anyhow::Result;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_validate_targets_on_valid_targets() -> Result<()> {
+        let targets = build_targets(vec![
+            ("target_1", build_target_with_dependencies(vec!["target_2"])),
+            ("target_2", build_target_with_dependencies(vec![])),
+        ]);
+
+        Config::validate_target("target_1", &[], &targets)
+    }
+
+    #[test]
+    fn test_validate_targets_with_unknown_dependency() {
+        let targets = build_targets(vec![(
+            "target_1",
+            build_target_with_dependencies(vec!["target_2"]),
+        )]);
+
+        let result = Config::validate_target("target_1", &[], &targets);
+
+        assert_eq!("Target target_2 not found", result.unwrap_err().to_string());
+    }
+
+    #[test]
+    fn test_validate_targets_with_circular_dependency() {
+        let targets = build_targets(vec![
+            ("target_1", build_target_with_dependencies(vec!["target_2"])),
+            ("target_2", build_target_with_dependencies(vec!["target_3"])),
+            ("target_3", build_target_with_dependencies(vec!["target_1"])),
+        ]);
+
+        let result = Config::validate_target("target_1", &[], &targets);
+
+        assert_eq!(
+            "Circular dependency: target_1 -> target_2 -> target_3 -> target_1",
+            result.unwrap_err().to_string()
+        );
+    }
+
+    fn build_target_with_dependencies(dependencies: Vec<&str>) -> Target {
+        Target {
+            dependencies: dependencies.iter().map(|&dep| dep.to_string()).collect(),
+            input_paths: vec![],
+            output_paths: vec![],
+            build_list: vec![],
+            service: None,
+        }
+    }
+
+    fn build_targets(data: Vec<(&str, Target)>) -> HashMap<String, Target> {
+        data.into_iter().map(|(k, v)| (k.to_string(), v)).collect()
     }
 }
