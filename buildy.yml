@@ -1,15 +1,16 @@
-clippy:
-  input_paths: [ src ]
-  build: [ cargo clippy ]
+targets:
+  clippy:
+    input_paths: [ src ]
+    build: [ cargo clippy ]
 
-test:
-  input_paths: [ src, test ]
-  build: [ cargo test ]
+  test:
+    input_paths: [ src, tests ]
+    build: [ cargo test ]
 
-no-unused-dependencies:
-  dependencies: [ clippy ]
-  input_paths: [ Cargo.toml, src, test ]
-  build: [ cargo +nightly udeps ]
+  no-unused-dependencies:
+    dependencies: [ clippy ]
+    input_paths: [ Cargo.toml, src, tests ]
+    build: [ cargo +nightly udeps ]
 
-check:
-  dependencies: [ test, clippy, no-unused-dependencies ]
+  check:
+    dependencies: [ test, clippy, no-unused-dependencies ]

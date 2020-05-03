@@ -27,3 +27,7 @@ stderrlog = "0.4.3"
 fasthash = "0.4"
 anyhow = "1.0.28"
 serde_json = "1.0"
+
+[dev-dependencies]
+assert_cmd = "1.0"
+predicates = "1.0"

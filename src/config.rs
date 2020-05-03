@@ -19,7 +19,9 @@ struct Target {
     service: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct Config {
+    #[serde(default)]
     targets: HashMap<String, Target>,
 }
 
@@ -27,15 +29,15 @@ impl Config {
     pub fn from_yml_file(file: &Path) -> Result<Self> {
         let contents = fs::read_to_string(file)
             .with_context(|| format!("Something went wrong reading {}", file.display()))?;
-        let targets: HashMap<String, Target> = serde_yaml::from_str(&contents)
+        let config: Self = serde_yaml::from_str(&contents)
             .with_context(|| format!("Invalid format for {}", file.display()))?;
 
-        for target_name in targets.keys() {
-            Self::validate_target(target_name, &[], &targets)
+        for target_name in config.targets.keys() {
+            Self::validate_target(target_name, &[], &config.targets)
                 .with_context(|| format!("Invalid configuration in file {}", file.display()))?;
         }
 
-        Ok(Self { targets })
+        Ok(config)
     }
 
     /// Checks the validity of the provided target.

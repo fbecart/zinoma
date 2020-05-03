@@ -1,0 +1,7 @@
+targets:
+  target_1:
+    dependencies: [ target_2 ]
+  target_2:
+    dependencies: [ target_3 ]
+  target_3:
+    dependencies: [ target_1 ]
