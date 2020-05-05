@@ -35,7 +35,7 @@ impl<'a> IncrementalRunner<'a> {
             return Ok(IncrementalRunResult::Skipped);
         };
 
-        self.erase_target_checksums(&target)?;
+        self.remove_target_checksums(&target)?;
 
         let result = function();
 
@@ -71,7 +71,7 @@ impl<'a> IncrementalRunner<'a> {
                         &target.name,
                         e
                     );
-                    self.erase_target_checksums(&target)?;
+                    self.remove_target_checksums(&target)?;
                     Ok(None)
                 }
             },
@@ -84,7 +84,7 @@ impl<'a> IncrementalRunner<'a> {
         }
     }
 
-    fn erase_target_checksums(&self, target: &Target) -> Result<()> {
+    fn remove_target_checksums(&self, target: &Target) -> Result<()> {
         let checksum_file = &self.get_checksum_file(&target.name);
         if checksum_file.exists() {
             fs::remove_file(&checksum_file).with_context(|| {
@@ -116,6 +116,32 @@ impl<'a> IncrementalRunner<'a> {
                 target.name
             )
         })
+    }
+
+    pub fn clean_checksums(&self, targets: &[Target]) -> Result<()> {
+        if targets.is_empty() {
+            self.remove_checksum_dir()
+        } else {
+            for target in targets.iter() {
+                self.remove_target_checksums(target)?;
+            }
+            Ok(())
+        }
+    }
+
+    pub fn remove_checksum_dir(&self) -> Result<()> {
+        match std::fs::remove_dir_all(self.checksum_dir) {
+            Ok(_) => {}
+            Err(e) if e.kind() == ErrorKind::NotFound => {}
+            Err(e) => {
+                return Err(Error::new(e).context(format!(
+                    "Failed to remove checksum directory {}",
+                    self.checksum_dir.display()
+                )));
+            }
+        }
+
+        Ok(())
     }
 }
 

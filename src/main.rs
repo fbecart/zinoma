@@ -1,12 +1,14 @@
+mod clean;
 mod config;
 mod domain;
 mod engine;
 
-use crate::config::Config;
-use crate::engine::incremental::IncrementalRunner;
-use crate::engine::Engine;
 use anyhow::{Context, Result};
 use clap::{App, Arg};
+use clean::clean_target_outputs;
+use config::Config;
+use engine::incremental::IncrementalRunner;
+use engine::Engine;
 use std::path::Path;
 
 fn main() -> Result<()> {
@@ -17,9 +19,9 @@ fn main() -> Result<()> {
                 Arg::with_name("project_dir")
                     .short("p")
                     .long("project")
+                    .takes_value(true)
                     .value_name("PROJECT_DIR")
-                    .help("Directory of the project to build (in which 'buildy.yml' is located)")
-                    .takes_value(true),
+                    .help("Directory of the project to build (in which 'buildy.yml' is located)"),
             )
             .arg(
                 Arg::with_name("verbosity")
@@ -30,6 +32,11 @@ fn main() -> Result<()> {
             .arg(Arg::with_name("watch").short("w").long("watch").help(
                 "Enable watch mode: rebuild targets and restart services on file system changes",
             ))
+            .arg(
+                Arg::with_name("clean")
+                    .long("clean")
+                    .help("Start by cleaning the target outputs"),
+            )
             .arg(
                 Arg::with_name("targets")
                     .value_name("TARGETS")
@@ -48,12 +55,19 @@ fn main() -> Result<()> {
     let project_dir = Path::new(arg_matches.value_of("project_dir").unwrap_or("."));
     let requested_targets = arg_matches.values_of_lossy("targets").unwrap();
     let watch_mode_enabled = arg_matches.is_present("watch");
+    let clean_before_run = arg_matches.is_present("clean");
 
     let config = Config::load(&project_dir)?;
     let targets = config.into_targets(&project_dir, &requested_targets)?;
 
     let checksum_dir = project_dir.join(".buildy");
     let incremental_runner = IncrementalRunner::new(&checksum_dir);
+
+    if clean_before_run {
+        incremental_runner.clean_checksums(&targets)?;
+        clean_target_outputs(&targets)?;
+    }
+
     let engine = Engine::new(targets, incremental_runner);
 
     crossbeam::scope(|scope| {
