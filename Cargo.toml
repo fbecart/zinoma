@@ -21,7 +21,7 @@ crossbeam = "=0.7.3"
 duct = "0.13"
 walkdir = "2"
 notify = { version = "=5.0.0-pre.2", features = ["serde"] }
-clap = "2.33.0"
+clap = "3.0.0-beta.1"
 log = "0.4.8"
 stderrlog = "0.4.3"
 fasthash = "0.4"

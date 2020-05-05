@@ -12,39 +12,38 @@ use engine::Engine;
 use std::path::Path;
 
 fn main() -> Result<()> {
-    let arg_matches =
-        App::new("Buildy")
-            .about("An ultra-fast parallel build system for local iteration")
-            .arg(
-                Arg::with_name("project_dir")
-                    .short("p")
-                    .long("project")
-                    .takes_value(true)
-                    .value_name("PROJECT_DIR")
-                    .help("Directory of the project to build (in which 'buildy.yml' is located)"),
-            )
-            .arg(
-                Arg::with_name("verbosity")
-                    .short("v")
-                    .multiple(true)
-                    .help("Increases message verbosity"),
-            )
-            .arg(Arg::with_name("watch").short("w").long("watch").help(
-                "Enable watch mode: rebuild targets and restart services on file system changes",
-            ))
-            .arg(
-                Arg::with_name("clean")
-                    .long("clean")
-                    .help("Start by cleaning the target outputs"),
-            )
-            .arg(
-                Arg::with_name("targets")
-                    .value_name("TARGETS")
-                    .multiple(true)
-                    .required(true)
-                    .help("Targets to build"),
-            )
-            .get_matches();
+    let arg_matches = App::new("Buildy")
+        .about("An ultra-fast parallel build system for local iteration")
+        .arg(
+            Arg::with_name("project_dir")
+                .short('p')
+                .long("project")
+                .takes_value(true)
+                .value_name("PROJECT_DIR")
+                .about("Directory of the project to build (in which 'buildy.yml' is located)"),
+        )
+        .arg(
+            Arg::with_name("verbosity")
+                .short('v')
+                .multiple(true)
+                .about("Increases message verbosity"),
+        )
+        .arg(Arg::with_name("watch").short('w').long("watch").about(
+            "Enable watch mode: rebuild targets and restart services on file system changes",
+        ))
+        .arg(
+            Arg::with_name("clean")
+                .long("clean")
+                .about("Start by cleaning the target outputs"),
+        )
+        .arg(
+            Arg::with_name("targets")
+                .value_name("TARGETS")
+                .multiple(true)
+                .required(true)
+                .about("Targets to build"),
+        )
+        .get_matches();
 
     stderrlog::new()
         .module(module_path!())
