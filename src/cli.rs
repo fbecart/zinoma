@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 pub struct AppArgs {
     pub verbosity: usize,
     pub project_dir: PathBuf,
-    pub requested_targets: Vec<String>,
+    pub requested_targets: Option<Vec<String>>,
     pub watch_mode_enabled: bool,
     pub clean_before_run: bool,
 }
@@ -38,7 +38,7 @@ pub fn get_app_args() -> AppArgs {
             Arg::with_name("targets")
                 .value_name("TARGETS")
                 .multiple(true)
-                .required(true)
+                .required_unless("clean")
                 .about("Targets to build"),
         );
 
@@ -47,7 +47,7 @@ pub fn get_app_args() -> AppArgs {
     AppArgs {
         verbosity: arg_matches.occurrences_of("verbosity") as usize,
         project_dir: Path::new(arg_matches.value_of("project_dir").unwrap_or(".")).to_owned(),
-        requested_targets: arg_matches.values_of_lossy("targets").unwrap(),
+        requested_targets: arg_matches.values_of_lossy("targets"),
         watch_mode_enabled: arg_matches.is_present("watch"),
         clean_before_run: arg_matches.is_present("clean"),
     }

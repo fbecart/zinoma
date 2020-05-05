@@ -7,8 +7,10 @@ use std::path::Path;
 pub fn into_targets(
     mut parsed_targets: HashMap<String, config::Target>,
     project_dir: &Path,
-    requested_targets: &[String],
+    requested_targets: &Option<Vec<String>>,
 ) -> Result<Vec<domain::Target>> {
+    let all_target_names: Vec<String> = parsed_targets.keys().cloned().collect();
+    let requested_targets = requested_targets.as_ref().unwrap_or(&all_target_names);
     let mut targets = Vec::with_capacity(requested_targets.len());
     let mut mapping = HashMap::with_capacity(requested_targets.len());
 
@@ -97,8 +99,9 @@ mod tests {
             ("target_2", build_target()),
         ]);
 
-        let actual_targets = into_targets(targets, Path::new("."), &vec!["target_2".to_string()])
-            .expect("Conversion of valid targets should be successful");
+        let actual_targets =
+            into_targets(targets, Path::new("."), &Some(vec!["target_2".to_string()]))
+                .expect("Conversion of valid targets should be successful");
 
         assert_eq!(actual_targets.len(), 1);
         assert_eq!(actual_targets[0].name, "target_2");
@@ -108,8 +111,12 @@ mod tests {
     fn test_into_targets_should_reject_requested_target_not_found() {
         let targets = build_targets(vec![("target_1", build_target())]);
 
-        into_targets(targets, Path::new("."), &vec!["not_a_target".to_string()])
-            .expect_err("Should reject an invalid requested target");
+        into_targets(
+            targets,
+            Path::new("."),
+            &Some(vec!["not_a_target".to_string()]),
+        )
+        .expect_err("Should reject an invalid requested target");
     }
 
     fn build_target() -> Target {

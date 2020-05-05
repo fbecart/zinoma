@@ -50,9 +50,11 @@ impl Config {
     pub fn into_targets(
         self,
         project_dir: &Path,
-        requested_targets: &[String],
+        requested_targets: &Option<Vec<String>>,
     ) -> Result<Vec<domain::Target>> {
-        validate_requested_targets(requested_targets, &self.targets)?;
+        if let Some(requested_targets) = requested_targets {
+            validate_requested_targets(requested_targets, &self.targets)?;
+        }
 
         conversion::into_targets(self.targets, project_dir, requested_targets)
     }
