@@ -1,4 +1,4 @@
-use crate::incremental::{IncrementalRunResult, IncrementalRunner};
+use super::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::{Target, TargetId};
 use anyhow::{Context, Result};
 use crossbeam::channel::Sender;

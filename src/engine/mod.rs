@@ -1,14 +1,15 @@
 mod build_state;
 mod builder;
+pub mod incremental;
 mod service;
 mod watcher;
 
-use crate::incremental::{IncrementalRunResult, IncrementalRunner};
 use crate::target::Target;
 use anyhow::{Context, Result};
 use build_state::TargetBuildStates;
 use builder::TargetBuilder;
 use crossbeam::thread::Scope;
+use incremental::{IncrementalRunResult, IncrementalRunner};
 use service::ServicesRunner;
 use std::thread::sleep;
 use std::time::Duration;

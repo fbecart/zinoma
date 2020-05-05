@@ -1,11 +1,11 @@
 targets:
-  clippy:
-    input_paths: [ src ]
-    build: [ cargo clippy ]
-
   test:
     input_paths: [ src, tests ]
     build: [ cargo test ]
+
+  clippy:
+    input_paths: [ src ]
+    build: [ cargo clippy ]
 
   no-unused-dependencies:
     dependencies: [ clippy ]
@@ -14,3 +14,7 @@ targets:
 
   check:
     dependencies: [ test, clippy, no-unused-dependencies ]
+
+  install:
+    dependencies: [ check ]
+    build: [ cargo install --path . ]

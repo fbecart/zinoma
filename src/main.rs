@@ -1,11 +1,10 @@
 mod config;
 mod engine;
-mod incremental;
 mod target;
 
 use crate::config::Config;
+use crate::engine::incremental::IncrementalRunner;
 use crate::engine::Engine;
-use crate::incremental::IncrementalRunner;
 use anyhow::{Context, Result};
 use clap::{App, Arg};
 use std::path::Path;
