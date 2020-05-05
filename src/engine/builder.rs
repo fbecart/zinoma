@@ -1,5 +1,5 @@
 use super::incremental::{IncrementalRunResult, IncrementalRunner};
-use crate::target::{Target, TargetId};
+use crate::domain::{Target, TargetId};
 use anyhow::{Context, Result};
 use crossbeam::channel::Sender;
 use crossbeam::thread::Scope;

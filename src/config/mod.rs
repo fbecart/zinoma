@@ -1,7 +1,7 @@
 mod conversion;
 mod validation;
 
-use crate::target;
+use crate::domain;
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -51,7 +51,7 @@ impl Config {
         self,
         project_dir: &Path,
         requested_targets: &[String],
-    ) -> Result<Vec<target::Target>> {
+    ) -> Result<Vec<domain::Target>> {
         validate_requested_targets(requested_targets, &self.targets)?;
 
         conversion::into_targets(self.targets, project_dir, requested_targets)

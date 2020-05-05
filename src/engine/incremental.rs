@@ -1,4 +1,4 @@
-use crate::target::Target;
+use crate::domain::Target;
 use anyhow::{Context, Error, Result};
 use fasthash::XXHasher;
 use serde::{Deserialize, Serialize};

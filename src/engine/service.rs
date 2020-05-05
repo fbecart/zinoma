@@ -1,4 +1,4 @@
-use crate::target::Target;
+use crate::domain::Target;
 use anyhow::{Context, Result};
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use crossbeam::thread::Scope;

@@ -1,5 +1,5 @@
 use crate::config;
-use crate::target;
+use crate::domain;
 use anyhow::{Context, Result};
 use std::collections::HashMap;
 use std::path::Path;
@@ -8,13 +8,13 @@ pub fn into_targets(
     mut parsed_targets: HashMap<String, config::Target>,
     project_dir: &Path,
     requested_targets: &[String],
-) -> Result<Vec<target::Target>> {
+) -> Result<Vec<domain::Target>> {
     let mut targets = Vec::with_capacity(requested_targets.len());
     let mut mapping = HashMap::with_capacity(requested_targets.len());
 
     fn add_target(
-        mut targets: &mut Vec<target::Target>,
-        mut mapping: &mut HashMap<String, target::TargetId>,
+        mut targets: &mut Vec<domain::Target>,
+        mut mapping: &mut HashMap<String, domain::TargetId>,
         project_dir: &Path,
         parsed_targets: &mut HashMap<String, config::Target>,
         target_name: &str,
@@ -56,7 +56,7 @@ pub fn into_targets(
             .iter()
             .map(|path| project_dir.join(path))
             .collect();
-        targets.push(target::Target {
+        targets.push(domain::Target {
             id: target_id,
             name: target_name.to_string(),
             dependencies,

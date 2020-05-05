@@ -1,6 +1,6 @@
 use super::builder::BuildReport;
 use super::incremental::IncrementalRunResult;
-use crate::target::{Target, TargetId};
+use crate::domain::{Target, TargetId};
 use anyhow::{Error, Result};
 use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
 

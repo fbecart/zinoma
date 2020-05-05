@@ -4,7 +4,7 @@ pub mod incremental;
 mod service;
 mod watcher;
 
-use crate::target::Target;
+use crate::domain::Target;
 use anyhow::{Context, Result};
 use build_state::TargetBuildStates;
 use builder::TargetBuilder;

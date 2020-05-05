@@ -1,4 +1,4 @@
-use crate::target::{Target, TargetId};
+use crate::domain::{Target, TargetId};
 use anyhow::{Context, Error, Result};
 use crossbeam::channel::{unbounded, Receiver, TryRecvError};
 use notify::{ErrorKind, Event, FsEventWatcher, RecursiveMode, Watcher};
