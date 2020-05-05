@@ -7,7 +7,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use validation::{validate_requested_targets, validate_targets};
+use validation::validate_targets;
 
 #[derive(Debug, Deserialize)]
 pub struct Target {
@@ -47,15 +47,18 @@ impl Config {
         Ok(config)
     }
 
+    pub fn get_target_names(&self) -> Vec<&str> {
+        self.targets
+            .keys()
+            .map(|target_name| target_name.as_str())
+            .collect()
+    }
+
     pub fn into_targets(
         self,
         project_dir: &Path,
         requested_targets: &Option<Vec<String>>,
     ) -> Result<Vec<domain::Target>> {
-        if let Some(requested_targets) = requested_targets {
-            validate_requested_targets(requested_targets, &self.targets)?;
-        }
-
         conversion::into_targets(self.targets, project_dir, requested_targets)
     }
 }

@@ -9,7 +9,19 @@ pub struct AppArgs {
     pub clean_before_run: bool,
 }
 
-pub fn get_app_args() -> AppArgs {
+pub fn get_app_args(allowed_target_names: Option<Vec<&str>>) -> AppArgs {
+    let targets_arg = Arg::with_name("targets")
+        .value_name("TARGETS")
+        .multiple(true)
+        .required_unless("clean")
+        .about("Targets to build");
+
+    let targets_arg = if let Some(allowed_target_names) = allowed_target_names {
+        targets_arg.possible_values(&allowed_target_names)
+    } else {
+        targets_arg
+    };
+
     let app = App::new("Buildy")
         .about("An ultra-fast parallel build system for local iteration")
         .arg(
@@ -34,13 +46,7 @@ pub fn get_app_args() -> AppArgs {
                 .long("clean")
                 .about("Start by cleaning the target outputs"),
         )
-        .arg(
-            Arg::with_name("targets")
-                .value_name("TARGETS")
-                .multiple(true)
-                .required_unless("clean")
-                .about("Targets to build"),
-        );
+        .arg(targets_arg);
 
     let arg_matches = app.get_matches();
 

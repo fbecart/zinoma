@@ -1,5 +1,4 @@
 use super::Target;
-use crate::config;
 use anyhow::{Context, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -53,26 +52,6 @@ fn validate_target(
         })?;
 
         validate_target(dependency_name, dependency, &targets_chain, &targets)?;
-    }
-
-    Ok(())
-}
-
-pub fn validate_requested_targets(
-    requested_targets: &[String],
-    targets: &HashMap<String, config::Target>,
-) -> Result<()> {
-    let invalid_targets: Vec<String> = requested_targets
-        .iter()
-        .filter(|&requested_target| !targets.contains_key(requested_target))
-        .map(|i| i.to_owned())
-        .collect();
-
-    if !invalid_targets.is_empty() {
-        return Err(anyhow::anyhow!(
-            "Invalid targets: {}",
-            invalid_targets.join(", ")
-        ));
     }
 
     Ok(())

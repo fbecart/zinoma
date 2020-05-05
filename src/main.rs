@@ -12,7 +12,7 @@ use engine::incremental::IncrementalRunner;
 use engine::Engine;
 
 fn main() -> Result<()> {
-    let app_args = get_app_args();
+    let app_args = get_app_args(None);
 
     stderrlog::new()
         .module(module_path!())
@@ -21,6 +21,10 @@ fn main() -> Result<()> {
         .unwrap();
 
     let config = Config::load(&app_args.project_dir)?;
+    let all_target_names = config.get_target_names();
+
+    let app_args = get_app_args(Some(all_target_names));
+
     let targets = config.into_targets(&app_args.project_dir, &app_args.requested_targets)?;
 
     let checksum_dir = app_args.project_dir.join(".buildy");
