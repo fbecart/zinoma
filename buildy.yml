@@ -1,6 +1,6 @@
 targets:
   test:
-    input_paths: [ src, tests ]
+    input_paths: [ Cargo.lock, Cargo.toml, src, tests ]
     build: [ cargo test ]
 
   clippy:
