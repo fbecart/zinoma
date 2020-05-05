@@ -1,6 +1,6 @@
 mod config;
-mod engine;
 mod domain;
+mod engine;
 
 use crate::config::Config;
 use crate::engine::incremental::IncrementalRunner;

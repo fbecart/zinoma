@@ -30,11 +30,8 @@ impl<'a> IncrementalRunner<'a> {
         F: Fn() -> Result<T>,
     {
         let saved_checksums = self.read_target_checksums(target)?;
-        let target_checksums = TargetChecksums {
-            inputs: compute_checksum(&target.name, &target.input_paths)?,
-            outputs: compute_checksum(&target.name, &target.output_paths)?,
-        };
-        if Some(&target_checksums) == saved_checksums.as_ref() {
+        let target_checksums = compute_target_checksums(target)?;
+        if saved_checksums.is_some() && saved_checksums == target_checksums {
             return Ok(IncrementalRunResult::Skipped);
         };
 
@@ -43,11 +40,13 @@ impl<'a> IncrementalRunner<'a> {
         let result = function();
 
         if result.is_ok() {
-            let target_checksums = TargetChecksums {
-                outputs: compute_checksum(&target.name, &target.output_paths)?,
-                ..target_checksums
-            };
-            self.write_target_checksums(&target, &target_checksums)?;
+            if let Some(target_checksums) = target_checksums {
+                let target_checksums = TargetChecksums {
+                    outputs: compute_checksum(&target.name, &target.output_paths)?,
+                    ..target_checksums
+                };
+                self.write_target_checksums(&target, &target_checksums)?;
+            }
         }
 
         Ok(IncrementalRunResult::Run(result))
@@ -117,6 +116,17 @@ impl<'a> IncrementalRunner<'a> {
                 target.name
             )
         })
+    }
+}
+
+fn compute_target_checksums(target: &Target) -> Result<Option<TargetChecksums>> {
+    if target.input_paths.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(TargetChecksums {
+            inputs: compute_checksum(&target.name, &target.input_paths)?,
+            outputs: compute_checksum(&target.name, &target.output_paths)?,
+        }))
     }
 }
 
