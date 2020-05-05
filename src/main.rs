@@ -1,60 +1,30 @@
 mod clean;
+mod cli;
 mod config;
 mod domain;
 mod engine;
 
 use anyhow::{Context, Result};
-use clap::{App, Arg};
 use clean::clean_target_outputs;
+use cli::{get_app_args, AppArgs};
 use config::Config;
 use engine::incremental::IncrementalRunner;
 use engine::Engine;
-use std::path::Path;
 
 fn main() -> Result<()> {
-    let arg_matches = App::new("Buildy")
-        .about("An ultra-fast parallel build system for local iteration")
-        .arg(
-            Arg::with_name("project_dir")
-                .short('p')
-                .long("project")
-                .takes_value(true)
-                .value_name("PROJECT_DIR")
-                .about("Directory of the project to build (in which 'buildy.yml' is located)"),
-        )
-        .arg(
-            Arg::with_name("verbosity")
-                .short('v')
-                .multiple(true)
-                .about("Increases message verbosity"),
-        )
-        .arg(Arg::with_name("watch").short('w').long("watch").about(
-            "Enable watch mode: rebuild targets and restart services on file system changes",
-        ))
-        .arg(
-            Arg::with_name("clean")
-                .long("clean")
-                .about("Start by cleaning the target outputs"),
-        )
-        .arg(
-            Arg::with_name("targets")
-                .value_name("TARGETS")
-                .multiple(true)
-                .required(true)
-                .about("Targets to build"),
-        )
-        .get_matches();
+    let AppArgs {
+        verbosity,
+        project_dir,
+        requested_targets,
+        watch_mode_enabled,
+        clean_before_run,
+    } = get_app_args();
 
     stderrlog::new()
         .module(module_path!())
-        .verbosity(arg_matches.occurrences_of("verbosity") as usize + 2)
+        .verbosity(verbosity + 2)
         .init()
         .unwrap();
-
-    let project_dir = Path::new(arg_matches.value_of("project_dir").unwrap_or("."));
-    let requested_targets = arg_matches.values_of_lossy("targets").unwrap();
-    let watch_mode_enabled = arg_matches.is_present("watch");
-    let clean_before_run = arg_matches.is_present("clean");
 
     let config = Config::load(&project_dir)?;
     let targets = config.into_targets(&project_dir, &requested_targets)?;
