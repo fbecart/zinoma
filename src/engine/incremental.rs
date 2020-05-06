@@ -52,16 +52,16 @@ impl<'a> IncrementalRunner<'a> {
         Ok(IncrementalRunResult::Run(result))
     }
 
-    fn get_checksum_file(&self, identifier: &str) -> PathBuf {
+    fn get_checksum_file(&self, target: &Target) -> PathBuf {
         self.checksum_dir
-            .join(format!("{}.checksum.json", identifier))
+            .join(format!("{}.checksum.json", target.name))
     }
 
     fn read_target_checksums(&self, target: &Target) -> Result<Option<TargetChecksums>> {
         // Might want to check for some errors like permission denied.
         fs::create_dir(&self.checksum_dir).ok();
 
-        let checksum_file = self.get_checksum_file(&target.name);
+        let checksum_file = self.get_checksum_file(target);
         match fs::read_to_string(&checksum_file) {
             Ok(file_content) => match serde_json::from_str(&file_content) {
                 Ok(checksums) => Ok(Some(checksums)),
@@ -85,7 +85,7 @@ impl<'a> IncrementalRunner<'a> {
     }
 
     fn remove_target_checksums(&self, target: &Target) -> Result<()> {
-        let checksum_file = &self.get_checksum_file(&target.name);
+        let checksum_file = &self.get_checksum_file(target);
         if checksum_file.exists() {
             fs::remove_file(&checksum_file).with_context(|| {
                 format!(
@@ -99,7 +99,7 @@ impl<'a> IncrementalRunner<'a> {
     }
 
     fn write_target_checksums(&self, target: &Target, checksums: &TargetChecksums) -> Result<()> {
-        let checksum_file = self.get_checksum_file(&target.name);
+        let checksum_file = self.get_checksum_file(target);
         let mut file = fs::File::create(&checksum_file).with_context(|| {
             format!(
                 "Failed to create checksum file {} for target {}",
