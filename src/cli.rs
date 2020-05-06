@@ -10,6 +10,18 @@ pub struct AppArgs {
 }
 
 pub fn get_app_args(allowed_target_names: Option<Vec<&str>>) -> AppArgs {
+    let arg_matches = get_app(allowed_target_names).get_matches();
+
+    AppArgs {
+        verbosity: arg_matches.occurrences_of("verbosity") as usize,
+        project_dir: Path::new(arg_matches.value_of("project_dir").unwrap_or(".")).to_owned(),
+        requested_targets: arg_matches.values_of_lossy("targets"),
+        watch_mode_enabled: arg_matches.is_present("watch"),
+        clean_before_run: arg_matches.is_present("clean"),
+    }
+}
+
+fn get_app(allowed_target_names: Option<Vec<&str>>) -> App {
     let targets_arg = Arg::with_name("targets")
         .value_name("TARGETS")
         .multiple(true)
@@ -22,7 +34,7 @@ pub fn get_app_args(allowed_target_names: Option<Vec<&str>>) -> AppArgs {
         targets_arg
     };
 
-    let app = App::new("Buildy")
+    App::new("Buildy")
         .about("An ultra-fast parallel build system for local iteration")
         .arg(
             Arg::with_name("project_dir")
@@ -46,15 +58,5 @@ pub fn get_app_args(allowed_target_names: Option<Vec<&str>>) -> AppArgs {
                 .long("clean")
                 .about("Start by cleaning the target outputs"),
         )
-        .arg(targets_arg);
-
-    let arg_matches = app.get_matches();
-
-    AppArgs {
-        verbosity: arg_matches.occurrences_of("verbosity") as usize,
-        project_dir: Path::new(arg_matches.value_of("project_dir").unwrap_or(".")).to_owned(),
-        requested_targets: arg_matches.values_of_lossy("targets"),
-        watch_mode_enabled: arg_matches.is_present("watch"),
-        clean_before_run: arg_matches.is_present("clean"),
-    }
+        .arg(targets_arg)
 }
