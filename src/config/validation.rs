@@ -119,7 +119,7 @@ mod tests {
 
     fn build_target_with_dependencies(dependencies: Vec<&str>) -> Target {
         Target {
-            dependencies: dependencies.iter().map(|&dep| dep.to_string()).collect(),
+            dependencies: dependencies.into_iter().map(str::to_string).collect(),
             input_paths: vec![],
             output_paths: vec![],
             build_list: vec![],

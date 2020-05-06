@@ -47,15 +47,15 @@ pub fn into_targets(
         let target_id = targets.len();
         mapping.insert(target_name.to_string(), target_id);
         let dependencies = dependencies
-            .iter()
-            .map(|target_name| *mapping.get(target_name).unwrap())
+            .into_iter()
+            .map(|target_name| *mapping.get(&target_name).unwrap())
             .collect();
         let input_paths = input_paths
-            .iter()
+            .into_iter()
             .map(|path| project_dir.join(path))
             .collect();
         let output_paths = output_paths
-            .iter()
+            .into_iter()
             .map(|path| project_dir.join(path))
             .collect();
         targets.push(domain::Target {

@@ -76,10 +76,11 @@ impl<'a> TargetWatcher<'a> {
     pub fn is_invalidated(&self) -> Result<bool> {
         match self.rx.try_recv() {
             Ok(event) => {
-                let paths = event.unwrap().paths;
-                let paths: Vec<&PathBuf> = paths
-                    .iter()
-                    .filter(|&path| !is_tmp_editor_file(path))
+                let paths: Vec<PathBuf> = event
+                    .unwrap()
+                    .paths
+                    .into_iter()
+                    .filter(|path| !is_tmp_editor_file(path))
                     .collect();
 
                 let invalidated = !paths.is_empty();
