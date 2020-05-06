@@ -6,7 +6,7 @@ mod engine;
 
 use anyhow::{Context, Result};
 use clean::clean_target_outputs;
-use cli::get_app_args;
+use cli::{get_app_args, write_zsh_completion};
 use config::Config;
 use engine::incremental::IncrementalRunner;
 use engine::Engine;
@@ -19,6 +19,11 @@ fn main() -> Result<()> {
         .verbosity(app_args.verbosity + 2)
         .init()
         .unwrap();
+
+    if app_args.generate_zsh_completion {
+        write_zsh_completion(&mut std::io::stdout());
+        return Ok(());
+    }
 
     let config = Config::load(&app_args.project_dir)?;
     let all_target_names = config.get_target_names();

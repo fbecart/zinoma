@@ -9,6 +9,7 @@ The core of `buildy` is in its configuration file. Simply add a file named `buil
 This configuration file tells `buildy` exactly what to do.
 
 ## buildy.yml spec
+
 ```yaml
 server_deps:
   input_paths:
@@ -52,6 +53,18 @@ e.g.
 ```shell script
 buildy target_1 target_2
 ```
+
+## Auto completion
+
+### Z shell (Zsh)
+
+To set up buildy auto-completion for Zsh, put the completion script in one of the paths in your `$fpath`. For instance:
+
+```shell script
+buildy --generate-zsh-completion > $HOME/.zfunc/_buildy
+```
+
+This script should be updated when a new version of buildy is installed.
 
 ## Known Issues
 
