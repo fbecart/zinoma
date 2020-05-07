@@ -1,73 +1,165 @@
-# zinoma - An ultra-fast parallel build system for local iteration
+# Žinoma
+ 
+Make your build flow incremental
 
-**Warning: `zinoma` is not yet ready for use**
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-`zinoma` is very simple and configurable. It's meant to facilitate development by watching the file system and rebuilding as necessary.
+---
 
-The core of `zinoma` is in its configuration file. Simply add a file named `zinoma.yml` into the root of the project.
+## Why Žinoma?
 
-This configuration file tells `zinoma` exactly what to do.
+Non-trivial software project usually combine multiple technologies, each coming with their specific build tool.
+The development workflows on such projects (e.g. checking code validity, deploy a new version) involve multiple commands that need to be executed in a coordinated way.
 
-## zinoma.yml spec
+Running these commands manually is error prone, as it is easy to forget a command or to run them in the wrong order.
+On the other hand, using a simple script running systematically all of them is slow.
 
-```yaml
-server_deps:
-  input_paths:
-    - server/package.json
-    - server/yarn.lock
-  build:
-    - cd server && yarn install
+## Value proposition
 
-server:
-  dependencies:
-    - server_deps
-  input_paths:
-    - server/src
-  service: cd server && node src/server.js
-```
+Žinoma provides developers a simple command line to execute their most common build flows in the most efficient way.
 
-The configuration file is composed of `target`s, which are an entity to build. Each `target` can define its `dependencies`, `input_paths` to watch, commands to `build`, and a `service` command to run after the build completes.
+In particular, Žinoma provides a mechanism to run the tasks incrementally. This means Žinoma will avoid running repetitive tasks again and again if it determines they can be skipped.
 
-`target`s will be run in parallel as much as possible, waiting to start until their `dependencies` are built.
+It also handles dependencies between tasks (waiting for the completion of one task before starting another one), and runs tasks in parallel whenever possible.
 
-The commands in the `build` list under a target are run one after another in a shell working from the directory containing the `zinoma.yml`.
+Finally, Žinoma offers a watch mode, which waits for filesystem updates and re-executes the relevant tasks when source files are updated.
 
-The `target` will only be rebuilt if either no `input_paths` exist, or any of the contents of the `input_paths` have changed since the last build.
+## Installation
 
-`zinoma` maintains a list of checksums in a directory named `.zinoma` next to the `zinoma.yml`. This directory should be ignored in version control.
-
-Once a `target` is built, its `service` will be run. The `service` command can continue running in the background, which is useful for running programs such as a web server.
-
-Even after everything is built, `zinoma` will watch all the paths in the `input_paths` for new changes in the background. When any change is detected, those `target`s are rebuilt. Children `target`s (those that have a dependency on the rebuilt `target`) will only be rerun if files in their `input_paths` changed as well.
-
-Whenever a `target` is rebuilt, its `service` command is rerun as well, terminating any that may still be running.
-
-## Usage
-
-Install with `cargo install zinoma`.
-
-Then, simply run `zinoma <TARGETS>...` in a directory with `zinoma.yml`.
-
-e.g.
+Via cargo (https://rustup.rs/):
 
 ```shell script
-zinoma target_1 target_2
+cargo install --git https://github.com/fbecart/zinoma
 ```
 
-## Auto completion
+### Setup auto-completion for Z shell (Zsh)
 
-### Z shell (Zsh)
-
-To set up zinoma auto-completion for Zsh, put the completion script in one of the paths in your `$fpath`. For instance:
+To set up Žinoma auto-completion for Zsh, put the completion script in one of the paths in your `$fpath`. For instance:
 
 ```shell script
 zinoma --generate-zsh-completion > $HOME/.zfunc/_zinoma
 ```
 
-This script should be updated when a new version of zinoma is installed.
+This script should be updated when a new version of Žinoma is installed.
 
-## Known Issues
+## Documentation
 
-* `service` commands that should be restarted when input paths change need to use `exec` or else they won't terminate properly.
-* Output is not very pretty
-* No unit tests
+### Project configuration file
+
+This documentation assumes prior knowledge of the Yaml format. If you're not familiar with Yaml, you should first get accustomed to the basics of its syntax.
+
+Configure your project with a Yaml file called `zinoma.yml` at the root of your project.
+
+```yaml
+targets:                                             # Lists the targets (aka tasks) of your project workflow
+  npm-install:                                       # Declares target "npm-install"
+    input_paths: [ package.json, package-lock.json ] # Lists the locations of the sources for this target (optional)
+    output_paths: [ node_modules ]                   # Lists locations where this target will produce its artifacts (optional)
+    build: [ npm install ]                           # Lists commands to run sequentially in order to build this target (optional)
+
+  start-server:                                      # Declares target "start-server"
+    dependencies: [ npm-install ]                    # Lists other target this target depends on (optional) This means "start-server" will only be executed upon a successful build of "npm-install".
+    service: npm start                               # States the command which starts this service (optional) A service is a long-lasting command, such as a server. It will only be executed in watch mode, upon a successful build (or rebuild) of the same target.
+```
+
+### Command line
+
+```
+zinoma [FLAGS] [OPTIONS] [--] [TARGETS]...
+
+ARGS:
+    <TARGETS>...    Targets to build
+
+FLAGS:
+        --clean      Start by cleaning the target outputs
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+    -w, --watch      Enable watch mode: rebuild targets and restart services on file system changes
+
+OPTIONS:
+    -p, --project <PROJECT_DIR>    Directory of the project to build (in which 'zinoma.yml' is located)
+    -v <verbosity>...              Increases message verbosity
+```
+
+### Additional information
+
+#### Incremental build
+
+The build of a target will be skipped if the `input_paths` and `output_paths` have been left untouched since its last successful execution.
+
+Žinoma keeps track of the build state in a directory located at the root of the project (where `zinoma.yml` is located) and named `.zinoma`. This directory should be ignored in version control.
+
+#### Watch mode
+
+The execution of `zinoma` will normally end as soon as all the specified targets were built.
+
+However, Žinoma also offers a watch mode which can be enabled with the `--watch` option of the command line.
+When the watch mode is enabled, Žinoma also runs the services of the built targets, and prevents its process from exiting.
+Žinoma will then keep an eye open on the `input_paths`, and will re-execute the relevant targets in case filesystem changes are detected.
+
+## Example of configuration
+
+`zinoma.yml`:
+
+```yaml
+targets:
+  download-dependencies:
+    input_paths: [ package.json, package-lock.json ]
+    output_paths: [ node_modules ]
+    build: [ npm install ]
+
+  test:
+    dependencies: [ download-dependencies ]
+    input_paths: [ package.json, node_modules, src, test ]
+    build: [ npm test ]
+
+  lint:
+    dependencies: [ download-dependencies ]
+    input_paths: [ package.json, node_modules, src, test ]
+    build: [ npm run lint ]
+
+  check:
+    dependencies: [ test, lint ]
+
+  start:
+    dependencies: [ download-dependencies ]
+    input_paths: [ package.json, src ]
+    service: npm run start
+
+  build:
+    dependencies: [ check ]
+    input_paths:
+      - Dockerfile
+      - package.json
+      - package-lock.json
+      - src
+    output_paths: [ lambda.zip ]
+    build:
+      - docker build -t build-my-project:latest .
+      - docker create -ti --name build-my-project build-my-project:latest bash
+      - docker cp build-my-project:/var/task/lambda.zip ./
+      - docker rm -f build-my-project
+```
+
+Some example of commands:
+
+- `zinoma check` will ensure the code complies to the test suites and the coding standards.
+- `zinoma start --watch` will run the application and restart it whenever the sources are updated.
+- `zinoma --clean build` will generate a clean artifact, ready to be deployed.
+
+## Roadmap
+
+- [x] Execute targets in parallel
+- [x] Handle dependencies between targets (and detect cyclic dependencies)
+- [x] Check input paths and output paths in incremental build
+- [x] Watch mode
+- [x] Clean command
+- [x] Basic auto-completion
+- [ ] Auto-complete target names
+- [ ] Accept configuration split in multiple files (would be especially useful for repositories containing multiple projects)
+- [ ] Accept scripted configuration
+- [ ] Provide a way to import/extend configuration templates
+
+## Acknowledgements
+
+This project started as a fork of https://github.com/Stovoy/buildy

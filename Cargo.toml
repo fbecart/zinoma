@@ -1,17 +1,17 @@
 [package]
 name = "zinoma"
-version = "0.0.7"
+version = "0.1.0"
 authors = ["Florent Bécart <florent.becart@gmail.com>"]
 edition = "2018"
 
-categories = ["command-line-utilities", "concurrency", "development-tools", "development-tools::build-utils", "filesystem"]
-documentation = "https://github.com/fbecart/zinoma/blob/master/README.md"
-description = "Make your build flow incremental"
-homepage = "https://github.com/fbecart/zinoma"
-keywords = ["parallel", "incremental", "build", "tool", "watch"]
+description = "Žinoma - Make your build flow incremental"
 license = "MIT"
-readme = "README.md"
 repository = "https://github.com/fbecart/zinoma"
+homepage = "https://github.com/fbecart/zinoma"
+documentation = "https://github.com/fbecart/zinoma/blob/master/README.md"
+readme = "README.md"
+categories = ["command-line-utilities", "development-tools::build-utils"]
+keywords = ["parallel", "incremental", "build", "tool", "watch"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
