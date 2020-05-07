@@ -7,11 +7,30 @@ on:
     schedule:
       - cron: '00 01 * * *'
 jobs:
-  check:
-    name: check
+  test:
+    name: test
     env:
       RUST_BACKTRACE: 1
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      matrix:
+        os: [ubuntu, macos, windows]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Run tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+  check-style:
+    name: check-style
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -21,10 +40,6 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt, clippy
-      - name: Run tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
       - name: Check formatting
         uses: actions-rs/cargo@v1
         with:
