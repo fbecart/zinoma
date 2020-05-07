@@ -8,11 +8,11 @@ Make your build flow incremental
 
 ## Why Žinoma?
 
-Non-trivial software project usually combine multiple technologies, each coming with their specific build tool.
-The development workflows on such projects (e.g. checking code validity, deploy a new version) involve multiple commands that need to be executed in a coordinated way.
+Non-trivial software projects usually combine multiple technologies, each coming with their specific build tool.
+The development workflows on such projects (e.g. checking code validity, deploying a new version) involve multiple commands that need to be executed in a coordinated way.
 
-Running these commands manually is error prone, as it is easy to forget a command or to run them in the wrong order.
-On the other hand, using a simple script running systematically all of them is unnecessarily slow.
+Running these commands manually is prone to errors, as it is easy to forget commands or to run them in the wrong order.
+On the other hand, using a simple script running all of them systematically is unnecessarily slow.
 
 ## Value proposition
 
@@ -40,7 +40,7 @@ To set up Žinoma auto-completion for Zsh, put the completion script in one of t
 zinoma --generate-zsh-completion > $HOME/.zfunc/_zinoma
 ```
 
-This script should be updated when a new version of Žinoma is installed.
+You should update this script when you install a new version of Žinoma.
 
 ## Documentation
 
@@ -95,7 +95,7 @@ The build of a target will be skipped if the `input_paths` and `output_paths` ha
 The execution of `zinoma` will normally end as soon as all the specified targets were built.
 
 However, Žinoma also offers a watch mode which can be enabled with the `--watch` option of the command line.
-When the watch mode is enabled, Žinoma also runs the services of the built targets, and prevents its process from exiting.
+When the watch mode is enabled, Žinoma also runs the services of the built targets, and does not exit.
 Žinoma will then keep an eye open on the `input_paths`, and will re-execute the relevant targets in case filesystem changes are detected.
 
 ## Example of configuration
