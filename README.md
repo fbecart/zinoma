@@ -6,7 +6,7 @@ Make your build flow incremental
 
 ---
 
-## Why Žinoma?
+## Why another build tool?
 
 Non-trivial software projects usually combine multiple technologies, each coming with their specific build tool.
 The development workflows on such projects (e.g. checking code validity, deploying a new version) involve multiple commands that need to be executed in a coordinated way.
@@ -14,9 +14,9 @@ The development workflows on such projects (e.g. checking code validity, deployi
 Running these commands manually is prone to errors, as it is easy to forget commands or to run them in the wrong order.
 On the other hand, using a simple script running all of them systematically is unnecessarily slow.
 
-## Value proposition
+## Introducing Žinoma
 
-Žinoma provides developers a simple command line to execute their most common build flows in the most efficient way.
+Žinoma provides a simple command line to execute your most common build flows in the most efficient way.
 
 In particular, Žinoma provides a mechanism to run the tasks incrementally. This means Žinoma will avoid running repetitive tasks again and again if it determines they can be skipped.
 
