@@ -31,7 +31,7 @@ pub struct Config {
 
 impl Config {
     pub fn load(project_dir: &Path) -> Result<Self> {
-        let config_file = project_dir.join("buildy.yml");
+        let config_file = project_dir.join("zinoma.yml");
         let contents = fs::read_to_string(&config_file)
             .with_context(|| format!("Something went wrong reading {}", config_file.display()))?;
         let config: Self = serde_yaml::from_str(&contents)

@@ -26,7 +26,7 @@ pub fn get_app_args(allowed_target_names: Option<Vec<&str>>) -> AppArgs {
 }
 
 pub fn write_zsh_completion(buf: &mut dyn Write) {
-    generate::<Zsh, _>(&mut get_app(None), "buildy", buf);
+    generate::<Zsh, _>(&mut get_app(None), "zinoma", buf);
 }
 
 fn get_app(allowed_target_names: Option<Vec<&str>>) -> App {
@@ -42,7 +42,7 @@ fn get_app(allowed_target_names: Option<Vec<&str>>) -> App {
         targets_arg
     };
 
-    App::new("Buildy")
+    App::new("Žinoma")
         .about("An ultra-fast parallel build system for local iteration")
         .arg(
             Arg::with_name("project_dir")
@@ -52,7 +52,7 @@ fn get_app(allowed_target_names: Option<Vec<&str>>) -> App {
                 .value_name("PROJECT_DIR")
                 .default_value(".")
                 .hide_default_value(true)
-                .about("Directory of the project to build (in which 'buildy.yml' is located)"),
+                .about("Directory of the project to build (in which 'zinoma.yml' is located)"),
         )
         .arg(
             Arg::with_name("verbosity")

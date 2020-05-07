@@ -1,18 +1,17 @@
 [package]
-name = "buildy"
+name = "zinoma"
 version = "0.0.7"
-authors = ["Steve Mostovoy <stevemostovoysm@gmail.com>"]
+authors = ["Florent Bécart <florent.becart@gmail.com>"]
 edition = "2018"
 
 categories = ["command-line-utilities", "concurrency", "development-tools", "development-tools::build-utils", "filesystem"]
-documentation = "https://github.com/stovoy/buildy/blob/master/README.md"
-description = "An ultra-fast parallel build system for local iteration"
-homepage = "https://github.com/stovoy/buildy"
-keywords = ["build", "parallel", "incremental", "watch", "tool"]
+documentation = "https://github.com/fbecart/zinoma/blob/master/README.md"
+description = "Make your build flow incremental"
+homepage = "https://github.com/fbecart/zinoma"
+keywords = ["parallel", "incremental", "build", "tool", "watch"]
 license = "MIT"
-maintenance = { status = "actively-developed" }
 readme = "README.md"
-repository = "https://github.com/stovoy/buildy"
+repository = "https://github.com/fbecart/zinoma"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

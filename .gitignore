@@ -1,7 +1,5 @@
-# Buildy
-.buildy/
+# Cargo
+/target/
 
-/target
-**/*.rs.bk
-.idea/
-*.iml
+# Žinoma
+.zinoma/

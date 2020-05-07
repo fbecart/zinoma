@@ -32,7 +32,7 @@ fn main() -> Result<()> {
 
     let targets = config.into_targets(&app_args.project_dir, &app_args.requested_targets)?;
 
-    let checksum_dir = app_args.project_dir.join(".buildy");
+    let checksum_dir = app_args.project_dir.join(".zinoma");
     let incremental_runner = IncrementalRunner::new(&checksum_dir);
 
     if app_args.clean_before_run {
