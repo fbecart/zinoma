@@ -12,7 +12,7 @@ Non-trivial software project usually combine multiple technologies, each coming 
 The development workflows on such projects (e.g. checking code validity, deploy a new version) involve multiple commands that need to be executed in a coordinated way.
 
 Running these commands manually is error prone, as it is easy to forget a command or to run them in the wrong order.
-On the other hand, using a simple script running systematically all of them is slow.
+On the other hand, using a simple script running systematically all of them is unnecessarily slow.
 
 ## Value proposition
 
@@ -65,7 +65,8 @@ targets:                                             # Lists the targets (aka ta
 ### Command line
 
 ```
-zinoma [FLAGS] [OPTIONS] [--] [TARGETS]...
+USAGE:
+    zinoma [FLAGS] [OPTIONS] [--] [TARGETS]...
 
 ARGS:
     <TARGETS>...    Targets to build
@@ -87,7 +88,7 @@ OPTIONS:
 
 The build of a target will be skipped if the `input_paths` and `output_paths` have been left untouched since its last successful execution.
 
-Žinoma keeps track of the build state in a directory located at the root of the project (where `zinoma.yml` is located) and named `.zinoma`. This directory should be ignored in version control.
+Žinoma keeps track of the build state in a directory named `.zinoma`, located at the root of the project (where `zinoma.yml` is located). This directory should be ignored in version control.
 
 #### Watch mode
 
