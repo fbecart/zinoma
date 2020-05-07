@@ -6,31 +6,31 @@ on:
       - master
     schedule:
       - cron: '00 01 * * *'
-  jobs:
-    check:
-      name: check
-      env:
-        RUST_BACKTRACE: 1
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout repository
-          uses: actions/checkout@v2
-        - name: Install Rust
-          uses: actions-rs/toolchain@v1
-          with:
-            toolchain: stable
-            override: true
-            components: rustfmt, clippy
-        - name: Run tests
-          uses: actions-rs/cargo@v1
-          with:
-            command: test
-        - name: Check formatting
-          uses: actions-rs/cargo@v1
-          with:
-            command: fmt
-            args: --all -- --check
-        - name: Run linter
-          uses: actions-rs/clippy-check@v1
-          with:
-            token: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  check:
+    name: check
+    env:
+      RUST_BACKTRACE: 1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+      - name: Run tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+      - name: Check formatting
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+      - name: Run linter
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
