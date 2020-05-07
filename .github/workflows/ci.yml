@@ -11,7 +11,7 @@ jobs:
     name: check
     env:
       RUST_BACKTRACE: 1
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
