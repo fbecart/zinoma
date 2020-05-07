@@ -51,15 +51,29 @@ This documentation assumes prior knowledge of the Yaml format. If you're not fam
 Configure your project with a Yaml file called `zinoma.yml` at the root of your project.
 
 ```yaml
-targets:                                             # Lists the targets (aka tasks) of your project workflow
-  npm-install:                                       # Declares target "npm-install"
-    input_paths: [ package.json, package-lock.json ] # Lists the locations of the sources for this target (optional)
-    output_paths: [ node_modules ]                   # Lists locations where this target will produce its artifacts (optional)
-    build: [ npm install ]                           # Lists commands to run sequentially in order to build this target (optional)
+# List the targets (aka tasks) of your project workflow
+targets:
+  # Declare target "npm-install"
+  npm-install:
+    # List the locations of the sources for this target (optional)
+    input_paths: [ package.json, package-lock.json ]
 
-  start-server:                                      # Declares target "start-server"
-    dependencies: [ npm-install ]                    # Lists other target this target depends on (optional) This means "start-server" will only be executed upon a successful build of "npm-install".
-    service: npm start                               # States the command which starts this service (optional) A service is a long-lasting command, such as a server. It will only be executed in watch mode, upon a successful build (or rebuild) of the same target.
+    # List locations where this target will produce its artifacts (optional)
+    output_paths: [ node_modules ]
+
+    # List commands to run sequentially in order to build this target (optional)
+    build: [ npm install ]
+
+  # Declare target "start-server"
+  start-server:
+    # List other target this target depends on (optional)
+    # This means "start-server" will only be executed upon a successful build of "npm-install".
+    dependencies: [ npm-install ]
+
+    # State the command which starts this service (optional)
+    # A service is a long-lasting command, such as a server.
+    # It will only be executed in watch mode, upon a successful build (or rebuild) of the same target.
+    service: npm start
 ```
 
 ### Command line
