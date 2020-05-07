@@ -12,8 +12,12 @@ targets:
     input_paths: [ Cargo.toml, src, tests ]
     build: [ cargo +nightly udeps ]
 
+  fmt:
+    input_paths: [ src, tests ]
+    build: [ cargo fmt --all -- --check ]
+
   check:
-    dependencies: [ test, clippy, no-unused-dependencies ]
+    dependencies: [ test, clippy, no-unused-dependencies, fmt ]
 
   install:
     dependencies: [ check ]
