@@ -1,9 +1,9 @@
 use crate::domain::Target;
 use anyhow::{Context, Error, Result};
-use fasthash::XXHasher;
+use seahash::SeaHasher;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::hash::{Hash, Hasher};
+use std::hash::Hasher;
 use std::io::ErrorKind;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -163,11 +163,11 @@ fn compute_checksum(identifier: &str, paths: &[PathBuf]) -> Result<Option<u64>> 
 
     let computation_start = Instant::now();
     log::trace!("{} - Computing checksum", identifier);
-    let mut hasher: XXHasher = Default::default();
+    let mut hasher = SeaHasher::default();
 
     for path in paths.iter() {
         let checksum = calculate_path_checksum(path)?;
-        checksum.unwrap_or(0).hash(&mut hasher);
+        Hasher::write_u64(&mut hasher, checksum.unwrap_or(0));
     }
 
     let computation_duration = computation_start.elapsed();
@@ -185,7 +185,7 @@ fn calculate_path_checksum(path: &Path) -> Result<Option<u64>> {
         return Ok(None);
     }
 
-    let mut hasher: XXHasher = Default::default();
+    let mut hasher = SeaHasher::default();
 
     for entry in WalkDir::new(path) {
         let entry = entry.with_context(|| "Failed to traverse directory")?;
@@ -193,7 +193,7 @@ fn calculate_path_checksum(path: &Path) -> Result<Option<u64>> {
         if entry.path().is_file() {
             let contents = fs::read(entry.path())
                 .with_context(|| "Failed to read file to calculate checksum")?;
-            contents.hash(&mut hasher);
+            Hasher::write(&mut hasher, &contents);
         }
     }
 
