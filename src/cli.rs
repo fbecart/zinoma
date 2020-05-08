@@ -1,4 +1,4 @@
-use clap::{App, Arg};
+use clap::{App, AppSettings, Arg};
 use clap_generate::{generate, generators::Zsh};
 use std::io::Write;
 
@@ -54,6 +54,7 @@ pub fn get_app() -> App<'static> {
                 .multiple(true)
                 .about("Targets to build"),
         )
+        .setting(AppSettings::ColoredHelp)
 }
 
 #[cfg(test)]
