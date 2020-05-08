@@ -43,7 +43,7 @@ impl<'a> TargetWatcher<'a> {
             Watcher::new_immediate(move |e| tx.send(e).with_context(|| "Sender error").unwrap())
                 .with_context(|| "Error creating watcher")?;
 
-        for path in target.input_paths.iter() {
+        for path in &target.input_paths {
             match watcher.watch(path, RecursiveMode::Recursive) {
                 Ok(_) => {}
                 Err(notify::Error {

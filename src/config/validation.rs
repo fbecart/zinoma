@@ -46,7 +46,7 @@ fn validate_target(
     }
 
     let targets_chain = [parent_targets, &[target_name]].concat();
-    for dependency_name in target.dependencies.iter() {
+    for dependency_name in &target.dependencies {
         let dependency = targets.get(dependency_name).ok_or_else(|| {
             anyhow::anyhow!("{} - Dependency {} not found", target_name, dependency_name)
         })?;

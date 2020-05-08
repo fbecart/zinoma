@@ -34,7 +34,7 @@ pub fn into_targets(
         } = parsed_targets
             .remove(target_name)
             .with_context(|| format!("Target {} does not exist", target_name))?;
-        for dependency in dependencies.iter() {
+        for dependency in &dependencies {
             add_target(
                 &mut targets,
                 &mut mapping,

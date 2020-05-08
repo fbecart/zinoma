@@ -81,7 +81,7 @@ impl<'a> Engine<'a> {
         scope: &Scope<'a>,
         target_build_states: &mut TargetBuildStates,
     ) {
-        for &target_id in target_build_states.get_ready_to_build_targets().iter() {
+        for &target_id in &target_build_states.get_ready_to_build_targets() {
             let target = self.targets.get(target_id).unwrap();
             target_build_states.set_build_started(target.id);
             self.target_builder

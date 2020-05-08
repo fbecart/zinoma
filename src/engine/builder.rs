@@ -34,7 +34,7 @@ pub fn build_target(
         .run(&target, || {
             let target_start = Instant::now();
             log::info!("{} - Building", &target.name);
-            for command in target.build_list.iter() {
+            for command in &target.build_list {
                 let command_start = Instant::now();
                 log::debug!("{} - Command \"{}\" - Executing", target.name, command);
                 let command_output = cmd!("/bin/sh", "-c", command)
