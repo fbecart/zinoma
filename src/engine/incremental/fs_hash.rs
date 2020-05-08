@@ -1,67 +1,42 @@
 use anyhow::{Context, Result};
 use rayon::prelude::*;
 use seahash::SeaHasher;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::hash::Hasher;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
-use std::time::Instant;
 use walkdir::WalkDir;
 
-pub fn compute_paths_hash(identifier: &str, paths: &[PathBuf]) -> Result<Option<u64>> {
-    if paths.is_empty() {
-        return Ok(None);
-    }
+pub fn compute_file_hashes_in_paths(paths: &[PathBuf]) -> Result<HashMap<PathBuf, u64>> {
+    let files = list_files(paths).with_context(|| "Failed to list checksum files".to_string())?;
 
-    let computation_start = Instant::now();
-    log::trace!("{} - Computing checksum", identifier);
-
-    let path_hashes = paths
-        .par_iter()
-        .map(|path| compute_path_hash(path))
-        .collect::<Result<Vec<_>>>()?;
-
-    let mut hasher = SeaHasher::default();
-    for hash in path_hashes {
-        Hasher::write_u64(&mut hasher, hash.unwrap_or(0));
-    }
-
-    let computation_duration = computation_start.elapsed();
-    log::trace!(
-        "{} - Checksum computed (took {}ms)",
-        identifier,
-        computation_duration.as_millis()
-    );
-
-    Ok(Some(hasher.finish()))
+    files
+        .into_par_iter()
+        .map(|file| {
+            let file_hash = compute_file_hash(&file)
+                .with_context(|| format!("Failed to compute hash of {}", file.display()))?;
+            Ok((file, file_hash))
+        })
+        .collect::<Result<HashMap<_, _>>>()
 }
 
-fn compute_path_hash(path: &Path) -> Result<Option<u64>> {
-    if !path.exists() {
-        return Ok(None);
+fn list_files(paths: &[PathBuf]) -> Result<HashSet<PathBuf>> {
+    let mut files = HashSet::new();
+
+    for path in paths {
+        for entry in WalkDir::new(path) {
+            let path = entry
+                .with_context(|| format!("Failed to traverse directory {}", path.display()))?
+                .path()
+                .to_path_buf();
+            if path.is_file() {
+                files.insert(path);
+            }
+        }
     }
 
-    let files = WalkDir::new(path)
-        .into_iter()
-        .map(|result| result.with_context(|| "Failed to traverse directory"))
-        .collect::<Result<Vec<_>>>()?;
-
-    let file_hashes = files
-        .into_par_iter()
-        .filter(|entry| entry.path().is_file())
-        .map(|entry| {
-            compute_file_hash(entry.path()).with_context(|| {
-                format!("Failed to compute hash of file {}", entry.path().display())
-            })
-        })
-        .collect::<Result<Vec<_>>>()?;
-
-    let mut hasher = SeaHasher::default();
-    for hash in file_hashes {
-        Hasher::write_u64(&mut hasher, hash);
-    }
-
-    Ok(Some(hasher.finish()))
+    Ok(files)
 }
 
 fn compute_file_hash(file_path: &Path) -> Result<u64> {
@@ -72,7 +47,9 @@ fn compute_file_hash(file_path: &Path) -> Result<u64> {
 
     let mut buffer = [0; 1024];
     loop {
-        let count = reader.read(&mut buffer)?;
+        let count = reader
+            .read(&mut buffer)
+            .with_context(|| format!("Failed to read file {}", file_path.display()))?;
         if count == 0 {
             break;
         }

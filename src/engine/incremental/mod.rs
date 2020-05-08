@@ -2,8 +2,9 @@ mod fs_hash;
 
 use crate::domain::Target;
 use anyhow::{Context, Error, Result};
-use fs_hash::compute_paths_hash;
+use fs_hash::compute_file_hashes_in_paths;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::io::ErrorKind;
 use std::io::Write;
@@ -39,11 +40,7 @@ impl<'a> IncrementalRunner<'a> {
         let result = function();
 
         if result.is_ok() {
-            if let Some(target_checksums) = target_checksums {
-                let target_checksums = TargetChecksums {
-                    outputs: compute_paths_hash(&target.name, &target.output_paths)?,
-                    ..target_checksums
-                };
+            if let Some(target_checksums) = compute_target_checksums(target)? {
                 self.write_target_checksums(&target, &target_checksums)?;
             }
         }
@@ -149,14 +146,14 @@ fn compute_target_checksums(target: &Target) -> Result<Option<TargetChecksums>> 
         Ok(None)
     } else {
         Ok(Some(TargetChecksums {
-            inputs: compute_paths_hash(&target.name, &target.input_paths)?,
-            outputs: compute_paths_hash(&target.name, &target.output_paths)?,
+            inputs: compute_file_hashes_in_paths(&target.input_paths)?,
+            outputs: compute_file_hashes_in_paths(&target.output_paths)?,
         }))
     }
 }
 
 #[derive(Serialize, Deserialize, PartialEq)]
 struct TargetChecksums {
-    inputs: Option<u64>,
-    outputs: Option<u64>,
+    inputs: HashMap<PathBuf, u64>,
+    outputs: HashMap<PathBuf, u64>,
 }
