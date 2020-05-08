@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use rayon::prelude::*;
 use seahash::SeaHasher;
 use std::fs;
 use std::hash::Hasher;
@@ -36,16 +37,24 @@ fn compute_path_hash(path: &Path) -> Result<Option<u64>> {
         return Ok(None);
     }
 
-    let mut hasher = SeaHasher::default();
+    let files = WalkDir::new(path)
+        .into_iter()
+        .map(|result| result.with_context(|| "Failed to traverse directory"))
+        .collect::<Result<Vec<_>>>()?;
 
-    for entry in WalkDir::new(path) {
-        let entry = entry.with_context(|| "Failed to traverse directory")?;
-        let path = entry.path();
-        if path.is_file() {
-            let file_hash = compute_file_hash(path)
-                .with_context(|| format!("Failed to compute hash of file {}", path.display()))?;
-            Hasher::write_u64(&mut hasher, file_hash);
-        }
+    let file_hashes = files
+        .into_par_iter()
+        .filter(|entry| entry.path().is_file())
+        .map(|entry| {
+            compute_file_hash(entry.path()).with_context(|| {
+                format!("Failed to compute hash of file {}", entry.path().display())
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    let mut hasher = SeaHasher::default();
+    for hash in file_hashes {
+        Hasher::write_u64(&mut hasher, hash);
     }
 
     Ok(Some(hasher.finish()))
