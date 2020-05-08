@@ -9,7 +9,7 @@ pub fn into_targets(
     project_dir: &Path,
     requested_targets: &Option<Vec<String>>,
 ) -> Result<Vec<domain::Target>> {
-    let all_target_names: Vec<String> = parsed_targets.keys().cloned().collect();
+    let all_target_names: Vec<_> = parsed_targets.keys().cloned().collect();
     let requested_targets = requested_targets.as_ref().unwrap_or(&all_target_names);
     let mut targets = Vec::with_capacity(requested_targets.len());
     let mut mapping = HashMap::with_capacity(requested_targets.len());

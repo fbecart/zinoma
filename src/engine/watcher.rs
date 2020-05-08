@@ -2,7 +2,7 @@ use crate::domain::{Target, TargetId};
 use anyhow::{Context, Error, Result};
 use crossbeam::channel::{unbounded, Receiver, TryRecvError};
 use notify::{ErrorKind, Event, RecommendedWatcher, RecursiveMode, Watcher};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 pub struct TargetsWatcher<'a> {
     target_watchers: Vec<TargetWatcher<'a>>,
@@ -76,7 +76,7 @@ impl<'a> TargetWatcher<'a> {
     pub fn is_invalidated(&self) -> Result<bool> {
         match self.rx.try_recv() {
             Ok(event) => {
-                let paths: Vec<PathBuf> = event
+                let paths: Vec<_> = event
                     .unwrap()
                     .paths
                     .into_iter()
