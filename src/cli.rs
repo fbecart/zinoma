@@ -32,6 +32,7 @@ pub fn get_app() -> App<'static> {
             Arg::with_name(arg::VERBOSITY)
                 .short('v')
                 .multiple(true)
+                .takes_value(false)
                 .about("Increases message verbosity"),
         )
         .arg(Arg::with_name(arg::WATCH).short('w').long("watch").about(
@@ -53,4 +54,31 @@ pub fn get_app() -> App<'static> {
                 .multiple(true)
                 .about("Targets to build"),
         )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{arg, get_app};
+
+    #[test]
+    fn test_get_app_verbosity_is_optional() {
+        let arg_matches = get_app().get_matches_from(vec!["zinoma", "check"]);
+        assert_eq!(arg_matches.occurrences_of(arg::VERBOSITY), 0);
+    }
+
+    #[test]
+    fn test_get_app_verbosity_does_not_take_value() {
+        let arg_matches = get_app().get_matches_from(vec!["zinoma", "-v", "check"]);
+        assert_eq!(arg_matches.occurrences_of(arg::VERBOSITY), 1);
+        assert_eq!(
+            arg_matches.values_of_lossy(arg::TARGETS),
+            Some(vec!["check".to_string()])
+        );
+    }
+
+    #[test]
+    fn test_get_app_verbosity_accepts_multiple_occurrences() {
+        let arg_matches = get_app().get_matches_from(vec!["zinoma", "-vvv"]);
+        assert_eq!(arg_matches.occurrences_of(arg::VERBOSITY), 3);
+    }
 }
