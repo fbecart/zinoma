@@ -21,6 +21,30 @@ pub fn compute_file_hashes_in_paths(paths: &[PathBuf]) -> Result<HashMap<PathBuf
         .collect::<Result<HashMap<_, _>>>()
 }
 
+pub fn file_hashes_eq(
+    lookup_paths: &[PathBuf],
+    saved_file_hashes: &HashMap<PathBuf, u64>,
+) -> Result<bool> {
+    let files =
+        list_files(lookup_paths).with_context(|| "Failed to list checksum files".to_string())?;
+
+    if files.len() != saved_file_hashes.len() {
+        return Ok(false);
+    }
+
+    Ok(files.par_iter().all(|file_path| {
+        match saved_file_hashes.get(file_path) {
+            Some(&saved_hash) => compute_file_hash(file_path)
+                .map(|hash| hash == saved_hash)
+                .unwrap_or_else(|e| {
+                    log::error!("{:?}", e);
+                    false // Propagating the error would be better, but I don't know how this can be achieved
+                }),
+            None => false,
+        }
+    }))
+}
+
 fn list_files(paths: &[PathBuf]) -> Result<HashSet<PathBuf>> {
     let mut files = HashSet::new();
 

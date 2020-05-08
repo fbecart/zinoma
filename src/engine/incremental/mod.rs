@@ -1,6 +1,7 @@
 mod fs_hash;
 
 use crate::domain::Target;
+use crate::engine::incremental::fs_hash::file_hashes_eq;
 use anyhow::{Context, Error, Result};
 use fs_hash::compute_file_hashes_in_paths;
 use serde::{Deserialize, Serialize};
@@ -29,11 +30,9 @@ impl<'a> IncrementalRunner<'a> {
     where
         F: Fn() -> Result<T>,
     {
-        let saved_checksums = self.read_target_checksums(target)?;
-        let target_checksums = compute_target_checksums(target)?;
-        if saved_checksums.is_some() && saved_checksums == target_checksums {
+        if self.files_have_not_changed_since_last_successful_execution(target)? {
             return Ok(IncrementalRunResult::Skipped);
-        };
+        }
 
         self.remove_target_checksums(&target)?;
 
@@ -51,6 +50,25 @@ impl<'a> IncrementalRunner<'a> {
     fn get_checksum_file(&self, target: &Target) -> PathBuf {
         self.checksum_dir
             .join(format!("{}.checksum.json", target.name))
+    }
+
+    fn files_have_not_changed_since_last_successful_execution(
+        &self,
+        target: &Target,
+    ) -> Result<bool> {
+        let saved_checksums = self
+            .read_target_checksums(target)
+            .with_context(|| format!("Failed to read saved checksums for {}", target.name))?;
+
+        match saved_checksums {
+            Some(saved_checksums) => saved_checksums.eq_fs_checksum(target).with_context(|| {
+                format!(
+                    "Failed to compare saved checksums with filesystem checksums for {}",
+                    target.name
+                )
+            }),
+            _ => Ok(false),
+        }
     }
 
     fn read_target_checksums(&self, target: &Target) -> Result<Option<TargetChecksums>> {
@@ -156,4 +174,11 @@ fn compute_target_checksums(target: &Target) -> Result<Option<TargetChecksums>> 
 struct TargetChecksums {
     inputs: HashMap<PathBuf, u64>,
     outputs: HashMap<PathBuf, u64>,
+}
+
+impl TargetChecksums {
+    fn eq_fs_checksum(&self, target: &Target) -> Result<bool> {
+        Ok(file_hashes_eq(&target.input_paths, &self.inputs)?
+            && file_hashes_eq(&target.output_paths, &self.outputs)?)
+    }
 }
