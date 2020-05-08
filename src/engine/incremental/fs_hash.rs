@@ -15,11 +15,15 @@ pub fn compute_paths_hash(identifier: &str, paths: &[PathBuf]) -> Result<Option<
 
     let computation_start = Instant::now();
     log::trace!("{} - Computing checksum", identifier);
-    let mut hasher = SeaHasher::default();
 
-    for path in paths.iter() {
-        let path_hash = compute_path_hash(path)?;
-        Hasher::write_u64(&mut hasher, path_hash.unwrap_or(0));
+    let path_hashes = paths
+        .par_iter()
+        .map(|path| compute_path_hash(path))
+        .collect::<Result<Vec<_>>>()?;
+
+    let mut hasher = SeaHasher::default();
+    for hash in path_hashes {
+        Hasher::write_u64(&mut hasher, hash.unwrap_or(0));
     }
 
     let computation_duration = computation_start.elapsed();
