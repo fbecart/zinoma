@@ -43,7 +43,7 @@ fn get_app(allowed_target_names: Option<Vec<&str>>) -> App {
     };
 
     App::new("Žinoma")
-        .about("An ultra-fast parallel build system for local iteration")
+        .about("Make your build flow incremental")
         .arg(
             Arg::with_name("project_dir")
                 .short('p')
