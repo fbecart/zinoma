@@ -1,14 +1,13 @@
+mod fs_hash;
+
 use crate::domain::Target;
 use anyhow::{Context, Error, Result};
-use seahash::SeaHasher;
+use fs_hash::compute_paths_hash;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::hash::Hasher;
 use std::io::ErrorKind;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::time::Instant;
-use walkdir::WalkDir;
 
 #[derive(PartialEq)]
 pub enum IncrementalRunResult<T> {
@@ -42,7 +41,7 @@ impl<'a> IncrementalRunner<'a> {
         if result.is_ok() {
             if let Some(target_checksums) = target_checksums {
                 let target_checksums = TargetChecksums {
-                    outputs: compute_checksum(&target.name, &target.output_paths)?,
+                    outputs: compute_paths_hash(&target.name, &target.output_paths)?,
                     ..target_checksums
                 };
                 self.write_target_checksums(&target, &target_checksums)?;
@@ -150,54 +149,10 @@ fn compute_target_checksums(target: &Target) -> Result<Option<TargetChecksums>> 
         Ok(None)
     } else {
         Ok(Some(TargetChecksums {
-            inputs: compute_checksum(&target.name, &target.input_paths)?,
-            outputs: compute_checksum(&target.name, &target.output_paths)?,
+            inputs: compute_paths_hash(&target.name, &target.input_paths)?,
+            outputs: compute_paths_hash(&target.name, &target.output_paths)?,
         }))
     }
-}
-
-fn compute_checksum(identifier: &str, paths: &[PathBuf]) -> Result<Option<u64>> {
-    if paths.is_empty() {
-        return Ok(None);
-    }
-
-    let computation_start = Instant::now();
-    log::trace!("{} - Computing checksum", identifier);
-    let mut hasher = SeaHasher::default();
-
-    for path in paths.iter() {
-        let checksum = calculate_path_checksum(path)?;
-        Hasher::write_u64(&mut hasher, checksum.unwrap_or(0));
-    }
-
-    let computation_duration = computation_start.elapsed();
-    log::trace!(
-        "{} - Checksum computed (took {}ms)",
-        identifier,
-        computation_duration.as_millis()
-    );
-
-    Ok(Some(hasher.finish()))
-}
-
-fn calculate_path_checksum(path: &Path) -> Result<Option<u64>> {
-    if !path.exists() {
-        return Ok(None);
-    }
-
-    let mut hasher = SeaHasher::default();
-
-    for entry in WalkDir::new(path) {
-        let entry = entry.with_context(|| "Failed to traverse directory")?;
-
-        if entry.path().is_file() {
-            let contents = fs::read(entry.path())
-                .with_context(|| "Failed to read file to calculate checksum")?;
-            Hasher::write(&mut hasher, &contents);
-        }
-    }
-
-    Ok(Some(hasher.finish()))
 }
 
 #[derive(Serialize, Deserialize, PartialEq)]
