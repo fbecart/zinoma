@@ -7,8 +7,8 @@ use fs_hash::compute_file_hashes_in_paths;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
+use std::fs::File;
 use std::io::ErrorKind;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 
 #[derive(PartialEq)]
@@ -47,9 +47,8 @@ impl<'a> IncrementalRunner<'a> {
         Ok(IncrementalRunResult::Run(result))
     }
 
-    fn get_checksum_file(&self, target: &Target) -> PathBuf {
-        self.checksum_dir
-            .join(format!("{}.checksum.json", target.name))
+    fn get_checksum_file_path(&self, target: &Target) -> PathBuf {
+        self.checksum_dir.join(format!("{}.checksum", target.name))
     }
 
     fn files_have_not_changed_since_last_successful_execution(
@@ -75,9 +74,11 @@ impl<'a> IncrementalRunner<'a> {
         // Might want to check for some errors like permission denied.
         fs::create_dir(&self.checksum_dir).ok();
 
-        let checksum_file = self.get_checksum_file(target);
-        match fs::read_to_string(&checksum_file) {
-            Ok(file_content) => match serde_json::from_str(&file_content) {
+        let file_path = self.get_checksum_file_path(target);
+        if file_path.exists() {
+            let file = File::open(&file_path)
+                .with_context(|| format!("Failed to open checksum file {}", file_path.display()))?;
+            match bincode::deserialize_from(file) {
                 Ok(checksums) => Ok(Some(checksums)),
                 Err(e) => {
                     log::trace!(
@@ -88,48 +89,28 @@ impl<'a> IncrementalRunner<'a> {
                     self.remove_target_checksums(&target)?;
                     Ok(None)
                 }
-            },
-            Err(e) if e.kind() == ErrorKind::NotFound => Ok(None),
-            Err(e) => Err(Error::new(e).context(format!(
-                "Failed reading checksum file {} for target {}",
-                checksum_file.display(),
-                &target.name
-            ))),
+            }
+        } else {
+            Ok(None)
         }
     }
 
     fn remove_target_checksums(&self, target: &Target) -> Result<()> {
-        let checksum_file = &self.get_checksum_file(target);
+        let checksum_file = &self.get_checksum_file_path(target);
         if checksum_file.exists() {
             fs::remove_file(&checksum_file).with_context(|| {
-                format!(
-                    "Failed to delete checksum file {} for target {}",
-                    checksum_file.display(),
-                    target.name
-                )
+                format!("Failed to delete checksum file {}", checksum_file.display())
             })?;
         }
         Ok(())
     }
 
     fn write_target_checksums(&self, target: &Target, checksums: &TargetChecksums) -> Result<()> {
-        let checksum_file = self.get_checksum_file(target);
-        let mut file = fs::File::create(&checksum_file).with_context(|| {
-            format!(
-                "Failed to create checksum file {} for target {}",
-                checksum_file.display(),
-                target.name
-            )
-        })?;
-        let file_content = serde_json::to_string(checksums)
-            .with_context(|| format!("Failed to serialize checksums for {}", target.name))?;
-        file.write_all(file_content.as_bytes()).with_context(|| {
-            format!(
-                "Failed to write checksum file {} for target {}",
-                checksum_file.display(),
-                target.name
-            )
-        })
+        let file_path = self.get_checksum_file_path(target);
+        let file = File::create(&file_path)
+            .with_context(|| format!("Failed to create checksum file {}", file_path.display()))?;
+        bincode::serialize_into(file, checksums)
+            .with_context(|| format!("Failed to serialize checksums for {}", target.name))
     }
 
     pub fn clean_checksums(&self, targets: &[Target]) -> Result<()> {
@@ -144,7 +125,7 @@ impl<'a> IncrementalRunner<'a> {
     }
 
     pub fn remove_checksum_dir(&self) -> Result<()> {
-        match std::fs::remove_dir_all(self.checksum_dir) {
+        match fs::remove_dir_all(self.checksum_dir) {
             Ok(_) => {}
             Err(e) if e.kind() == ErrorKind::NotFound => {}
             Err(e) => {
