@@ -6,45 +6,52 @@ mod engine;
 
 use anyhow::{Context, Result};
 use clean::clean_target_outputs;
-use cli::{get_app_args, write_zsh_completion};
 use config::Config;
 use engine::incremental::IncrementalRunner;
 use engine::Engine;
+use std::path::Path;
 
 fn main() -> Result<()> {
-    let app_args = get_app_args(None);
+    let arg_matches = cli::get_app().get_matches();
 
     stderrlog::new()
         .module(module_path!())
-        .verbosity(app_args.verbosity + 2)
+        .verbosity(arg_matches.occurrences_of(cli::arg::VERBOSITY) as usize + 2)
         .init()
         .unwrap();
 
-    if app_args.generate_zsh_completion {
-        write_zsh_completion(&mut std::io::stdout());
+    if arg_matches.is_present(cli::arg::GENERATE_ZSH_COMPLETION) {
+        cli::write_zsh_completion(&mut std::io::stdout());
         return Ok(());
     }
 
-    let config = Config::load(&app_args.project_dir)?;
+    let project_dir = Path::new(arg_matches.value_of(cli::arg::PROJECT_DIR).unwrap());
+    let config = Config::load(project_dir)?;
     let all_target_names = config.get_target_names();
 
-    let app_args = get_app_args(Some(all_target_names));
+    let arg_matches = cli::get_app()
+        .mut_arg(cli::arg::TARGETS, |arg| {
+            arg.possible_values(&all_target_names)
+                .required_unless(cli::arg::CLEAN)
+        })
+        .get_matches();
 
-    let targets = config.into_targets(&app_args.project_dir, &app_args.requested_targets)?;
+    let requested_targets = arg_matches.values_of_lossy(cli::arg::TARGETS);
+    let targets = config.into_targets(project_dir, &requested_targets)?;
 
-    let checksum_dir = app_args.project_dir.join(".zinoma");
+    let checksum_dir = project_dir.join(".zinoma");
     let incremental_runner = IncrementalRunner::new(&checksum_dir);
 
-    if app_args.clean_before_run {
+    if arg_matches.is_present(cli::arg::CLEAN) {
         incremental_runner.clean_checksums(&targets)?;
         clean_target_outputs(&targets)?;
     }
 
-    if app_args.requested_targets.is_some() {
+    if requested_targets.is_some() {
         let engine = Engine::new(targets, incremental_runner);
 
         crossbeam::scope(|scope| {
-            if app_args.watch_mode_enabled {
+            if arg_matches.is_present(cli::arg::WATCH) {
                 engine.watch(scope).with_context(|| "Watch error")
             } else {
                 engine.build(scope).with_context(|| "Build error")
