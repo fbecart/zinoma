@@ -1,7 +1,7 @@
 use crate::domain::{Target, TargetId};
 use anyhow::{Context, Error, Result};
 use crossbeam::channel::{unbounded, Receiver, TryRecvError};
-use notify::{ErrorKind, Event, FsEventWatcher, RecursiveMode, Watcher};
+use notify::{ErrorKind, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::{Path, PathBuf};
 
 pub struct TargetsWatcher<'a> {
@@ -33,13 +33,13 @@ impl<'a> TargetsWatcher<'a> {
 pub struct TargetWatcher<'a> {
     target: &'a Target,
     rx: Receiver<notify::Result<Event>>,
-    _watcher: FsEventWatcher,
+    _watcher: RecommendedWatcher,
 }
 
 impl<'a> TargetWatcher<'a> {
     pub fn new(target: &'a Target) -> Result<Self> {
         let (tx, rx) = unbounded();
-        let mut watcher: FsEventWatcher =
+        let mut watcher: RecommendedWatcher =
             Watcher::new_immediate(move |e| tx.send(e).with_context(|| "Sender error").unwrap())
                 .with_context(|| "Error creating watcher")?;
 
