@@ -2,7 +2,9 @@
  
 Make your build flow incremental
 
+[![Crates.io](https://img.shields.io/crates/v/zinoma.svg)](https://crates.io/crates/zinoma)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build status](https://github.com/fbecart/zinoma/workflows/ci/badge.svg)](https://github.com/fbecart/zinoma/actions)
 
 ---
 
