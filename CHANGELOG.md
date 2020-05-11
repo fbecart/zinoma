@@ -1,5 +1,9 @@
 # TBD
 
+# 0.3.0 (2020-05-11)
+
+Žinoma 0.3.0 is a minor version release which introduces binaries for Linux.
+
 # 0.2.0 (2020-05-11)
 
-zinoma 0.2.0 is the first minor minor version release which introduces binaries for macOS X. Its primary intent is to make the installation via Homebrew possible.
+Žinoma 0.2.0 is the first minor version release. It introduces binaries for macOS X. Its primary intent is to make the installation via Homebrew possible.
