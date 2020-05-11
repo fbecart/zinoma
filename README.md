@@ -31,7 +31,7 @@ Finally, Žinoma offers a watch mode, which waits for filesystem updates and re-
 Via cargo (https://rustup.rs/):
 
 ```shell script
-cargo install --git https://github.com/fbecart/zinoma
+cargo install zinoma
 ```
 
 ### Setup auto-completion for Z shell (Zsh)
