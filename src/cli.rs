@@ -1,4 +1,4 @@
-use clap::{App, AppSettings, Arg};
+use clap::{crate_version, App, AppSettings, Arg};
 use clap_generate::{generate, generators::Zsh};
 use std::io::Write;
 
@@ -17,6 +17,7 @@ pub mod arg {
 
 pub fn get_app() -> App<'static> {
     App::new("Žinoma")
+        .version(crate_version!())
         .about("Make your build flow incremental")
         .arg(
             Arg::with_name(arg::PROJECT_DIR)
