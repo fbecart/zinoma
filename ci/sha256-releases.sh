@@ -10,7 +10,7 @@ version="$1"
 
 # Linux and Darwin builds.
 arch=x86_64
-for target in apple-darwin unknown-linux; do
+for target in apple-darwin unknown-linux-musl; do
   url="https://github.com/fbecart/zinoma/releases/download/$version/zinoma-$version-$arch-$target.tar.gz"
   sha=$(curl -sfSL "$url" | sha256sum)
   echo "$version-$arch-$target $sha"
