@@ -8,12 +8,13 @@ if [ $# != 1 ]; then
 fi
 version="$1"
 
-# Darwin build.
+# Linux and Darwin builds.
 arch=x86_64
-target=apple-darwin
-url="https://github.com/fbecart/zinoma/releases/download/$version/zinoma-$version-$arch-$target.tar.gz"
-sha=$(curl -sfSL "$url" | sha256sum)
-echo "$version-$arch-$target $sha"
+for target in apple-darwin unknown-linux; do
+  url="https://github.com/fbecart/zinoma/releases/download/$version/zinoma-$version-$arch-$target.tar.gz"
+  sha=$(curl -sfSL "$url" | sha256sum)
+  echo "$version-$arch-$target $sha"
+done
 
 # Source.
 for ext in zip tar.gz; do
