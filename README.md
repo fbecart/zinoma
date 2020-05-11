@@ -35,7 +35,7 @@ Prerequisites:
 - Homebrew: https://brew.sh/
 
 ```shell script
-brew install fbecart/zinoma/zinoma
+brew install fbecart/tap/zinoma
 ```
 
 ### Via Cargo (for Linux, Windows or macOS)
