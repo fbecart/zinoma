@@ -108,7 +108,7 @@ jobs:
         run: cargo build --verbose --release
 
       - name: Strip release binary
-        run: strip "target/release/rg"
+        run: strip "target/release/zinoma"
 
       - name: Build archive
         shell: bash
