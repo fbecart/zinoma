@@ -177,6 +177,17 @@ Some example of commands:
 - [ ] Accept scripted configuration
 - [ ] Provide a way to import/extend configuration templates
 
+## Žinoma for the curious
+
+Žinoma is a Lituanian word. It should be pronounced _\[zhee-no-ma]_, with a stress on the first syllabus.
+
+In Lithuanian, the word has two meanings:
+
+- _of course_, when used as an adverb;
+- _known_, when used as an adjective (a reference to the _Not Invented Here Syndrome_).
+
+It is also a recursive acronym for "Žinoma Is NOt MAke!".
+
 ## Acknowledgements
 
 This project started as a fork of https://github.com/Stovoy/buildy
