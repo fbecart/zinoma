@@ -8,3 +8,4 @@ Release Checklist
 * Commit the changes, create a new tag and push it along with the master branch.
 * Wait for CI to finish creating the release. If the release build fails, then delete the tag from GitHub, make fixes, re-tag, delete the release and push.
 * Run `cargo publish`.
+* Run `ci/sha256-releases.sh {VERSION} >> HomebrewFormula/zinoma.rb`. Then edit `HomebrewFormula/zinoma.rb` to update the version number and sha256 hashes. Remove extraneous stuff added by `ci/sha256-releases`. Commit changes.

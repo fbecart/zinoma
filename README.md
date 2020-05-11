@@ -28,7 +28,21 @@ Finally, Žinoma offers a watch mode, which waits for filesystem updates and re-
 
 ## Installation
 
-Via cargo (https://rustup.rs/):
+### Via Homebrew (for macOS only)
+
+Prerequisites:
+
+- Homebrew: https://brew.sh/
+
+```shell script
+brew install fbecart/zinoma/zinoma
+```
+
+### Via Cargo (for Linux, Windows or macOS)
+
+Prerequisites:
+
+- Rust toolchain: https://rustup.rs/
 
 ```shell script
 cargo install zinoma
