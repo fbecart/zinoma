@@ -178,3 +178,9 @@ Some example of commands:
 ## Acknowledgements
 
 This project started as a fork of https://github.com/Stovoy/buildy
+
+## License
+
+Žinoma is distributed under the terms of the MIT license.
+
+See [LICENSE](LICENSE) for details.
