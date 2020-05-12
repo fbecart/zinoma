@@ -1,12 +1,8 @@
 # TBD
 
-# 0.4.2 (2020-05-12)
+# 0.4.\[1-3] (2020-05-12)
 
-Žinoma 0.4.2 is a patch release created to test the improved release automation.
-
-# 0.4.1 (2020-05-12)
-
-Žinoma 0.4.1 is a patch release created to test the improved release automation.
+Žinoma 0.4.1 to 0.4.3 are patch releases created to test the improved release automation.
 
 # 0.4.0 (2020-05-12)
 
