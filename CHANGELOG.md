@@ -1,5 +1,9 @@
 # TBD
 
+# 0.4.1 (2020-05-12)
+
+Žinoma 0.4.1 is a patch release created to test the improved release automation.
+
 # 0.4.0 (2020-05-12)
 
 Žinoma 0.4.0 is a minor version release which includes the addition of autocompletion scripts for Bash, Fish and Powershell (on top of Zsh).
