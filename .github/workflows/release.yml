@@ -61,7 +61,7 @@ jobs:
 
   build-release:
     name: build-release
-    needs: ['create-release']
+    needs: create-release
     runs-on: ${{ matrix.os }}
     env:
       # Emit backtraces on panics.
@@ -80,8 +80,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -137,3 +135,29 @@ jobs:
           asset_path: ${{ env.ASSET }}
           asset_name: ${{ env.ASSET }}
           asset_content_type: application/octet-stream
+
+  publish-release:
+    name: publish-release
+    needs: build-release
+    runs-on: ubuntu-latest
+    env:
+      # Emit backtraces on panics.
+      RUST_BACKTRACE: 1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: Login to crates.io
+        uses: actions-rs/cargo@v1
+        with:
+          command: login
+          args: ${{ secrets.CRATES_IO_TOKEN }}
+      - name: Publish to crates.io
+        uses: actions-rs/cargo@v1
+        with:
+          command: publish

@@ -7,5 +7,4 @@ Release Checklist
 * In `CHANGELOG.md`, update the release title with its version & the current date.
 * Commit the changes, create a new tag and push it along with the master branch.
 * Wait for CI to finish creating the release. If the release build fails, then delete the tag from GitHub, make fixes, re-tag, delete the release and push.
-* Run `cargo publish`.
 * Edit the version number and sha256 hashes in the Homebrew formula. Use `ci/sha256-releases.sh {VERSION}` to obtain the sha256.
