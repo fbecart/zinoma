@@ -1,5 +1,10 @@
 # TBD
 
+# 0.4.0 (2020-05-12)
+
+Žinoma 0.4.0 is a minor version release which includes the addition of autocompletion scripts for Bash, Fish and Powershell (on top of Zsh).
+These completion scripts will be added to the Homebrew formula.
+
 # 0.3.0 (2020-05-11)
 
 Žinoma 0.3.0 is a minor version release which introduces binaries for Linux.
