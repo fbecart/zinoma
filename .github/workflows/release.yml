@@ -68,7 +68,7 @@ jobs:
       RUST_BACKTRACE: 1
     strategy:
       matrix:
-        build: [macos]
+        build: [linux, macos]
         include:
           - build: linux
             os: ubuntu-latest
