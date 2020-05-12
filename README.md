@@ -193,9 +193,9 @@ Some example of commands:
 
 ## Žinoma for the curious
 
-Žinoma is a Lituanian word. It should be pronounced _\[zhee-no-ma]_, with a stress on the first syllabus.
+Žinoma is a Lituanian word. Pronounced it with a stress on the first syllable, which should sound like the _gi_ of _regime_.
 
-In Lithuanian, the word has two meanings:
+In Lithuanian, žinoma has two meanings:
 
 - _of course_, when used as an adverb;
 - _known_, when used as an adjective (a reference to the _Not Invented Here Syndrome_).
