@@ -12,6 +12,7 @@ documentation = "https://github.com/fbecart/zinoma/blob/master/README.md"
 readme = "README.md"
 categories = ["command-line-utilities", "development-tools::build-utils"]
 keywords = ["parallel", "incremental", "build", "tool", "watch"]
+build = "build.rs"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
@@ -34,3 +35,7 @@ bincode = "1.2.1"
 [dev-dependencies]
 assert_cmd = "1.0"
 predicates = "1.0"
+
+[build-dependencies]
+clap = "3.0.0-beta.1"
+clap_generate = "3.0.0-beta.1"

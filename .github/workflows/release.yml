@@ -116,11 +116,13 @@ jobs:
       - name: Build archive
         shell: bash
         run: |
+          outdir="$(ci/cargo-out-dir.sh ./target)"
           staging="zinoma-${{ env.RELEASE_VERSION }}-${{ matrix.target }}"
-          mkdir -p "$staging"/doc
+          mkdir -p "$staging"/{complete,doc}
 
           cp {README.md,LICENSE} "$staging/"
           cp CHANGELOG.md "$staging/doc/"
+          cp "$outdir"/{zinoma.bash,_zinoma,zinoma.fish,_zinoma.ps1} "$staging/complete/"
 
           cp "target/release/zinoma" "$staging/"
           tar czf "$staging.tar.gz" "$staging"
