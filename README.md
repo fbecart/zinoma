@@ -48,16 +48,6 @@ Prerequisites:
 cargo install zinoma
 ```
 
-### Setup auto-completion for Z shell (Zsh)
-
-To set up Žinoma auto-completion for Zsh, put the completion script in one of the paths in your `$fpath`. For instance:
-
-```shell script
-zinoma --generate-zsh-completion > $HOME/.zfunc/_zinoma
-```
-
-You should update this script when you install a new version of Žinoma.
-
 ## Documentation
 
 ### Project configuration file

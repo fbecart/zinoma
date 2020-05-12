@@ -20,11 +20,6 @@ fn main() -> Result<()> {
         .init()
         .unwrap();
 
-    if arg_matches.is_present(cli::arg::GENERATE_ZSH_COMPLETION) {
-        cli::write_zsh_completion(&mut std::io::stdout());
-        return Ok(());
-    }
-
     let project_dir = Path::new(arg_matches.value_of(cli::arg::PROJECT_DIR).unwrap());
     let config = Config::load(project_dir)?;
     let all_target_names = config.get_target_names();

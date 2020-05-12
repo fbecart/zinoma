@@ -1,10 +1,4 @@
 use clap::{crate_name, crate_version, App, AppSettings, Arg};
-use clap_generate::{generate, generators};
-use std::io::Write;
-
-pub fn write_zsh_completion(buf: &mut dyn Write) {
-    generate::<generators::Zsh, _>(&mut get_app(), "zinoma", buf);
-}
 
 pub mod arg {
     pub static PROJECT_DIR: &str = "project_dir";

@@ -1,6 +1,6 @@
 include!("src/cli.rs");
 
-use clap_generate::generate_to;
+use clap_generate::{generate_to, generators};
 use std::env;
 use std::fs::{self, File};
 use std::path::Path;
