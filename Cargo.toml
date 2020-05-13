@@ -53,3 +53,4 @@ assets = [
   ["deployment/deb/_zinoma", "usr/share/zsh/vendor-completions/", "644"],
   ["deployment/deb/zinoma.fish", "usr/share/fish/vendor_completions.d/", "644"],
 ]
+extended-description = "Žinoma provides a simple command line to execute your most common build flows in the most efficient way."
