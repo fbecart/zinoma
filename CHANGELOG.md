@@ -1,5 +1,9 @@
 # TBD
 
+# 0.5.0 (2020-05-13)
+
+Žinoma 0.4.0 is a minor version release which introduces _.deb_ artifacts for Debian-based Linux distributions.
+
 # 0.4.\[1-3] (2020-05-12)
 
 Žinoma 0.4.1 to 0.4.3 are patch releases created to test the improved release automation.
