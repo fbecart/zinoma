@@ -59,7 +59,9 @@ jobs:
       - name: Obtain asset path and name
         shell: bash
         run: |
-          echo "::set-env name=ASSET_PATH::$(ls target/${{ matrix.target }}/debian/*.deb)"
-          echo "asset path: ${{ env.ASSET_PATH }}"
-          echo "::set-env name=ASSET_NAME::$(basename ${{ env.ASSET_PATH }})"
-          echo "asset name: ${{ env.ASSET_NAME }}"
+          asset_path="$(ls target/${{ matrix.target }}/debian/*.deb)"
+          echo "::set-env name=ASSET_PATH::$asset_path"
+          echo "asset path: $asset_path"
+          asset_name="$(basename $asset_path)"
+          echo "::set-env name=ASSET_NAME::$asset_name"
+          echo "asset name: $asset_name"
