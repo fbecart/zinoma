@@ -1,0 +1,79 @@
+# The way this works is a little weird. But basically, the create-release job
+# runs purely to initialize the GitHub release itself. Once done, the upload
+# URL of the release is saved as an artifact.
+#
+# The build-release job runs only once create-release is finished. It gets
+# the release upload URL by downloading the corresponding artifact (which was
+# uploaded by create-release). It then builds the release executables for each
+# supported platform and attaches them as release assets to the previously
+# created release.
+#
+# The key here is that we create the release only once.
+
+name: test
+on:
+  pull_request:
+jobs:
+  build-deb:
+    name: build-deb
+    runs-on: ubuntu-latest
+    env:
+      # Emit backtraces on panics.
+      RUST_BACKTRACE: 1
+    strategy:
+      matrix:
+        build: [amd64, i386]
+        include:
+          - build: amd64
+            target: x86_64-unknown-linux-musl
+          - build: i386
+            target: i686-unknown-linux-musl
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+          target: ${{ matrix.target }}
+
+      - name: Install cargo-deb
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-deb
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target=${{ matrix.target }}
+          use-cross: true
+
+      - name: Copy assets
+        shell: bash
+        run: |
+          outdir="$(ci/cargo-out-dir.sh ./target/${{ matrix.target }})"
+          deploydir=deployment/deb
+          mkdir -p "$deploydir"
+          cp "$outdir"/{zinoma.bash,_zinoma,zinoma.fish} "$deploydir/"
+
+      - name: Build deb
+        uses: actions-rs/cargo@v1
+        with:
+          command: deb
+          args: --no-build --target=${{ matrix.target }}
+
+      - name: Obtain asset path and name
+        shell: bash
+        run: |
+          asset_path="$(ls target/${{ matrix.target }}/debian/*.deb)"
+          echo "::set-env name=ASSET_PATH::$asset_path"
+          echo "asset path: $asset_path"
+          asset_name="$(basename $asset_path)"
+          echo "::set-env name=ASSET_NAME::$asset_name"
+          echo "asset name: $asset_name"
