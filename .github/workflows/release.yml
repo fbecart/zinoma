@@ -59,8 +59,8 @@ jobs:
           name: artifacts
           path: artifacts
 
-  build-release:
-    name: build-release
+  build-archive:
+    name: build-archive
     needs: create-release
     runs-on: ${{ matrix.os }}
     env:
@@ -145,16 +145,12 @@ jobs:
       RUST_BACKTRACE: 1
     strategy:
       matrix:
-        build: [amd64, i386, i686, x86-64]
+        build: [amd64, i386]
         include:
           - build: amd64
-            target: amd64-unknown-linux-gnu
+            target: x86_64-unknown-linux-gnu
           - build: i386
-            target: i386-unknown-linux-gnu
-          - build: i686
             target: i686-unknown-linux-gnu
-          - build: x86-64
-            target: x86-64-unknown-linux-gnu
 
     steps:
       - name: Download artifact
@@ -193,11 +189,12 @@ jobs:
           command: install
           args: cargo-deb
 
-      - name: Generate assets
+      - name: Build
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --release --target=${{ matrix.target }}
+          use-cross: true
 
       - name: Copy assets
         shell: bash
@@ -211,17 +208,17 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: deb
-          args: --target=${{ matrix.target }}
+          args: --no-build --target=${{ matrix.target }}
 
       - name: Obtain asset path and name
         shell: bash
         run: |
           asset_path="$(ls target/${{ matrix.target }}/debian/*.deb)"
           echo "::set-env name=ASSET_PATH::$asset_path"
-          echo "asset path: $ASSET_PATH"
-          asset_name="$(basename asset_path)"
+          echo "asset path: $asset_path"
+          asset_name="$(basename $asset_path)"
           echo "::set-env name=ASSET_NAME::$asset_name"
-          echo "asset name: $ASSET_NAME"
+          echo "asset name: $asset_name"
 
       - name: Upload release archive
         uses: actions/upload-release-asset@v1.0.1
@@ -235,7 +232,7 @@ jobs:
 
   publish-release:
     name: publish-release
-    needs: [build-release, build-deb]
+    needs: [build-archive, build-deb]
     runs-on: ubuntu-latest
     env:
       # Emit backtraces on panics.
