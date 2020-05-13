@@ -58,37 +58,133 @@ cargo install zinoma
 
 ## Documentation
 
-### Project configuration file
+### `zinoma.yml` and the YAML syntax for build flows
+
+In order to use Žinoma, you need to create file named `zinoma.yml`. We recommend putting this file in the root directory of your project.
 
 This documentation assumes prior knowledge of the Yaml format. If you're not familiar with Yaml, you should first get accustomed to the basics of its syntax.
 
-Configure your project with a Yaml file called `zinoma.yml` at the root of your project.
+#### `targets`
+
+__Required__ A build flow is made of targets.
+
+Targets run in parallel by default.
+To run targets sequentially, you can define dependencies on other targets using the `targets.<target_name>.dependencies` keyword.
+
+#### `targets.<target_name>`
+
+Each target must have a name to associate with the target.
+
+The key target_name is a string and its value is a map of the target's configuration data. You must replace <target_name> with a string that is unique to the targets object. The <target_name> must start with a letter or _ and contain only alphanumeric characters, -, or _.
+
+__Example__
 
 ```yaml
-# List the targets (aka tasks) of your project workflow
 targets:
-  # Declare target "npm-install"
-  npm-install:
-    # List the locations of the sources for this target (optional)
+  my_first_target:
+  my_second_target:
+```
+
+In this example:
+
+- `zinoma my_first_target` will attempt to execute `my_first_target`
+- `zinoma my_second_target` will attempt to execute `my_second_target`
+- `zinoma my_first_target my_second_target` will run targets.
+
+#### `targets.<target_name>.dependencies`
+
+Identifies any targets that must complete successfully before this target will run. It should be an array of strings. If a target fails, all targets that need it are skipped.
+
+__Example__
+
+```yaml
+targets:
+  target1:
+  target2:
+    dependencies: [target1]
+  target3:
+    dependencies: [target1, target2]
+```
+
+In this example, `target1` must complete successfully before `target2` begins, and `target3` waits for both `target1` and `target2` to complete.
+
+`zinoma target2` will run sequentially `target1` and `target2`.
+`zinoma target3` will run sequentially `target1`, `target2` and `target3`.
+
+#### `targets.<target_name>.build`
+
+Lists commands to run sequentially in order to build this target. It should be an array of strings, each string representing a command.
+
+__Example__
+
+```yaml
+targets:
+  create_deep_dir:
+    build: [ mkdir -p deep/dir ]
+```
+
+In this example, running `zinoma create_deep_dir` will eventually execute the command `mkdir -p deep/dir`.
+
+#### `targets.<target_name>.input_paths`
+
+Lists the locations of the source files for this target. `input_paths` should be an array of strings, each representing the path to a file or directory.
+
+When `input_paths` is specified, the target becomes incremental:
+instead of executing the target, Žinoma will skip it if its input files have not changed since its last successful completion.
+
+To compare with the previous execution, Žinoma computes and compares the hashes of the files.
+
+__Example__
+
+```yaml
+targets:
+  npm_install:
     input_paths: [ package.json, package-lock.json ]
-
-    # List locations where this target will produce its artifacts (optional)
-    output_paths: [ node_modules ]
-
-    # List commands to run sequentially in order to build this target (optional)
     build: [ npm install ]
+```
 
-  # Declare target "start-server"
-  start-server:
-    # List other target this target depends on (optional)
-    # This means "start-server" will only be executed upon a successful build of "npm-install".
-    dependencies: [ npm-install ]
+In this example, the target `npm_install` will be skipped if `package.json` and `package-lock.json` were not modified since the last execution of `zinoma npm_install`.
 
-    # State the command which starts this service (optional)
-    # A service is a long-lasting command, such as a server.
-    # It will only be executed in watch mode, upon a successful build (or rebuild) of the same target.
+#### `targets.<target_name>.output_paths`
+
+Lists locations where this target will produce its artifacts. Similarly to `targets.<target_name>.input_paths`, it should be an array of strings, each representing the path to a file or directory.
+
+If the `--clean` flag is provided to `zinoma`, the files or directories specified in `output_paths` will be deleted before running the build flow.
+
+The incremental build takes in account the `output_paths`. Just like with `targets.<target_name>.input_paths`, if any of the target output paths were altered since its previous successful execution, its state will be invalidated and its build will be run again.
+
+__Example__
+
+```yaml
+targets:
+  npm_install:
+    input_paths: [ package.json, package-lock.json ]
+    output_paths: [ node_modules ]
+    build: [ npm install ]
+```
+
+In this example, running `zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.
+
+Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
+
+#### `targets.<target_name>.service`
+
+Specifies a command to run upon successful build of the target. It should be a string.
+
+This can be a long-lasting command, such as a server.
+
+Services are only executed in watch mode (when the `--watch` flag is passed to `zinoma`). They are restarted every time the target `build` runs to completion.
+
+__Example__
+
+```yaml
+targets:
+  npm_server:
+    build: [ npm install ]
     service: npm start
 ```
+
+In this example, `zinoma npm_server --watch` will run `npm install` and then `npm start`.
 
 ### Command line
 
@@ -120,11 +216,11 @@ The build of a target will be skipped if the `input_paths` and `output_paths` ha
 
 #### Watch mode
 
-The execution of `zinoma` will normally end as soon as all the specified targets were built.
+The execution of `zinoma` normally ends as soon as all the specified targets are built.
 
 However, Žinoma also offers a watch mode which can be enabled with the `--watch` option of the command line.
 When the watch mode is enabled, Žinoma also runs the services of the built targets, and does not exit.
-Žinoma will then keep an eye open on the `input_paths`, and will re-execute the relevant targets in case filesystem changes are detected.
+Žinoma will then keep an eye open on the targets `input_paths`, and will re-execute the relevant targets in case filesystem changes are detected.
 
 ## Example of configuration
 
@@ -202,7 +298,7 @@ It is also a recursive acronym for "Žinoma Is NOt MAke!".
 
 ## Acknowledgements
 
-This project started as a fork of https://github.com/Stovoy/buildy
+This project started as a fork of https://github.com/Stovoy/buildy.
 
 ## License
 
