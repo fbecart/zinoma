@@ -40,6 +40,7 @@ jobs:
         with:
           command: build
           args: --release --target=${{ matrix.target }}
+          use-cross: true
 
       - name: Copy assets
         shell: bash
