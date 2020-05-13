@@ -148,9 +148,9 @@ jobs:
         build: [amd64, i386]
         include:
           - build: amd64
-            target: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-musl
           - build: i386
-            target: i686-unknown-linux-gnu
+            target: i686-unknown-linux-musl
 
     steps:
       - name: Download artifact
