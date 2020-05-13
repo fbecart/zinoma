@@ -10,10 +10,12 @@ jobs:
       RUST_BACKTRACE: 1
     strategy:
       matrix:
-        build: [x86_64]
+        build: [amd64, i386]
         include:
-          - build: x86_64
+          - build: amd64
             target: x86_64-unknown-linux-gnu
+          - build: i386
+            target: i686-unknown-linux-gnu
 
     steps:
       - name: Checkout repository
@@ -58,7 +60,7 @@ jobs:
         run: |
           asset_path="$(ls target/${{ matrix.target }}/debian/*.deb)"
           echo "::set-env name=ASSET_PATH::$asset_path"
-          echo "asset path: $ASSET_PATH"
+          echo "asset path: $asset_path"
           asset_name="$(basename asset_path)"
           echo "::set-env name=ASSET_NAME::$asset_name"
-          echo "asset name: $ASSET_NAME"
+          echo "asset name: $asset_name"
