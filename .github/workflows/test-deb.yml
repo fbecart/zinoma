@@ -16,6 +16,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
           - build: i386
             target: i686-unknown-linux-gnu
+            build_dependencies: lib32gcc1:i386
 
     steps:
       - name: Checkout repository
@@ -28,6 +29,10 @@ jobs:
           profile: minimal
           override: true
           target: ${{ matrix.target }}
+
+      - name: Install dependencies
+        if: matrix.build_dependencies != ''
+        run: sudo apt-get install ${{ matrix.build_dependencies }}
 
       - name: Install cargo-deb
         uses: actions-rs/cargo@v1
