@@ -1,5 +1,9 @@
 # TBD
 
+# 0.5.1 (2020-05-13)
+
+Žinoma 0.5.1 is a patch release created to fix the released _.deb_ artifacts.
+
 # 0.5.0 (2020-05-13)
 
 Žinoma 0.4.0 is a minor version release which introduces _.deb_ artifacts for Debian-based Linux distributions.
