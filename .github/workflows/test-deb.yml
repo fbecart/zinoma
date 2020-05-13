@@ -1,0 +1,70 @@
+name: test-deb
+on:
+  pull_request:
+jobs:
+  build-deb:
+    name: build-deb
+    runs-on: ubuntu-latest
+    env:
+      # Emit backtraces on panics.
+      RUST_BACKTRACE: 1
+    strategy:
+      matrix:
+        build: [amd64, i386, i686, x86-64]
+        include:
+          - build: amd64
+            target: amd64-unknown-linux-gnu
+          - build: i386
+            target: i386-unknown-linux-gnu
+          - build: i686
+            target: i686-unknown-linux-gnu
+          - build: x86-64
+            target: x86-64-unknown-linux-gnu
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+          target: ${{ matrix.target }}
+
+      - name: Install cargo-deb
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-deb
+
+      - name: Generate assets
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target=${{ matrix.target }}
+
+      - name: Copy assets
+        shell: bash
+        run: |
+          outdir="$(ci/cargo-out-dir.sh ./target/${{ matrix.target }})"
+          deploydir=deployment/deb
+          mkdir -p "$deploydir"
+          cp "$outdir"/{zinoma.bash,_zinoma,zinoma.fish} "$deploydir/"
+
+      - name: Build deb
+        uses: actions-rs/cargo@v1
+        with:
+          command: deb
+          args: --target=${{ matrix.target }}
+
+      - name: Obtain asset path and name
+        shell: bash
+        run: |
+          asset_path="$(ls target/${{ matrix.target }}/debian/*.deb)"
+          echo "::set-env name=ASSET_PATH::$asset_path"
+          echo "asset path: $ASSET_PATH"
+          asset_name="$(basename asset_path)"
+          echo "::set-env name=ASSET_NAME::$asset_name"
+          echo "asset name: $ASSET_NAME"
