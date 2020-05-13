@@ -35,7 +35,7 @@ jobs:
           command: install
           args: cargo-deb
 
-      - name: Generate assets
+      - name: Build binary and assets
         uses: actions-rs/cargo@v1
         with:
           command: build
@@ -54,7 +54,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: deb
-          args: --target=${{ matrix.target }}
+          args: --no-build --target=${{ matrix.target }}
 
       - name: Obtain asset path and name
         shell: bash
