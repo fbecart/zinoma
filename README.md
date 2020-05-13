@@ -28,7 +28,7 @@ Finally, Žinoma offers a watch mode, which waits for filesystem updates and re-
 
 ## Installation
 
-### Via Homebrew (for macOS only)
+### Via Homebrew (for macOS)
 
 Prerequisites:
 
@@ -36,6 +36,14 @@ Prerequisites:
 
 ```shell script
 brew install fbecart/tap/zinoma
+```
+
+### Via .deb file (for Debian-based Linux distros)
+
+Download the relevant .deb file from the latest release on https://github.com/fbecart/zinoma/releases. Then, run:
+
+```shell script
+dpkg -i zinoma_*.deb
 ```
 
 ### Via Cargo (for Linux, Windows or macOS)
