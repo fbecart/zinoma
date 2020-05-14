@@ -17,8 +17,8 @@ pub struct Target {
     input_paths: Vec<String>,
     #[serde(default)]
     output_paths: Vec<String>,
-    #[serde(default, rename = "build")]
-    build_list: Vec<String>,
+    #[serde(default)]
+    build: Option<String>,
     #[serde(default)]
     service: Option<String>,
 }

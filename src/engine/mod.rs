@@ -47,7 +47,7 @@ impl<'a> Engine<'a> {
             if let Some(result) = target_build_states.get_finished_build()? {
                 let target = &self.targets[result.target_id];
                 if let IncrementalRunResult::Run(Err(e)) = result.result {
-                    log::warn!("{} - Build failed: {}", target.name, e);
+                    log::warn!("{} - {}", target.name, e);
                 } else {
                     services_runner.restart_service(scope, target)?;
                 }
@@ -64,9 +64,8 @@ impl<'a> Engine<'a> {
             self.build_ready_targets(scope, &mut target_build_states);
 
             if let Some(build_report) = target_build_states.get_finished_build()? {
-                if let IncrementalRunResult::Run(Err(e)) = build_report.result {
-                    let target = &self.targets[build_report.target_id];
-                    return Err(e.context(format!("Build failed for target {}", target.name)));
+                if let IncrementalRunResult::Run(result) = build_report.result {
+                    result?;
                 }
             }
 

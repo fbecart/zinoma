@@ -1,24 +1,24 @@
 targets:
   test:
     input_paths: [ Cargo.lock, Cargo.toml, src, tests ]
-    build: [ cargo test ]
+    build: cargo test
 
   clippy:
     input_paths: [ src ]
-    build: [ cargo clippy ]
+    build: cargo clippy
 
   no-unused-dependencies:
     dependencies: [ clippy ]
     input_paths: [ Cargo.toml, src, tests ]
-    build: [ cargo +nightly udeps ]
+    build: cargo +nightly udeps
 
   fmt:
     input_paths: [ src, tests ]
-    build: [ cargo fmt --all -- --check ]
+    build: cargo fmt --all -- --check
 
   check:
     dependencies: [ test, clippy, no-unused-dependencies, fmt ]
 
   install:
     dependencies: [ check ]
-    build: [ cargo install --path . ]
+    build: cargo install --path .

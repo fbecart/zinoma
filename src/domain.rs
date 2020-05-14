@@ -10,6 +10,6 @@ pub struct Target {
     pub path: PathBuf,
     pub input_paths: Vec<PathBuf>,
     pub output_paths: Vec<PathBuf>,
-    pub build_list: Vec<String>,
+    pub build: Option<String>,
     pub service: Option<String>,
 }

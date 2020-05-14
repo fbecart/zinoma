@@ -3,7 +3,7 @@ use crate::domain::{Target, TargetId};
 use anyhow::{Context, Result};
 use crossbeam::channel::Sender;
 use crossbeam::thread::Scope;
-use duct::cmd;
+use run_script::{IoOptions, ScriptOptions};
 use std::time::Instant;
 
 pub struct TargetBuilder<'a> {
@@ -33,28 +33,24 @@ pub fn build_target(
     let result = incremental_runner
         .run(&target, || {
             let target_start = Instant::now();
-            log::info!("{} - Building", &target.name);
-            for command in &target.build_list {
-                let command_start = Instant::now();
-                log::debug!("{} - Command \"{}\" - Executing", target.name, command);
-                let command_output = cmd!("/bin/sh", "-c", command)
-                    .dir(&target.path)
-                    .stderr_to_stdout()
-                    .run()
-                    .with_context(|| "Command execution error")?;
-                print!(
-                    "{}",
-                    String::from_utf8(command_output.stdout)
-                        .with_context(|| "Failed to interpret stdout as utf-8")?
-                );
-                let command_execution_duration = command_start.elapsed();
-                log::debug!(
-                    "{} - Command \"{}\" - Success (took: {}ms)",
-                    target.name,
-                    command,
-                    command_execution_duration.as_millis()
-                );
+
+            if let Some(script) = &target.build {
+                log::info!("{} - Building", &target.name);
+
+                let script = format!("cd {}\n{}", (&target.path).to_str().unwrap(), script);
+
+                let mut options = ScriptOptions::new();
+                options.exit_on_error = true;
+                options.output_redirection = IoOptions::Inherit;
+
+                let (code, _output, _error) = run_script::run(&script, &vec![], &options)
+                    .with_context(|| "Build execution error")?;
+
+                if code != 0 {
+                    return Err(anyhow::anyhow!("Build failed for target {}", target.name));
+                }
             }
+
             let target_build_duration = target_start.elapsed();
             log::info!(
                 "{} - Built (took: {}ms)",

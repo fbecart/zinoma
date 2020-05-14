@@ -122,7 +122,7 @@ mod tests {
             dependencies: dependencies.into_iter().map(str::to_string).collect(),
             input_paths: vec![],
             output_paths: vec![],
-            build_list: vec![],
+            build: None,
             service: None,
         }
     }
