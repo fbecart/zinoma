@@ -168,7 +168,7 @@ Subsequent runs of `zinoma npm_install` will return immediately — until the co
 
 #### `targets.<target_name>.output_paths`
 
-This keyword lists the locations where this target will produce its artifacts.
+This keyword lists the locations where this target produce its artifacts.
 Similarly to `targets.<target_name>.input_paths`, it should be an array of strings, each representing a path to a file or directory.
 
 If the `--clean` flag is provided to `zinoma`, the files or directories specified in `output_paths` will be deleted before running the build flow.
@@ -194,7 +194,7 @@ Running `zinoma --clean npm_install` will start by deleting `node_modules`, then
 
 Specifies a command to run upon successful build of the target. It should be a string.
 
-This keyword is meant to enable the execution of long-lasting command, such as servers.
+This keyword is meant to enable the execution of long-lasting commands, such as servers.
 
 Services are only executed in watch mode (when the `--watch` flag is passed to `zinoma`). They are restarted every time the target `build` runs to completion.
 
@@ -243,7 +243,7 @@ The best way to speed up your build flow is simply to avoid running its commands
 
 Targets operate on the file system, transforming some files (aka inputs) into other files (aka outputs).
 By looking at the files located in the `input_paths` and `output_paths` of your targets,
-Žinoma can tell if a target needs to run, or can be skipped.
+Žinoma can tell if a target needs to run again, or can be skipped.
 
 Žinoma compares files by computing their checksum.
 These checksums are stored in the `.zinoma` directory, located next to `zinoma.yml`.
