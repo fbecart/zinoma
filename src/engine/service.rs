@@ -2,7 +2,7 @@ use crate::domain::Target;
 use anyhow::{Context, Result};
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use crossbeam::thread::Scope;
-use duct::cmd;
+use run_script::{IoOptions, ScriptOptions};
 
 pub struct ServicesRunner {
     tx_channels: Vec<Option<Sender<RunSignal>>>,
@@ -35,20 +35,24 @@ impl ServicesRunner {
 }
 
 fn run_target_service(target: &Target, rx: Receiver<RunSignal>) -> Result<()> {
-    if let Some(command) = &target.service {
-        log::info!("{} - Command: \"{}\" - Run", target.name, command);
-        let handle = cmd!("/bin/sh", "-c", command)
-            .dir(&target.path)
-            .stderr_to_stdout()
-            .start()
-            .with_context(|| format!("Failed to run command: {}", command))?;
+    if let Some(script) = &target.service {
+        log::info!("{} - Starting service", target.name);
+
+        let script = format!("cd {}\n{}", (&target.path).to_str().unwrap(), script);
+
+        let mut options = ScriptOptions::new();
+        options.exit_on_error = true;
+        options.output_redirection = IoOptions::Inherit;
+
+        let mut handle = run_script::spawn(&script, &vec![], &options)
+            .with_context(|| format!("Failed to start service {}", target.name))?;
 
         match rx.recv().with_context(|| "Receiver error")? {
             RunSignal::Kill => {
-                log::trace!("{} - Killing process", target.name);
+                log::trace!("{} - Stopping service", target.name);
                 handle
                     .kill()
-                    .with_context(|| format!("Failed to kill process {}", command))?;
+                    .with_context(|| format!("Failed to kill service {}", target.name))?;
             }
         }
     }
