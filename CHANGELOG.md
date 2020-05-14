@@ -1,5 +1,9 @@
 # TBD
 
+# 0.6.0 (2020-05-14)
+
+If Žinoma was to follow Semver, this would absolutely be a major release. But until then, let's enjoy having a version number below 1.
+
 __BREAKING CHANGES__
 
 - The format of `targets.<target_name>.build` has changed. Instead of accepting an array of commands, this keyword now accepts a multi-line string.
