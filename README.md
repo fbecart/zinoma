@@ -35,7 +35,7 @@ Prerequisites:
 - Homebrew: https://brew.sh/
 
 ```shell script
-brew install fbecart/tap/zinoma
+$ brew install fbecart/tap/zinoma
 ```
 
 ### Via .deb file (for Debian-based Linux distros)
@@ -43,7 +43,7 @@ brew install fbecart/tap/zinoma
 Download the relevant .deb file from the latest release on https://github.com/fbecart/zinoma/releases. Then, run:
 
 ```shell script
-dpkg -i zinoma_*.deb
+$ dpkg -i zinoma_*.deb
 ```
 
 ### Via Cargo (for Linux, Windows or macOS)
@@ -53,19 +53,7 @@ Prerequisites:
 - Rust toolchain: https://rustup.rs/
 
 ```shell script
-cargo install zinoma
-```
-
-### From sources (for Linux, Windows or macOS)
-
-Prerequisites:
-
-- Rust toolchain: https://rustup.rs/
-
-```shell script
-git clone git@github.com:fbecart/zinoma.git
-cd zinoma
-cargo install --path .
+$ cargo install zinoma
 ```
 
 ## Documentation
@@ -332,6 +320,26 @@ Some example of commands:
 - [ ] Accept configuration split in multiple files (would be especially useful for repositories containing multiple projects)
 - [ ] Accept scripted configuration
 - [ ] Provide a way to import/extend configuration templates
+
+## Building
+
+Žinoma is written in Rust, so you'll need to grab a [Rust installation](https://rustup.rs/) in order to compile it.
+
+To build Žinoma:
+
+```shell script
+$ git clone git@github.com:fbecart/zinoma.git
+$ cd zinoma
+$ cargo build --release
+$ ./target/release/zinoma --version
+Žinoma 0.5.1
+```
+
+To run the test suite, use:
+
+```shell script
+$ cargo test
+```
 
 ## Žinoma for the curious
 
