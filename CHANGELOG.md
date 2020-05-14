@@ -1,5 +1,13 @@
 # TBD
 
+__BREAKING CHANGES__
+
+- The format of `targets.<target_name>.build` has changed. Instead of accepting an array of commands, this keyword now accepts a multi-line string.
+
+Feature enhancements:
+
+- [FEATURE #14](https://github.com/fbecart/zinoma/issues/14): Accept multi-line build scripts for targets' `build` and `run` keywords.
+
 # 0.5.1 (2020-05-13)
 
 Žinoma 0.5.1 is a patch release created to fix the released _.deb_ artifacts.
