@@ -29,7 +29,7 @@ pub fn into_targets(
             dependencies,
             input_paths,
             output_paths,
-            build_list,
+            build,
             service,
         } = parsed_targets
             .remove(target_name)
@@ -65,7 +65,7 @@ pub fn into_targets(
             path: project_dir.to_path_buf(),
             input_paths,
             output_paths,
-            build_list,
+            build,
             service,
         });
 
@@ -124,7 +124,7 @@ mod tests {
             dependencies: vec![],
             input_paths: vec![],
             output_paths: vec![],
-            build_list: vec![],
+            build: None,
             service: None,
         }
     }
