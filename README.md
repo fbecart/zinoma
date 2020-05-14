@@ -120,7 +120,7 @@ In this example, `target1` must complete successfully before `target2` begins, w
 
 #### `targets.<target_name>.build`
 
-Use build to specify the script to execute in order to build this target. It should be string, which can have one or multiple lines.
+Use this keyword to specify the build script of this target. It should be string, which can have one or multiple lines.
 
 __Example__
 
