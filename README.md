@@ -308,19 +308,6 @@ Some example of commands:
 - `zinoma start --watch` will run the application and restart it whenever the sources are updated.
 - `zinoma --clean build` will generate a clean artifact, ready to be deployed.
 
-## Project roadmap
-
-- [x] Execute targets in parallel
-- [x] Handle dependencies between targets (and detect cyclic dependencies)
-- [x] Check input paths and output paths in incremental build
-- [x] Watch mode
-- [x] Clean command
-- [x] Basic auto-completion
-- [ ] Auto-complete target names
-- [ ] Accept configuration split in multiple files (would be especially useful for repositories containing multiple projects)
-- [ ] Accept scripted configuration
-- [ ] Provide a way to import/extend configuration templates
-
 ## Building
 
 Žinoma is written in Rust, so you'll need to grab a [Rust installation](https://rustup.rs/) in order to compile it.
@@ -343,7 +330,7 @@ $ cargo test
 
 ## Žinoma for the curious
 
-Žinoma is a Lituanian word. Pronounced it with a stress on the first syllable, which should sound like the _gi_ of _regime_.
+Žinoma is a Lithuanian word. Pronounced it with a stress on the first syllable, which should sound like the _gi_ of _regime_.
 
 In Lithuanian, žinoma has two meanings:
 
