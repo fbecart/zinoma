@@ -56,9 +56,21 @@ Prerequisites:
 cargo install zinoma
 ```
 
+### From sources (for Linux, Windows or macOS)
+
+Prerequisites:
+
+- Rust toolchain: https://rustup.rs/
+
+```shell script
+git clone git@github.com:fbecart/zinoma.git
+cd zinoma
+cargo install --path .
+```
+
 ## Documentation
 
-### `zinoma.yml` and the YAML syntax for build flows
+### YAML syntax for build flows (`zinoma.yml`)
 
 In order to use Žinoma with your project, you need to create a file named `zinoma.yml`.
 We recommend putting this file in the root directory of your project.
@@ -74,11 +86,11 @@ To run targets sequentially, you can define dependencies on other targets using 
 
 #### `targets.<target_name>`
 
-Each target must have a name to associate with the target.
-
+Each target must have a name.
 The key `target_name` is a string and its value is a map of the target's configuration data.
-You must replace `<target_name>` with a string that is unique to the targets object.
-The `<target_name>` must start with an alphanumeric character or _ and contain only alphanumeric characters, -, or _.
+
+You must replace `<target_name>` with a string that is unique to the `targets` object.
+The `<target_name>` must start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.
 
 __Example__
 
@@ -112,9 +124,10 @@ targets:
     dependencies: [target2]
 ```
 
-In this example, `target1` must complete successfully before `target2` begins, and `target3` waits for `target2` to complete.
+In this example, `target1` must complete successfully before `target2` begins, while `target3` waits for `target2` to complete.
 
 `zinoma target2` will run sequentially `target1` and `target2`.
+
 `zinoma target3` will run sequentially `target1`, `target2` and `target3`.
 
 #### `targets.<target_name>.build`
@@ -125,13 +138,13 @@ __Example__
 
 ```yaml
 targets:
-  create_deep_dir:
+  create_my_file:
     build:
       - mkdir -p deep/dir
       - touch deep/dir/my_file
 ```
 
-In this example, running `zinoma create_deep_dir` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.
+In this example, running `zinoma create_my_file` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.
 
 #### `targets.<target_name>.input_paths`
 
@@ -151,12 +164,12 @@ targets:
 ```
 
 In this example, running `zinoma npm_install` once will execute `npm install`.
-Subsequent runs of `zinoma npm_install` will return immediately -- until `package.json` or `package-lock.json` are modified.
+Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
 
 #### `targets.<target_name>.output_paths`
 
 This keyword lists the locations where this target will produce its artifacts.
-Similarly to `targets.<target_name>.input_paths`, it should be an array of strings, each representing the path to a file or directory.
+Similarly to `targets.<target_name>.input_paths`, it should be an array of strings, each representing a path to a file or directory.
 
 If the `--clean` flag is provided to `zinoma`, the files or directories specified in `output_paths` will be deleted before running the build flow.
 
@@ -228,15 +241,15 @@ while simplifying the execution of your most common build flows.
 The best way to speed up your build flow is simply to avoid running its commands.
 Žinoma helps you do this in a fully automated way.
 
-Build targets work on the file system, transforming some files (aka inputs) into other files (aka outputs).
+Targets operate on the file system, transforming some files (aka inputs) into other files (aka outputs).
 By looking at the files located in the `input_paths` and `output_paths` of your targets,
-Žinoma can tell if a target needs to run again, or can be skipped this time.
+Žinoma can tell if a target needs to run, or can be skipped.
 
 Žinoma compares files by computing their checksum.
-These checksums are stored in a directory named `.zinoma`, located next to `zinoma.yml`.
+These checksums are stored in the `.zinoma` directory, located next to `zinoma.yml`.
 This directory should be ignored in your version control.
 
-#### Watch mode
+#### Watch mode (`--watch`)
 
 The execution of `zinoma` normally ends as soon as all the specified targets are built.
 
@@ -246,6 +259,16 @@ and will re-execute the relevant targets in case filesystem changes are detected
 
 When watch mode is enabled, Žinoma also runs the services of the built targets.
 A service will be restarted every time its target's build completes.
+
+#### Clean flag (`--clean`)
+
+This flag helps you clean up your build environment.
+It will delete files specified in your `targets.<target_name>.output_paths` and will reinitialize the targets incremental states.
+
+If provided alone, the `--clean` flag will clean up all targets of your build flow.
+
+When provided along with targets, the `--clean` flag will only run the cleanup on the specified targets and their dependencies.
+`zinoma` will then proceed to the execution of these targets.
 
 ## Example of configuration
 
@@ -297,7 +320,7 @@ Some example of commands:
 - `zinoma start --watch` will run the application and restart it whenever the sources are updated.
 - `zinoma --clean build` will generate a clean artifact, ready to be deployed.
 
-## Roadmap
+## Project roadmap
 
 - [x] Execute targets in parallel
 - [x] Handle dependencies between targets (and detect cyclic dependencies)
