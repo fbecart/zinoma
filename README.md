@@ -120,16 +120,16 @@ In this example, `target1` must complete successfully before `target2` begins, w
 
 #### `targets.<target_name>.build`
 
-This keyword lists the commands to run sequentially in order to build this target. It should be an array of strings, each string representing a command.
+Use build to specify the script to execute in order to build this target. It should be string, which can have one or multiple lines.
 
 __Example__
 
 ```yaml
 targets:
   create_my_file:
-    build:
-      - mkdir -p deep/dir
-      - touch deep/dir/my_file
+    build: |
+      mkdir -p deep/dir
+      touch deep/dir/my_file
 ```
 
 In this example, running `zinoma create_my_file` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.
@@ -148,7 +148,7 @@ __Example__
 targets:
   npm_install:
     input_paths: [ package.json, package-lock.json ]
-    build: [ npm install ]
+    build: npm install
 ```
 
 In this example, running `zinoma npm_install` once will execute `npm install`.
@@ -171,7 +171,7 @@ targets:
   npm_install:
     input_paths: [ package.json, package-lock.json ]
     output_paths: [ node_modules ]
-    build: [ npm install ]
+    build: npm install
 ```
 
 In this example, running `zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.
@@ -192,7 +192,7 @@ __Example__
 targets:
   npm_server:
     input_paths: [ package.json, index.js ]
-    build: [ npm install ]
+    build: npm install
     service: npm start
 ```
 
@@ -267,17 +267,17 @@ targets:
   download_dependencies:
     input_paths: [ package.json, package-lock.json ]
     output_paths: [ node_modules ]
-    build: [ npm install ]
+    build: npm install
 
   test:
     dependencies: [ download_dependencies ]
     input_paths: [ package.json, node_modules, src, test ]
-    build: [ npm test ]
+    build: npm test
 
   lint:
     dependencies: [ download_dependencies ]
     input_paths: [ package.json, node_modules, src, test ]
-    build: [ npm run lint ]
+    build: npm run lint
 
   check:
     dependencies: [ test, lint ]
@@ -295,11 +295,11 @@ targets:
       - package-lock.json
       - src
     output_paths: [ lambda.zip ]
-    build:
-      - docker build -t build-my-project:latest .
-      - docker create -ti --name build-my-project build-my-project:latest bash
-      - docker cp build-my-project:/var/task/lambda.zip ./
-      - docker rm -f build-my-project
+    build: |
+      docker build -t build-my-project:latest .
+      docker create -ti --name build-my-project build-my-project:latest bash
+      docker cp build-my-project:/var/task/lambda.zip ./
+      docker rm -f build-my-project
 ```
 
 Some example of commands:
