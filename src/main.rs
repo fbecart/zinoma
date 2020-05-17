@@ -45,17 +45,12 @@ fn main() -> Result<()> {
     if requested_targets.is_some() {
         let engine = Engine::new(targets, incremental_runner);
 
-        crossbeam::scope(|scope| {
-            if arg_matches.is_present(cli::arg::WATCH) {
-                engine.watch(scope).with_context(|| "Watch error")
-            } else {
-                engine.build(scope).with_context(|| "Build error")
-            }
-        })
-        .map_err(|_| {
-            anyhow::anyhow!("Unknown crossbeam parallelism failure (thread panicked)")
-        })??;
+        if arg_matches.is_present(cli::arg::WATCH) {
+            engine.watch().with_context(|| "Watch error")
+        } else {
+            engine.build().with_context(|| "Build error")
+        }
+    } else {
+        Ok(())
     }
-
-    Ok(())
 }
