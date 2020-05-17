@@ -82,11 +82,7 @@ impl Engine {
 
             Ok(())
         })
-        .map_err(|_| {
-            anyhow::anyhow!("Unknown crossbeam parallelism failure (thread panicked)")
-        })??;
-
-        Ok(())
+        .map_err(|_| anyhow::anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
     }
 
     fn build_ready_targets<'a, 's>(
