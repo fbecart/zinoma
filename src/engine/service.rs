@@ -15,15 +15,19 @@ impl ServicesRunner {
         }
     }
 
-    pub fn restart_service<'a>(&mut self, scope: &Scope<'a>, target: &'a Target) -> Result<()> {
-        if target.service.is_some() {
-            // If already running, send a kill signal.
-            if let Some(service_tx) = &self.tx_channels[target.id] {
-                service_tx
-                    .send(RunSignal::Kill)
-                    .with_context(|| "Failed to send Kill signal to running process")?;
-            }
+    pub fn restart_service(&mut self, scope: &Scope, target: Target) -> Result<()> {
+        // If already running, send a kill signal.
+        if let Some(service_tx) = &self.tx_channels[target.id] {
+            service_tx
+                .send(RunSignal::Kill)
+                .with_context(|| "Failed to send Kill signal to running process")?;
+        }
 
+        self.start_service(scope, target)
+    }
+
+    pub fn start_service(&mut self, scope: &Scope, target: Target) -> Result<()> {
+        if target.service.is_some() {
             let (service_tx, service_rx) = unbounded();
             self.tx_channels[target.id] = Some(service_tx);
 
@@ -34,7 +38,7 @@ impl ServicesRunner {
     }
 }
 
-fn run_target_service(target: &Target, rx: Receiver<RunSignal>) -> Result<()> {
+fn run_target_service(target: Target, rx: Receiver<RunSignal>) -> Result<()> {
     if let Some(script) = &target.service {
         log::info!("{} - Starting service", target.name);
 

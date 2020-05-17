@@ -35,7 +35,7 @@ fn main() -> Result<()> {
     let targets = config.into_targets(project_dir, &requested_targets)?;
 
     let checksum_dir = project_dir.join(".zinoma");
-    let incremental_runner = IncrementalRunner::new(&checksum_dir);
+    let incremental_runner = IncrementalRunner::new(checksum_dir);
 
     if arg_matches.is_present(cli::arg::CLEAN) {
         incremental_runner.clean_checksums(&targets)?;
