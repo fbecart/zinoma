@@ -90,9 +90,9 @@ targets:
 
 In this example:
 
-- `zinoma my_first_target` will attempt to execute `my_first_target`
-- `zinoma my_second_target` will attempt to execute `my_second_target`
-- `zinoma my_first_target my_second_target` will run both targets.
+- `$ zinoma my_first_target` will attempt to execute `my_first_target`
+- `$ zinoma my_second_target` will attempt to execute `my_second_target`
+- `$ zinoma my_first_target my_second_target` will run both targets.
 
 #### `targets.<target_name>.dependencies`
 
@@ -114,9 +114,9 @@ targets:
 
 In this example, `target1` must complete successfully before `target2` begins, while `target3` waits for `target2` to complete.
 
-`zinoma target2` will run sequentially `target1` and `target2`.
+`$ zinoma target2` will run sequentially `target1` and `target2`.
 
-`zinoma target3` will run sequentially `target1`, `target2` and `target3`.
+`$ zinoma target3` will run sequentially `target1`, `target2` and `target3`.
 
 #### `targets.<target_name>.build`
 
@@ -132,7 +132,7 @@ targets:
       touch deep/dir/my_file
 ```
 
-In this example, running `zinoma create_my_file` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.
+In this example, running `$ zinoma create_my_file` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.
 
 #### `targets.<target_name>.input_paths`
 
@@ -151,8 +151,8 @@ targets:
     build: npm install
 ```
 
-In this example, running `zinoma npm_install` once will execute `npm install`.
-Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
+In this example, running `$ zinoma npm_install` once will execute `npm install`.
+Subsequent runs of `$ zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
 
 #### `targets.<target_name>.output_paths`
 
@@ -174,9 +174,9 @@ targets:
     build: npm install
 ```
 
-In this example, running `zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.
+In this example, running `$ zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.
 
-Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
+Running `$ zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
 
 #### `targets.<target_name>.service`
 
@@ -196,7 +196,7 @@ targets:
     service: npm start
 ```
 
-In this example, `zinoma npm_server --watch` will run `npm install` and then `npm start`.
+In this example, `$ zinoma npm_server --watch` will run `npm install` and then `npm start`.
 
 ### Command line
 
@@ -304,9 +304,9 @@ targets:
 
 Some example of commands:
 
-- `zinoma check` will ensure the code complies to the test suites and the coding standards.
-- `zinoma start --watch` will run the application and restart it whenever the sources are updated.
-- `zinoma --clean build` will generate a clean artifact, ready to be deployed.
+- `$ zinoma check` will ensure the code complies to the test suites and the coding standards.
+- `$ zinoma start --watch` will run the application and restart it whenever the sources are updated.
+- `$ zinoma --clean build` will generate a clean artifact, ready to be deployed.
 
 ## Building
 
