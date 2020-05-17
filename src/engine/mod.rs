@@ -29,12 +29,11 @@ impl Engine {
         }
     }
 
-    pub fn watch(&self) -> Result<()> {
+    pub fn watch(self) -> Result<()> {
         let watcher =
             TargetsWatcher::new(&self.targets).with_context(|| "Failed to set up file watcher")?;
 
         let mut services_runner = ServicesRunner::new(&self.targets);
-
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
         crossbeam::scope(|scope| -> Result<()> {
@@ -61,9 +60,8 @@ impl Engine {
         .map_err(|_| anyhow::anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
     }
 
-    pub fn build(&self) -> Result<()> {
+    pub fn build(self) -> Result<()> {
         let mut services_runner = ServicesRunner::new(&self.targets);
-
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
         crossbeam::scope(|scope| {
