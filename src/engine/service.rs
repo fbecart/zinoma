@@ -38,11 +38,10 @@ fn run_target_service(target: &Target, rx: Receiver<RunSignal>) -> Result<()> {
     if let Some(script) = &target.service {
         log::info!("{} - Starting service", target.name);
 
-        let script = format!("cd {}\n{}", (&target.path).to_str().unwrap(), script);
-
         let mut options = ScriptOptions::new();
         options.exit_on_error = true;
         options.output_redirection = IoOptions::Inherit;
+        options.working_directory = Some(target.path.to_path_buf());
 
         let mut handle = run_script::spawn(&script, &vec![], &options)
             .with_context(|| format!("Failed to start service {}", target.name))?;
