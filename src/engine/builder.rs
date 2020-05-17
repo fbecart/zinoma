@@ -37,11 +37,10 @@ pub fn build_target(
             if let Some(script) = &target.build {
                 log::info!("{} - Building", &target.name);
 
-                let script = format!("cd {}\n{}", (&target.path).to_str().unwrap(), script);
-
                 let mut options = ScriptOptions::new();
                 options.exit_on_error = true;
                 options.output_redirection = IoOptions::Inherit;
+                options.working_directory = Some(target.path.to_path_buf());
 
                 let (code, _output, _error) = run_script::run(&script, &vec![], &options)
                     .with_context(|| "Build execution error")?;
