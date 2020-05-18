@@ -38,11 +38,16 @@ impl Engine {
 
         crossbeam::scope(|scope| -> Result<()> {
             loop {
+                self.build_ready_targets(
+                    scope,
+                    &mut target_build_states,
+                    &build_report_sender,
+                    &termination_events,
+                );
+
                 crossbeam_channel::select! {
                     recv(target_invalidated_events) -> target_id => {
                         target_build_states.set_build_invalidated(target_id?);
-
-                        self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
                     }
                     recv(build_report_events) -> build_report => {
                         let BuildReport { target_id, result } = build_report?;
@@ -55,12 +60,10 @@ impl Engine {
                         } else {
                             services_runner.restart_service(target)?;
                         }
-
-                        self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
                     }
                     recv(termination_events) -> _ => {
                         services_runner.terminate_all_services();
-                        break Ok(());
+                        return Ok(());
                     }
                 }
             }
@@ -68,15 +71,24 @@ impl Engine {
         .map_err(|_| anyhow::anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
     }
 
-    pub fn build(self, termination_events: Receiver<()>) -> Result<()> {
+    pub fn build(
+        self,
+        termination_sender: Sender<()>,
+        termination_events: Receiver<()>,
+    ) -> Result<()> {
         let mut services_runner = ServicesRunner::new(&self.targets);
         let (build_report_sender, build_report_events) = unbounded();
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
         crossbeam::scope(|scope| {
-            self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
-
             while !target_build_states.all_are_built() {
+                self.build_ready_targets(
+                    scope,
+                    &mut target_build_states,
+                    &build_report_sender,
+                    &termination_events,
+                );
+
                 crossbeam_channel::select! {
                     recv(build_report_events) -> build_report => {
                         let BuildReport { target_id, result } = build_report?;
@@ -84,17 +96,17 @@ impl Engine {
                         target_build_states.set_build_finished(target_id, &result);
 
                         if let IncrementalRunResult::Run(Err(e)) = result {
+                            termination_sender.send(()).with_context(|| "Sender error")?;
+                            services_runner.terminate_all_services();
                             return Err(e);
                         }
 
                         let target = &self.targets[target_id];
                         services_runner.start_service(target)?;
-
-                        self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
                     }
                     recv(termination_events) -> _ => {
                         services_runner.terminate_all_services();
-                        break;
+                        return Ok(());
                     }
                 }
             }

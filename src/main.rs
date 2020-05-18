@@ -7,7 +7,7 @@ mod engine;
 use anyhow::{Context, Result};
 use clean::clean_target_outputs;
 use config::Config;
-use crossbeam::channel::{unbounded, Receiver};
+use crossbeam::channel::{unbounded, Sender};
 use engine::incremental::IncrementalRunner;
 use engine::Engine;
 use std::path::Path;
@@ -45,7 +45,8 @@ fn main() -> Result<()> {
 
     if requested_targets.is_some() {
         let engine = Engine::new(targets, incremental_runner);
-        let termination_events = termination_channel()?;
+        let (termination_sender, termination_events) = unbounded();
+        terminate_on_ctrlc(termination_sender.clone())?;
 
         if arg_matches.is_present(cli::arg::WATCH) {
             engine
@@ -53,7 +54,7 @@ fn main() -> Result<()> {
                 .with_context(|| "Watch error")
         } else {
             engine
-                .build(termination_events)
+                .build(termination_sender, termination_events)
                 .with_context(|| "Build error")
         }
     } else {
@@ -61,11 +62,7 @@ fn main() -> Result<()> {
     }
 }
 
-fn termination_channel() -> Result<Receiver<()>, ctrlc::Error> {
-    let (sender, receiver) = unbounded();
-    ctrlc::set_handler(move || {
-        let _ = sender.send(());
-    })?;
-
-    Ok(receiver)
+fn terminate_on_ctrlc(termination_sender: Sender<()>) -> Result<()> {
+    ctrlc::set_handler(move || termination_sender.send(()).unwrap())
+        .with_context(|| "Failed to set Ctrl-C handler")
 }
