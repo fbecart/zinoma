@@ -47,7 +47,7 @@ impl Engine {
                         .with_context(|| "File watch error")?;
                     target_build_states.set_builds_invalidated(&invalidated_builds);
 
-                    self.build_ready_targets(scope, &mut target_build_states, &build_report_sender);
+                    self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
 
                     if let Some(build_report) = target_build_states.get_finished_build()? {
                         let target = &self.targets[build_report.target_id];
@@ -79,7 +79,7 @@ impl Engine {
             while !target_build_states.all_are_built() {
                 crossbeam_channel::select! {
                   recv(ticks) -> _ => {
-                    self.build_ready_targets(scope, &mut target_build_states, &build_report_sender);
+                    self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
 
                     if let Some(build_report) = target_build_states.get_finished_build()? {
                         if let IncrementalRunResult::Run(Err(e)) = build_report.result {
@@ -114,12 +114,13 @@ impl Engine {
         scope: &Scope<'s>,
         target_build_states: &mut TargetBuildStates,
         build_report_sender: &Sender<BuildReport>,
+        termination_events: &Receiver<()>,
     ) where
         'a: 's,
     {
         for &target_id in &target_build_states.get_ready_to_build_targets() {
             target_build_states.set_build_started(target_id);
-            self.build_target(scope, target_id, build_report_sender.clone());
+            self.build_target(scope, target_id, build_report_sender.clone(), termination_events.clone());
         }
     }
 
@@ -128,6 +129,7 @@ impl Engine {
         scope: &Scope<'s>,
         target_id: TargetId,
         build_report_sender: Sender<BuildReport>,
+        termination_events: Receiver<()>
     ) where
         'a: 's,
     {
@@ -135,7 +137,9 @@ impl Engine {
         scope.spawn(move |_| {
             let result = self
                 .incremental_runner
-                .run(&target, || build_target(&target))
+                .run(&target, || {
+                    let termination_events = termination_events.clone();
+                    build_target(&target, termination_events)})
                 .with_context(|| format!("{} - Build failed", target.name))
                 .unwrap();
 
