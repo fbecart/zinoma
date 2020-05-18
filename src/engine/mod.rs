@@ -8,11 +8,10 @@ use crate::domain::{Target, TargetId};
 use anyhow::{Context, Result};
 use build_state::TargetBuildStates;
 use builder::build_target;
-use crossbeam::channel::Sender;
+use crossbeam::channel::{tick, Receiver, Sender};
 use crossbeam::thread::Scope;
 use incremental::{IncrementalRunResult, IncrementalRunner};
 use service::ServicesRunner;
-use std::thread::sleep;
 use std::time::Duration;
 use watcher::TargetsWatcher;
 
@@ -29,56 +28,79 @@ impl Engine {
         }
     }
 
-    pub fn watch(self) -> Result<()> {
+    pub fn watch(self, termination_events: Receiver<()>) -> Result<()> {
         let watcher =
             TargetsWatcher::new(&self.targets).with_context(|| "Failed to set up file watcher")?;
 
         let mut services_runner = ServicesRunner::new(&self.targets);
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
+        let ticks = tick(Duration::from_millis(10));
+
         crossbeam::scope(|scope| -> Result<()> {
             loop {
-                let invalidated_builds = watcher
-                    .get_invalidated_targets()
-                    .with_context(|| "File watch error")?;
-                target_build_states.set_builds_invalidated(&invalidated_builds);
+                crossbeam_channel::select! {
+                  recv(ticks) -> _ => {
+                    let invalidated_builds = watcher
+                        .get_invalidated_targets()
+                        .with_context(|| "File watch error")?;
+                    target_build_states.set_builds_invalidated(&invalidated_builds);
 
-                self.build_ready_targets(scope, &mut target_build_states);
+                    self.build_ready_targets(scope, &mut target_build_states);
 
-                if let Some(build_report) = target_build_states.get_finished_build()? {
-                    let target = &self.targets[build_report.target_id];
-                    if let IncrementalRunResult::Run(Err(e)) = build_report.result {
-                        log::warn!("{} - {}", target.name, e);
-                    } else {
-                        services_runner.restart_service(scope, target.clone())?;
+                    if let Some(build_report) = target_build_states.get_finished_build()? {
+                        let target = &self.targets[build_report.target_id];
+                        if let IncrementalRunResult::Run(Err(e)) = build_report.result {
+                            log::warn!("{} - {}", target.name, e);
+                        } else {
+                            services_runner.restart_service(scope, target.clone())?;
+                        }
                     }
+                  },
+                  recv(termination_events) -> _ => {
+                      services_runner.terminate_all_services();
+                      break Ok(());
+                  }
                 }
-
-                sleep(Duration::from_millis(10))
             }
         })
         .map_err(|_| anyhow::anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
     }
 
-    pub fn build(self) -> Result<()> {
+    pub fn build(self, termination_events: Receiver<()>) -> Result<()> {
         let mut services_runner = ServicesRunner::new(&self.targets);
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
+        let ticks = tick(Duration::from_millis(10));
+
         crossbeam::scope(|scope| {
             while !target_build_states.all_are_built() {
-                self.build_ready_targets(scope, &mut target_build_states);
+                crossbeam_channel::select! {
+                  recv(ticks) -> _ => {
+                    self.build_ready_targets(scope, &mut target_build_states);
 
-                if let Some(build_report) = target_build_states.get_finished_build()? {
-                    if let IncrementalRunResult::Run(Err(e)) = build_report.result {
-                        return Err(e);
+                    if let Some(build_report) = target_build_states.get_finished_build()? {
+                        if let IncrementalRunResult::Run(Err(e)) = build_report.result {
+                            return Err(e);
+                        }
+
+                        let target = &self.targets[build_report.target_id];
+                        services_runner.start_service(scope, target.clone())?;
                     }
-
-                    let target = &self.targets[build_report.target_id];
-                    services_runner.start_service(scope, target.clone())?;
+                  },
+                  recv(termination_events) -> _ => {
+                      services_runner.terminate_all_services();
+                      break;
+                  }
                 }
-
-                sleep(Duration::from_millis(10))
             }
+
+            match termination_events
+                .recv()
+                .with_context(|| "Failed to listen to termination event")?
+            {
+                _ => services_runner.terminate_all_services(),
+            };
 
             Ok(())
         })

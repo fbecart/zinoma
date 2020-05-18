@@ -7,6 +7,7 @@ mod engine;
 use anyhow::{Context, Result};
 use clean::clean_target_outputs;
 use config::Config;
+use crossbeam::channel::{unbounded, Receiver};
 use engine::incremental::IncrementalRunner;
 use engine::Engine;
 use std::path::Path;
@@ -44,13 +45,27 @@ fn main() -> Result<()> {
 
     if requested_targets.is_some() {
         let engine = Engine::new(targets, incremental_runner);
+        let termination_events = termination_channel()?;
 
         if arg_matches.is_present(cli::arg::WATCH) {
-            engine.watch().with_context(|| "Watch error")
+            engine
+                .watch(termination_events)
+                .with_context(|| "Watch error")
         } else {
-            engine.build().with_context(|| "Build error")
+            engine
+                .build(termination_events)
+                .with_context(|| "Build error")
         }
     } else {
         Ok(())
     }
+}
+
+fn termination_channel() -> Result<Receiver<()>, ctrlc::Error> {
+    let (sender, receiver) = unbounded();
+    ctrlc::set_handler(move || {
+        let _ = sender.send(());
+    })?;
+
+    Ok(receiver)
 }
