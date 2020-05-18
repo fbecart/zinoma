@@ -114,44 +114,35 @@ impl Engine {
         scope: &Scope<'s>,
         target_build_states: &mut TargetBuildStates,
         build_report_sender: &Sender<BuildReport>,
-        termination_events: &Receiver<()>,
+        termination_events: &'s Receiver<()>,
     ) where
         'a: 's,
     {
         for &target_id in &target_build_states.get_ready_to_build_targets() {
             target_build_states.set_build_started(target_id);
-            self.build_target(scope, target_id, build_report_sender.clone(), termination_events.clone());
+
+            let target = self.targets.get(target_id).unwrap();
+            let build_report_sender = build_report_sender.clone();
+            scope.spawn(move |_| {
+                let result = self
+                    .incremental_runner
+                    .run(&target, || {
+                        let termination_events = termination_events.clone();
+                        build_target(&target, termination_events)
+                    })
+                    .with_context(|| format!("{} - Build failed", target.name))
+                    .unwrap();
+
+                if let IncrementalRunResult::Skipped = result {
+                    log::info!("{} - Build skipped (Not Modified)", target.name);
+                }
+
+                build_report_sender
+                    .send(BuildReport::new(target.id, result))
+                    .with_context(|| "Sender error")
+                    .unwrap();
+            });
         }
-    }
-
-    fn build_target<'a, 's>(
-        &'a self,
-        scope: &Scope<'s>,
-        target_id: TargetId,
-        build_report_sender: Sender<BuildReport>,
-        termination_events: Receiver<()>
-    ) where
-        'a: 's,
-    {
-        let target = self.targets.get(target_id).unwrap();
-        scope.spawn(move |_| {
-            let result = self
-                .incremental_runner
-                .run(&target, || {
-                    let termination_events = termination_events.clone();
-                    build_target(&target, termination_events)})
-                .with_context(|| format!("{} - Build failed", target.name))
-                .unwrap();
-
-            if let IncrementalRunResult::Skipped = result {
-                log::info!("{} - Build skipped (Not Modified)", target.name);
-            }
-
-            build_report_sender
-                .send(BuildReport::new(target.id, result))
-                .with_context(|| "Sender error")
-                .unwrap();
-        });
     }
 }
 

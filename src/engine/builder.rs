@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use anyhow::{Context, Result};
-use crossbeam::channel::{Receiver, tick};
+use crossbeam::channel::{tick, Receiver};
 use run_script::{IoOptions, ScriptOptions};
 use std::time::Duration;
 
