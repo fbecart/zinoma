@@ -53,7 +53,7 @@ impl Engine {
                         if let IncrementalRunResult::Run(Err(e)) = build_report.result {
                             log::warn!("{} - {}", target.name, e);
                         } else {
-                            services_runner.restart_service(scope, target.clone())?;
+                            services_runner.restart_service(target)?;
                         }
                     }
                   },
@@ -85,7 +85,7 @@ impl Engine {
                         }
 
                         let target = &self.targets[build_report.target_id];
-                        services_runner.start_service(scope, target.clone())?;
+                        services_runner.start_service(target)?;
                     }
                   },
                   recv(termination_events) -> _ => {
