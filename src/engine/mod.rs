@@ -95,12 +95,12 @@ impl Engine {
                 }
             }
 
-            match termination_events
-                .recv()
-                .with_context(|| "Failed to listen to termination event")?
-            {
-                _ => services_runner.terminate_all_services(),
-            };
+            if services_runner.has_running_services() {
+                termination_events
+                    .recv()
+                    .with_context(|| "Failed to listen to termination event")?;
+                services_runner.terminate_all_services();
+            }
 
             Ok(())
         })

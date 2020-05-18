@@ -14,10 +14,16 @@ impl ServicesRunner {
         }
     }
 
+    pub fn has_running_services(&self) -> bool {
+        self.service_processes.iter().any(Option::is_some)
+    }
+
     pub fn restart_service(&mut self, target: &Target) -> Result<()> {
         if let Some(Some(service_process)) = self.service_processes.get_mut(target.id) {
             log::trace!("{} - Stopping service", target.name);
-            service_process.kill().with_context(|| format!("Failed to kill service {}", target.name))?;
+            service_process
+                .kill()
+                .with_context(|| format!("Failed to kill service {}", target.name))?;
         }
 
         self.start_service(target)
