@@ -8,11 +8,10 @@ use crate::domain::{Target, TargetId};
 use anyhow::{Context, Result};
 use build_state::TargetBuildStates;
 use builder::build_target;
-use crossbeam::channel::{tick, unbounded, Receiver, Sender};
+use crossbeam::channel::{unbounded, Receiver, Sender};
 use crossbeam::thread::Scope;
 use incremental::{IncrementalRunResult, IncrementalRunner};
 use service::ServicesRunner;
-use std::time::Duration;
 use watcher::TargetsWatcher;
 
 pub struct Engine {
@@ -29,35 +28,35 @@ impl Engine {
     }
 
     pub fn watch(self, termination_events: Receiver<()>) -> Result<()> {
-        let watcher =
-            TargetsWatcher::new(&self.targets).with_context(|| "Failed to set up file watcher")?;
+        let (target_invalidated_sender, target_invalidated_events) = unbounded();
+        let _watcher = TargetsWatcher::new(&self.targets, target_invalidated_sender)
+            .with_context(|| "Failed to set up file watcher")?;
 
         let mut services_runner = ServicesRunner::new(&self.targets);
         let (build_report_sender, build_report_events) = unbounded();
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
-        let ticks = tick(Duration::from_millis(10));
-
         crossbeam::scope(|scope| -> Result<()> {
             loop {
                 crossbeam_channel::select! {
-                    recv(ticks) -> _ => {
-                        let invalidated_builds = watcher
-                            .get_invalidated_targets()
-                            .with_context(|| "File watch error")?;
-                        target_build_states.set_builds_invalidated(&invalidated_builds);
+                    recv(target_invalidated_events) -> target_id => {
+                        target_build_states.set_build_invalidated(target_id?);
 
                         self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
-                    },
+                    }
                     recv(build_report_events) -> build_report => {
                         let BuildReport { target_id, result } = build_report?;
                         let target = &self.targets[target_id];
+
                         target_build_states.set_build_finished(target_id, &result);
+
                         if let IncrementalRunResult::Run(Err(e)) = result {
                             log::warn!("{} - {}", target.name, e);
                         } else {
                             services_runner.restart_service(target)?;
                         }
+
+                        self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
                     }
                     recv(termination_events) -> _ => {
                         services_runner.terminate_all_services();
@@ -74,23 +73,24 @@ impl Engine {
         let (build_report_sender, build_report_events) = unbounded();
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
-        let ticks = tick(Duration::from_millis(10));
-
         crossbeam::scope(|scope| {
+            self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
+
             while !target_build_states.all_are_built() {
                 crossbeam_channel::select! {
-                    recv(ticks) -> _ => {
-                        self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
-                    },
                     recv(build_report_events) -> build_report => {
                         let BuildReport { target_id, result } = build_report?;
+
                         target_build_states.set_build_finished(target_id, &result);
+
                         if let IncrementalRunResult::Run(Err(e)) = result {
                             return Err(e);
                         }
 
                         let target = &self.targets[target_id];
                         services_runner.start_service(target)?;
+
+                        self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
                     }
                     recv(termination_events) -> _ => {
                         services_runner.terminate_all_services();

@@ -15,10 +15,8 @@ impl<'a> TargetBuildStates<'a> {
         }
     }
 
-    pub fn set_builds_invalidated(&mut self, target_ids: &[TargetId]) {
-        for &target_id in target_ids {
-            self.build_states[target_id].build_invalidated();
-        }
+    pub fn set_build_invalidated(&mut self, target_id: TargetId) {
+        self.build_states[target_id].build_invalidated();
     }
 
     pub fn set_build_started(&mut self, target_id: TargetId) {
