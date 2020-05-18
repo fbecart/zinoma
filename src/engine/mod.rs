@@ -34,34 +34,35 @@ impl Engine {
 
         let mut services_runner = ServicesRunner::new(&self.targets);
         let (build_report_sender, build_report_events) = unbounded();
-        let mut target_build_states = TargetBuildStates::new(&self.targets, build_report_events);
+        let mut target_build_states = TargetBuildStates::new(&self.targets);
 
         let ticks = tick(Duration::from_millis(10));
 
         crossbeam::scope(|scope| -> Result<()> {
             loop {
                 crossbeam_channel::select! {
-                  recv(ticks) -> _ => {
-                    let invalidated_builds = watcher
-                        .get_invalidated_targets()
-                        .with_context(|| "File watch error")?;
-                    target_build_states.set_builds_invalidated(&invalidated_builds);
+                    recv(ticks) -> _ => {
+                        let invalidated_builds = watcher
+                            .get_invalidated_targets()
+                            .with_context(|| "File watch error")?;
+                        target_build_states.set_builds_invalidated(&invalidated_builds);
 
-                    self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
-
-                    if let Some(build_report) = target_build_states.get_finished_build()? {
-                        let target = &self.targets[build_report.target_id];
-                        if let IncrementalRunResult::Run(Err(e)) = build_report.result {
+                        self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
+                    },
+                    recv(build_report_events) -> build_report => {
+                        let BuildReport { target_id, result } = build_report?;
+                        let target = &self.targets[target_id];
+                        target_build_states.set_build_finished(target_id, &result);
+                        if let IncrementalRunResult::Run(Err(e)) = result {
                             log::warn!("{} - {}", target.name, e);
                         } else {
                             services_runner.restart_service(target)?;
                         }
                     }
-                  },
-                  recv(termination_events) -> _ => {
-                      services_runner.terminate_all_services();
-                      break Ok(());
-                  }
+                    recv(termination_events) -> _ => {
+                        services_runner.terminate_all_services();
+                        break Ok(());
+                    }
                 }
             }
         })
@@ -71,29 +72,30 @@ impl Engine {
     pub fn build(self, termination_events: Receiver<()>) -> Result<()> {
         let mut services_runner = ServicesRunner::new(&self.targets);
         let (build_report_sender, build_report_events) = unbounded();
-        let mut target_build_states = TargetBuildStates::new(&self.targets, build_report_events);
+        let mut target_build_states = TargetBuildStates::new(&self.targets);
 
         let ticks = tick(Duration::from_millis(10));
 
         crossbeam::scope(|scope| {
             while !target_build_states.all_are_built() {
                 crossbeam_channel::select! {
-                  recv(ticks) -> _ => {
-                    self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
-
-                    if let Some(build_report) = target_build_states.get_finished_build()? {
-                        if let IncrementalRunResult::Run(Err(e)) = build_report.result {
+                    recv(ticks) -> _ => {
+                        self.build_ready_targets(scope, &mut target_build_states, &build_report_sender, &termination_events);
+                    },
+                    recv(build_report_events) -> build_report => {
+                        let BuildReport { target_id, result } = build_report?;
+                        target_build_states.set_build_finished(target_id, &result);
+                        if let IncrementalRunResult::Run(Err(e)) = result {
                             return Err(e);
                         }
 
-                        let target = &self.targets[build_report.target_id];
+                        let target = &self.targets[target_id];
                         services_runner.start_service(target)?;
                     }
-                  },
-                  recv(termination_events) -> _ => {
-                      services_runner.terminate_all_services();
-                      break;
-                  }
+                    recv(termination_events) -> _ => {
+                        services_runner.terminate_all_services();
+                        break;
+                    }
                 }
             }
 

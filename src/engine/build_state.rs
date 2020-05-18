@@ -1,20 +1,16 @@
 use super::incremental::IncrementalRunResult;
-use super::BuildReport;
 use crate::domain::{Target, TargetId};
-use anyhow::{Error, Result};
-use crossbeam::channel::{Receiver, TryRecvError};
+use anyhow::Result;
 
 pub struct TargetBuildStates<'a> {
     targets: &'a [Target],
-    build_report_events: Receiver<BuildReport>,
     build_states: Vec<TargetBuildState>,
 }
 
 impl<'a> TargetBuildStates<'a> {
-    pub fn new(targets: &'a [Target], build_report_events: Receiver<BuildReport>) -> Self {
+    pub fn new(targets: &'a [Target]) -> Self {
         Self {
             targets,
-            build_report_events,
             build_states: vec![TargetBuildState::new(); targets.len()],
         }
     }
@@ -27,6 +23,19 @@ impl<'a> TargetBuildStates<'a> {
 
     pub fn set_build_started(&mut self, target_id: TargetId) {
         self.build_states[target_id].build_started();
+    }
+
+    pub fn set_build_finished(
+        &mut self,
+        target_id: TargetId,
+        result: &IncrementalRunResult<Result<()>>,
+    ) {
+        let target_build_state = &mut self.build_states[target_id];
+        if let IncrementalRunResult::Run(Err(_)) = result {
+            target_build_state.build_failed();
+        } else {
+            target_build_state.build_succeeded();
+        }
     }
 
     pub fn get_ready_to_build_targets(&self) -> Vec<TargetId> {
@@ -51,23 +60,6 @@ impl<'a> TargetBuildStates<'a> {
         self.build_states
             .iter()
             .all(|build_state| build_state.built)
-    }
-
-    pub fn get_finished_build(&mut self) -> Result<Option<BuildReport>> {
-        match self.build_report_events.try_recv() {
-            Ok(result) => {
-                let target_build_state = &mut self.build_states[result.target_id];
-                if let IncrementalRunResult::Run(Err(_)) = &result.result {
-                    target_build_state.build_failed();
-                } else {
-                    target_build_state.build_succeeded();
-                }
-
-                Ok(Some(result))
-            }
-            Err(TryRecvError::Empty) => Ok(None),
-            Err(e) => Err(Error::new(e).context("Crossbeam parallelism failure")),
-        }
     }
 }
 
