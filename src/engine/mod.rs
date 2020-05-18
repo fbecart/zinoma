@@ -8,7 +8,7 @@ use crate::domain::{Target, TargetId};
 use anyhow::{Context, Result};
 use build_state::TargetBuildStates;
 use builder::build_target;
-use crossbeam::channel::{tick, Receiver, Sender};
+use crossbeam::channel::{tick, unbounded, Receiver, Sender};
 use crossbeam::thread::Scope;
 use incremental::{IncrementalRunResult, IncrementalRunner};
 use service::ServicesRunner;
@@ -33,7 +33,8 @@ impl Engine {
             TargetsWatcher::new(&self.targets).with_context(|| "Failed to set up file watcher")?;
 
         let mut services_runner = ServicesRunner::new(&self.targets);
-        let mut target_build_states = TargetBuildStates::new(&self.targets);
+        let (build_report_sender, build_report_events) = unbounded();
+        let mut target_build_states = TargetBuildStates::new(&self.targets, build_report_events);
 
         let ticks = tick(Duration::from_millis(10));
 
@@ -46,7 +47,7 @@ impl Engine {
                         .with_context(|| "File watch error")?;
                     target_build_states.set_builds_invalidated(&invalidated_builds);
 
-                    self.build_ready_targets(scope, &mut target_build_states);
+                    self.build_ready_targets(scope, &mut target_build_states, &build_report_sender);
 
                     if let Some(build_report) = target_build_states.get_finished_build()? {
                         let target = &self.targets[build_report.target_id];
@@ -69,7 +70,8 @@ impl Engine {
 
     pub fn build(self, termination_events: Receiver<()>) -> Result<()> {
         let mut services_runner = ServicesRunner::new(&self.targets);
-        let mut target_build_states = TargetBuildStates::new(&self.targets);
+        let (build_report_sender, build_report_events) = unbounded();
+        let mut target_build_states = TargetBuildStates::new(&self.targets, build_report_events);
 
         let ticks = tick(Duration::from_millis(10));
 
@@ -77,7 +79,7 @@ impl Engine {
             while !target_build_states.all_are_built() {
                 crossbeam_channel::select! {
                   recv(ticks) -> _ => {
-                    self.build_ready_targets(scope, &mut target_build_states);
+                    self.build_ready_targets(scope, &mut target_build_states, &build_report_sender);
 
                     if let Some(build_report) = target_build_states.get_finished_build()? {
                         if let IncrementalRunResult::Run(Err(e)) = build_report.result {
@@ -111,12 +113,13 @@ impl Engine {
         &'a self,
         scope: &Scope<'s>,
         target_build_states: &mut TargetBuildStates,
+        build_report_sender: &Sender<BuildReport>,
     ) where
         'a: 's,
     {
         for &target_id in &target_build_states.get_ready_to_build_targets() {
             target_build_states.set_build_started(target_id);
-            self.build_target(scope, target_id, target_build_states.tx.clone());
+            self.build_target(scope, target_id, build_report_sender.clone());
         }
     }
 
@@ -124,7 +127,7 @@ impl Engine {
         &'a self,
         scope: &Scope<'s>,
         target_id: TargetId,
-        tx: Sender<BuildReport>,
+        build_report_sender: Sender<BuildReport>,
     ) where
         'a: 's,
     {
@@ -140,7 +143,8 @@ impl Engine {
                 log::info!("{} - Build skipped (Not Modified)", target.name);
             }
 
-            tx.send(BuildReport::new(target.id, result))
+            build_report_sender
+                .send(BuildReport::new(target.id, result))
                 .with_context(|| "Sender error")
                 .unwrap();
         });
