@@ -21,8 +21,7 @@ impl ServicesRunner {
     pub fn restart_service(&mut self, target: &Target) -> Result<()> {
         if let Some(Some(service_process)) = self.service_processes.get_mut(target.id) {
             log::trace!("{} - Stopping service", target.name);
-            service_process
-                .kill()
+            kill_and_wait(service_process)
                 .with_context(|| format!("Failed to kill service {}", target.name))?;
         }
 
@@ -50,10 +49,15 @@ impl ServicesRunner {
     pub fn terminate_all_services(&mut self) {
         for service_process in self.service_processes.iter_mut() {
             if let Some(service_process) = service_process {
-                service_process.kill().unwrap_or_else(|e| {
-                    println!("Failed to send Kill signal to running process: {}", e)
-                });
+                kill_and_wait(service_process)
+                    .unwrap_or_else(|e| println!("Failed to kill service: {}", e));
             }
         }
     }
+}
+
+pub fn kill_and_wait(process: &mut Child) -> Result<()> {
+    process.kill()?;
+    process.wait()?;
+    Ok(())
 }
