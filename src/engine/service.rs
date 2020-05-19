@@ -48,11 +48,16 @@ impl ServicesRunner {
     }
 
     pub fn terminate_all_services(&mut self) {
-        for service_process in self.service_processes.iter_mut() {
-            if let Some(service_process) = service_process {
-                process::kill_and_wait(service_process)
-                    .unwrap_or_else(|e| println!("Failed to kill service: {}", e));
-            }
+        for service_process in self.service_processes.iter_mut().flatten() {
+            service_process
+                .kill()
+                .unwrap_or_else(|e| println!("Failed to kill service: {}", e));
+        }
+        for service_process in self.service_processes.iter_mut().flatten() {
+            service_process
+                .wait()
+                .map(|_exit_status| ())
+                .unwrap_or_else(|e| println!("Failed to wait for service termination: {}", e));
         }
     }
 }
