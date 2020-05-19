@@ -1,17 +1,18 @@
 use super::incremental::IncrementalRunResult;
 use crate::domain::{Target, TargetId};
 use anyhow::Result;
+use crossbeam::thread::ScopedJoinHandle;
 
-pub struct TargetBuildStates<'a> {
+pub struct TargetBuildStates<'a: 's, 's> {
     targets: &'a [Target],
-    build_states: Vec<TargetBuildState>,
+    build_states: Vec<TargetBuildState<'s>>,
 }
 
-impl<'a> TargetBuildStates<'a> {
+impl<'a, 's> TargetBuildStates<'a, 's> {
     pub fn new(targets: &'a [Target]) -> Self {
         Self {
             targets,
-            build_states: vec![TargetBuildState::new(); targets.len()],
+            build_states: targets.iter().map(|_| TargetBuildState::new()).collect(),
         }
     }
 
@@ -19,8 +20,12 @@ impl<'a> TargetBuildStates<'a> {
         self.build_states[target_id].build_invalidated();
     }
 
-    pub fn set_build_started(&mut self, target_id: TargetId) {
-        self.build_states[target_id].build_started();
+    pub fn set_build_started(
+        &mut self,
+        target_id: TargetId,
+        build_thread: ScopedJoinHandle<'s, ()>,
+    ) {
+        self.build_states[target_id].build_started(build_thread);
     }
 
     pub fn set_build_finished(
@@ -40,7 +45,9 @@ impl<'a> TargetBuildStates<'a> {
         self.build_states
             .iter()
             .enumerate()
-            .filter(|(_target_id, build_state)| build_state.to_build && !build_state.being_built)
+            .filter(|(_target_id, build_state)| {
+                build_state.to_build && build_state.build_thread.is_none()
+            })
             .map(|(target_id, _build_state)| target_id)
             .filter(|&target_id| self.has_all_dependencies_built(target_id))
             .collect()
@@ -59,20 +66,27 @@ impl<'a> TargetBuildStates<'a> {
             .iter()
             .all(|build_state| build_state.built)
     }
+
+    pub fn join_all_build_threads(&mut self) {
+        for build_state in self.build_states.iter_mut() {
+            if build_state.build_thread.is_some() {
+                build_state.join_build_thread();
+            }
+        }
+    }
 }
 
-#[derive(Clone)]
-struct TargetBuildState {
+struct TargetBuildState<'a> {
     to_build: bool,
-    being_built: bool,
+    build_thread: Option<ScopedJoinHandle<'a, ()>>,
     built: bool,
 }
 
-impl TargetBuildState {
+impl<'a> TargetBuildState<'a> {
     pub fn new() -> Self {
         Self {
             to_build: true,
-            being_built: false,
+            build_thread: None,
             built: false,
         }
     }
@@ -82,19 +96,27 @@ impl TargetBuildState {
         self.built = false;
     }
 
-    pub fn build_started(&mut self) {
+    pub fn build_started(&mut self, build_thread: ScopedJoinHandle<'a, ()>) {
         self.to_build = false;
-        self.being_built = true;
+        self.build_thread = Some(build_thread);
         self.built = false;
     }
 
     pub fn build_succeeded(&mut self) {
-        self.being_built = false;
+        self.join_build_thread();
         self.built = !self.to_build;
     }
 
     pub fn build_failed(&mut self) {
-        self.being_built = false;
+        self.join_build_thread();
         self.built = false;
+    }
+
+    fn join_build_thread(&mut self) {
+        let build_thread = std::mem::replace(&mut self.build_thread, None);
+        build_thread
+            .unwrap()
+            .join()
+            .unwrap_or_else(|_| println!("Failed to join build thread"));
     }
 }

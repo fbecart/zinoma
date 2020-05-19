@@ -10,7 +10,6 @@ use anyhow::{Context, Result};
 use build_state::TargetBuildStates;
 use builder::build_target;
 use crossbeam::channel::{unbounded, Receiver, Sender};
-use crossbeam::thread::Scope;
 use incremental::IncrementalRunResult;
 use service::ServicesRunner;
 use watcher::TargetWatcher;
@@ -35,16 +34,24 @@ impl Engine {
 
         let mut services_runner = ServicesRunner::new(&self.targets);
         let (build_report_sender, build_report_events) = unbounded();
-        let mut target_build_states = TargetBuildStates::new(&self.targets);
 
         crossbeam::scope(|scope| -> Result<()> {
+            let mut target_build_states = TargetBuildStates::new(&self.targets);
+
             loop {
-                self.build_ready_targets(
-                    scope,
-                    &mut target_build_states,
-                    &build_report_sender,
-                    &termination_events,
-                );
+                for &target_id in &target_build_states.get_ready_to_build_targets() {
+                    let target = &self.targets[target_id];
+                    let termination_events = termination_events.clone();
+                    let build_report_sender = build_report_sender.clone();
+                    let build_thread = scope.spawn(move |_| {
+                        build_target_incrementally(
+                            target,
+                            &termination_events,
+                            &build_report_sender,
+                        )
+                    });
+                    target_build_states.set_build_started(target_id, build_thread);
+                }
 
                 crossbeam_channel::select! {
                     recv(target_invalidated_events) -> target_id => {
@@ -63,6 +70,7 @@ impl Engine {
                         }
                     }
                     recv(termination_events) -> _ => {
+                        target_build_states.join_all_build_threads();
                         services_runner.terminate_all_services();
                         return Ok(());
                     }
@@ -79,16 +87,24 @@ impl Engine {
     ) -> Result<()> {
         let mut services_runner = ServicesRunner::new(&self.targets);
         let (build_report_sender, build_report_events) = unbounded();
-        let mut target_build_states = TargetBuildStates::new(&self.targets);
 
         crossbeam::scope(|scope| {
+            let mut target_build_states = TargetBuildStates::new(&self.targets);
+
             while !target_build_states.all_are_built() {
-                self.build_ready_targets(
-                    scope,
-                    &mut target_build_states,
-                    &build_report_sender,
-                    &termination_events,
-                );
+                for &target_id in &target_build_states.get_ready_to_build_targets() {
+                    let target = &self.targets[target_id];
+                    let termination_events = termination_events.clone();
+                    let build_report_sender = build_report_sender.clone();
+                    let build_thread = scope.spawn(move |_| {
+                        build_target_incrementally(
+                            target,
+                            &termination_events,
+                            &build_report_sender,
+                        )
+                    });
+                    target_build_states.set_build_started(target_id, build_thread);
+                }
 
                 crossbeam_channel::select! {
                     recv(build_report_events) -> build_report => {
@@ -98,6 +114,7 @@ impl Engine {
 
                         if let IncrementalRunResult::Run(Err(e)) = result {
                             termination_sender.send(()).with_context(|| "Sender error")?;
+                            target_build_states.join_all_build_threads();
                             services_runner.terminate_all_services();
                             return Err(e);
                         }
@@ -106,6 +123,7 @@ impl Engine {
                         services_runner.start_service(target)?;
                     }
                     recv(termination_events) -> _ => {
+                        target_build_states.join_all_build_threads();
                         services_runner.terminate_all_services();
                         return Ok(());
                     }
@@ -116,31 +134,13 @@ impl Engine {
                 termination_events
                     .recv()
                     .with_context(|| "Failed to listen to termination event")?;
+                target_build_states.join_all_build_threads();
                 services_runner.terminate_all_services();
             }
 
             Ok(())
         })
         .map_err(|_| anyhow::anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
-    }
-
-    fn build_ready_targets<'a, 's>(
-        &'a self,
-        scope: &Scope<'s>,
-        target_build_states: &mut TargetBuildStates,
-        build_report_sender: &'s Sender<BuildReport>,
-        termination_events: &'s Receiver<()>,
-    ) where
-        'a: 's,
-    {
-        for &target_id in &target_build_states.get_ready_to_build_targets() {
-            target_build_states.set_build_started(target_id);
-
-            let target = self.targets.get(target_id).unwrap();
-            scope.spawn(move |_| {
-                build_target_incrementally(target, termination_events, &build_report_sender)
-            });
-        }
     }
 }
 
