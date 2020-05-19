@@ -184,7 +184,10 @@ Specifies a command to run upon successful build of the target. It should be a s
 
 This keyword is meant to enable the execution of long-lasting commands, such as servers.
 
-Services are only executed in watch mode (when the `--watch` flag is passed to `zinoma`). They are restarted every time the target `build` runs to completion.
+If the targets to run do not define services, `zinoma` will automatically exit after all builds are complete.
+On the contrary, if at least one target defines a service, then, `zinoma` will keep running even after all builds are complete in order to keep the service alive.
+
+In watch mode (when the `--watch` flag is passed to `zinoma`), services are restarted every time the target `build` runs to completion.
 
 __Example__
 
@@ -196,7 +199,7 @@ targets:
     service: npm start
 ```
 
-In this example, `$ zinoma npm_server --watch` will run `npm install` and then `npm start`.
+In this example, `$ zinoma npm_server` will run `npm install` and then `npm start`.
 
 ### Command line
 
@@ -239,14 +242,9 @@ This directory should be ignored in your version control.
 
 #### Watch mode (`--watch`)
 
-The execution of `zinoma` normally ends as soon as all the specified targets are built.
-
-However, Žinoma also offers a watch mode which can be enabled with the `--watch` option of the command line.
+Žinoma offers a watch mode which can be enabled with the `--watch` option of the command line.
 Instead of exiting, Žinoma will keep an eye open on the targets' `input_paths`,
 and will re-execute the relevant targets in case filesystem changes are detected.
-
-When watch mode is enabled, Žinoma also runs the services of the built targets.
-A service will be restarted every time its target's build completes.
 
 #### Clean flag (`--clean`)
 
