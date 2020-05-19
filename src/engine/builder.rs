@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+use super::process;
 use anyhow::{Context, Result};
 use crossbeam::channel::{tick, Receiver};
 use run_script::{IoOptions, ScriptOptions};
@@ -17,7 +18,7 @@ pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result
         options.output_redirection = IoOptions::Inherit;
         options.working_directory = Some(target.path.to_path_buf());
 
-        let mut process = run_script::spawn(&script, &vec![], &options)
+        let mut build_process = run_script::spawn(&script, &vec![], &options)
             .with_context(|| "Build script execution error")?;
 
         let ticks = tick(Duration::from_millis(10));
@@ -25,7 +26,7 @@ pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result
         loop {
             crossbeam_channel::select! {
                 recv(ticks) -> _ => {
-                    if let Some(exit_status) = process.try_wait()? {
+                    if let Some(exit_status) = build_process.try_wait()? {
                         if !exit_status.success() {
                             return Err(anyhow::anyhow!("Build failed for target {} ({})", target.name, exit_status));
                         }
@@ -39,7 +40,7 @@ pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result
                     }
                 },
                 recv(termination_events) -> _ => {
-                    process.kill().with_context(|| format!("Failed to kill build process for {}", target.name))?;
+                    process::kill_and_wait(&mut build_process).with_context(|| format!("Failed to kill build process for {}", target.name))?;
                     return Err(anyhow::anyhow!("Build cancelled for target {}", target.name));
                 },
             }
