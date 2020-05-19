@@ -12,7 +12,7 @@ use crossbeam::channel::{unbounded, Receiver, Sender};
 use crossbeam::thread::Scope;
 use incremental::{IncrementalRunResult, IncrementalRunner};
 use service::ServicesRunner;
-use watcher::TargetsWatcher;
+use watcher::TargetWatcher;
 
 pub struct Engine {
     targets: Vec<Target>,
@@ -29,8 +29,12 @@ impl Engine {
 
     pub fn watch(self, termination_events: Receiver<()>) -> Result<()> {
         let (target_invalidated_sender, target_invalidated_events) = unbounded();
-        let _watcher = TargetsWatcher::new(&self.targets, target_invalidated_sender)
-            .with_context(|| "Failed to set up file watcher")?;
+        let _target_watchers = self
+            .targets
+            .iter()
+            .map(|target| TargetWatcher::new(target, target_invalidated_sender.clone()))
+            .collect::<Result<Vec<_>>>()
+            .with_context(|| "Failed setting up filesystem watchers");
 
         let mut services_runner = ServicesRunner::new(&self.targets);
         let (build_report_sender, build_report_events) = unbounded();

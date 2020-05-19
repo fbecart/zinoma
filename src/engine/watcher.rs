@@ -4,25 +4,6 @@ use crossbeam::channel::Sender;
 use notify::{ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
 
-pub struct TargetsWatcher {
-    _target_watchers: Vec<TargetWatcher>,
-}
-
-impl TargetsWatcher {
-    pub fn new(targets: &[Target], target_invalidated_sender: Sender<TargetId>) -> Result<Self> {
-        let mut target_watchers = Vec::new();
-        for target in targets.iter() {
-            target_watchers.push(TargetWatcher::new(
-                target,
-                target_invalidated_sender.clone(),
-            )?);
-        }
-        Ok(Self {
-            _target_watchers: target_watchers,
-        })
-    }
-}
-
 pub struct TargetWatcher {
     _watcher: RecommendedWatcher,
 }
