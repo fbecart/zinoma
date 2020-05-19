@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::ErrorKind;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(PartialEq)]
 pub enum IncrementalRunResult<T> {
@@ -17,13 +17,11 @@ pub enum IncrementalRunResult<T> {
     Run(T),
 }
 
-pub struct IncrementalRunner {
-    checksum_dir: PathBuf,
-}
+pub struct IncrementalRunner {}
 
 impl IncrementalRunner {
-    pub fn new(checksum_dir: PathBuf) -> Self {
-        Self { checksum_dir }
+    pub fn new() -> Self {
+        Self {}
     }
 
     pub fn run<T, F>(&self, target: &Target, function: F) -> Result<IncrementalRunResult<Result<T>>>
@@ -47,8 +45,13 @@ impl IncrementalRunner {
         Ok(IncrementalRunResult::Run(result))
     }
 
+    fn get_checksum_dir_path(&self, project_dir: &Path) -> PathBuf {
+        project_dir.join(".zinoma")
+    }
+
     fn get_checksum_file_path(&self, target: &Target) -> PathBuf {
-        self.checksum_dir.join(format!("{}.checksum", target.name))
+        self.get_checksum_dir_path(&target.path)
+            .join(format!("{}.checksum", target.name))
     }
 
     fn files_have_not_changed_since_last_successful_execution(
@@ -71,9 +74,6 @@ impl IncrementalRunner {
     }
 
     fn read_target_checksums(&self, target: &Target) -> Result<Option<TargetChecksums>> {
-        // Might want to check for some errors like permission denied.
-        fs::create_dir(&self.checksum_dir).ok();
-
         let file_path = self.get_checksum_file_path(target);
         if file_path.exists() {
             let file = File::open(&file_path)
@@ -106,6 +106,8 @@ impl IncrementalRunner {
     }
 
     fn write_target_checksums(&self, target: &Target, checksums: &TargetChecksums) -> Result<()> {
+        fs::create_dir(self.get_checksum_dir_path(&target.path)).ok();
+
         let file_path = self.get_checksum_file_path(target);
         let file = File::create(&file_path)
             .with_context(|| format!("Failed to create checksum file {}", file_path.display()))?;
@@ -113,9 +115,9 @@ impl IncrementalRunner {
             .with_context(|| format!("Failed to serialize checksums for {}", target.name))
     }
 
-    pub fn clean_checksums(&self, targets: &[Target]) -> Result<()> {
+    pub fn clean_checksums(&self, project_dir: &Path, targets: &[Target]) -> Result<()> {
         if targets.is_empty() {
-            self.remove_checksum_dir()
+            self.remove_checksum_dir(project_dir)
         } else {
             for target in targets.iter() {
                 self.remove_target_checksums(target)?;
@@ -124,14 +126,15 @@ impl IncrementalRunner {
         }
     }
 
-    pub fn remove_checksum_dir(&self) -> Result<()> {
-        match fs::remove_dir_all(&self.checksum_dir) {
+    pub fn remove_checksum_dir(&self, project_dir: &Path) -> Result<()> {
+        let checksum_dir = self.get_checksum_dir_path(project_dir);
+        match fs::remove_dir_all(&checksum_dir) {
             Ok(_) => {}
             Err(e) if e.kind() == ErrorKind::NotFound => {}
             Err(e) => {
                 return Err(Error::new(e).context(format!(
                     "Failed to remove checksum directory {}",
-                    self.checksum_dir.display()
+                    checksum_dir.display()
                 )));
             }
         }

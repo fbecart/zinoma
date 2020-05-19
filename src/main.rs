@@ -35,11 +35,10 @@ fn main() -> Result<()> {
     let requested_targets = arg_matches.values_of_lossy(cli::arg::TARGETS);
     let targets = config.into_targets(project_dir, &requested_targets)?;
 
-    let checksum_dir = project_dir.join(".zinoma");
-    let incremental_runner = IncrementalRunner::new(checksum_dir);
+    let incremental_runner = IncrementalRunner::new();
 
     if arg_matches.is_present(cli::arg::CLEAN) {
-        incremental_runner.clean_checksums(&targets)?;
+        incremental_runner.clean_checksums(project_dir, &targets)?;
         clean_target_outputs(&targets)?;
     }
 
