@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use clean::clean_target_outputs;
 use config::Config;
 use crossbeam::channel::{unbounded, Sender};
-use engine::incremental::IncrementalRunner;
+use engine::incremental;
 use engine::Engine;
 use std::path::Path;
 
@@ -35,15 +35,13 @@ fn main() -> Result<()> {
     let requested_targets = arg_matches.values_of_lossy(cli::arg::TARGETS);
     let targets = config.into_targets(project_dir, &requested_targets)?;
 
-    let incremental_runner = IncrementalRunner::new();
-
     if arg_matches.is_present(cli::arg::CLEAN) {
-        incremental_runner.clean_checksums(project_dir, &targets)?;
+        incremental::clean_checksums(project_dir, &targets)?;
         clean_target_outputs(&targets)?;
     }
 
     if requested_targets.is_some() {
-        let engine = Engine::new(targets, incremental_runner);
+        let engine = Engine::new(targets);
         let (termination_sender, termination_events) = unbounded();
         terminate_on_ctrlc(termination_sender.clone())?;
 

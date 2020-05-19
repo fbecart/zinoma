@@ -11,21 +11,17 @@ use build_state::TargetBuildStates;
 use builder::build_target;
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use crossbeam::thread::Scope;
-use incremental::{IncrementalRunResult, IncrementalRunner};
+use incremental::IncrementalRunResult;
 use service::ServicesRunner;
 use watcher::TargetWatcher;
 
 pub struct Engine {
     targets: Vec<Target>,
-    incremental_runner: IncrementalRunner,
 }
 
 impl Engine {
-    pub fn new(targets: Vec<Target>, incremental_runner: IncrementalRunner) -> Self {
-        Self {
-            targets,
-            incremental_runner,
-        }
+    pub fn new(targets: Vec<Target>) -> Self {
+        Self { targets }
     }
 
     pub fn watch(self, termination_events: Receiver<()>) -> Result<()> {
@@ -142,12 +138,7 @@ impl Engine {
 
             let target = self.targets.get(target_id).unwrap();
             scope.spawn(move |_| {
-                build_target_incrementally(
-                    target,
-                    &self.incremental_runner,
-                    termination_events,
-                    &build_report_sender,
-                )
+                build_target_incrementally(target, termination_events, &build_report_sender)
             });
         }
     }
@@ -155,16 +146,14 @@ impl Engine {
 
 fn build_target_incrementally(
     target: &Target,
-    incremental_runner: &IncrementalRunner,
     termination_events: &Receiver<()>,
     build_report_sender: &Sender<BuildReport>,
 ) {
-    let result = incremental_runner
-        .run(&target, || {
-            build_target(&target, termination_events.clone())
-        })
-        .with_context(|| format!("{} - Build failed", target.name))
-        .unwrap();
+    let result = incremental::run(&target, || {
+        build_target(&target, termination_events.clone())
+    })
+    .with_context(|| format!("{} - Build failed", target.name))
+    .unwrap();
 
     if let IncrementalRunResult::Skipped = result {
         log::info!("{} - Build skipped (Not Modified)", target.name);
