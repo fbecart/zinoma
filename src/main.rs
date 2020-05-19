@@ -7,6 +7,7 @@ mod engine;
 use anyhow::{Context, Result};
 use clean::clean_target_outputs;
 use config::Config;
+use crossbeam::channel::{unbounded, Sender};
 use engine::incremental::IncrementalRunner;
 use engine::Engine;
 use std::path::Path;
@@ -35,7 +36,7 @@ fn main() -> Result<()> {
     let targets = config.into_targets(project_dir, &requested_targets)?;
 
     let checksum_dir = project_dir.join(".zinoma");
-    let incremental_runner = IncrementalRunner::new(&checksum_dir);
+    let incremental_runner = IncrementalRunner::new(checksum_dir);
 
     if arg_matches.is_present(cli::arg::CLEAN) {
         incremental_runner.clean_checksums(&targets)?;
@@ -44,18 +45,24 @@ fn main() -> Result<()> {
 
     if requested_targets.is_some() {
         let engine = Engine::new(targets, incremental_runner);
+        let (termination_sender, termination_events) = unbounded();
+        terminate_on_ctrlc(termination_sender.clone())?;
 
-        crossbeam::scope(|scope| {
-            if arg_matches.is_present(cli::arg::WATCH) {
-                engine.watch(scope).with_context(|| "Watch error")
-            } else {
-                engine.build(scope).with_context(|| "Build error")
-            }
-        })
-        .map_err(|_| {
-            anyhow::anyhow!("Unknown crossbeam parallelism failure (thread panicked)")
-        })??;
+        if arg_matches.is_present(cli::arg::WATCH) {
+            engine
+                .watch(termination_events)
+                .with_context(|| "Watch error")
+        } else {
+            engine
+                .build(termination_sender, termination_events)
+                .with_context(|| "Build error")
+        }
+    } else {
+        Ok(())
     }
+}
 
-    Ok(())
+fn terminate_on_ctrlc(termination_sender: Sender<()>) -> Result<()> {
+    ctrlc::set_handler(move || termination_sender.send(()).unwrap())
+        .with_context(|| "Failed to set Ctrl-C handler")
 }

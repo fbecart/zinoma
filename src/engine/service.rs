@@ -1,64 +1,63 @@
+use super::process;
 use crate::domain::Target;
 use anyhow::{Context, Result};
-use crossbeam::channel::{unbounded, Receiver, Sender};
-use crossbeam::thread::Scope;
 use run_script::{IoOptions, ScriptOptions};
+use std::process::Child;
 
 pub struct ServicesRunner {
-    tx_channels: Vec<Option<Sender<RunSignal>>>,
+    service_processes: Vec<Option<Child>>,
 }
 
 impl ServicesRunner {
     pub fn new(targets: &[Target]) -> Self {
         Self {
-            tx_channels: vec![None; targets.len()],
+            service_processes: (0..targets.len()).map(|_| None).collect(),
         }
     }
 
-    pub fn restart_service<'a>(&mut self, scope: &Scope<'a>, target: &'a Target) -> Result<()> {
-        if target.service.is_some() {
-            // If already running, send a kill signal.
-            if let Some(service_tx) = &self.tx_channels[target.id] {
-                service_tx
-                    .send(RunSignal::Kill)
-                    .with_context(|| "Failed to send Kill signal to running process")?;
-            }
+    pub fn has_running_services(&self) -> bool {
+        self.service_processes.iter().any(Option::is_some)
+    }
 
-            let (service_tx, service_rx) = unbounded();
-            self.tx_channels[target.id] = Some(service_tx);
+    pub fn restart_service(&mut self, target: &Target) -> Result<()> {
+        if let Some(Some(service_process)) = self.service_processes.get_mut(target.id) {
+            log::trace!("{} - Stopping service", target.name);
+            process::kill_and_wait(service_process)
+                .with_context(|| format!("Failed to kill service {}", target.name))?;
+        }
 
-            scope.spawn(move |_| run_target_service(target, service_rx).unwrap());
+        self.start_service(target)
+    }
+
+    pub fn start_service(&mut self, target: &Target) -> Result<()> {
+        if let Some(script) = &target.service {
+            log::info!("{} - Starting service", target.name);
+
+            let mut options = ScriptOptions::new();
+            options.exit_on_error = true;
+            options.output_redirection = IoOptions::Inherit;
+            options.working_directory = Some(target.path.to_path_buf());
+
+            let service_process = run_script::spawn(&script, &vec![], &options)
+                .with_context(|| format!("Failed to start service {}", target.name))?;
+
+            self.service_processes[target.id] = Some(service_process);
         }
 
         Ok(())
     }
-}
 
-fn run_target_service(target: &Target, rx: Receiver<RunSignal>) -> Result<()> {
-    if let Some(script) = &target.service {
-        log::info!("{} - Starting service", target.name);
-
-        let mut options = ScriptOptions::new();
-        options.exit_on_error = true;
-        options.output_redirection = IoOptions::Inherit;
-        options.working_directory = Some(target.path.to_path_buf());
-
-        let mut handle = run_script::spawn(&script, &vec![], &options)
-            .with_context(|| format!("Failed to start service {}", target.name))?;
-
-        match rx.recv().with_context(|| "Receiver error")? {
-            RunSignal::Kill => {
-                log::trace!("{} - Stopping service", target.name);
-                handle
-                    .kill()
-                    .with_context(|| format!("Failed to kill service {}", target.name))?;
-            }
+    pub fn terminate_all_services(&mut self) {
+        for service_process in self.service_processes.iter_mut().flatten() {
+            service_process
+                .kill()
+                .unwrap_or_else(|e| println!("Failed to kill service: {}", e));
+        }
+        for service_process in self.service_processes.iter_mut().flatten() {
+            service_process
+                .wait()
+                .map(|_exit_status| ())
+                .unwrap_or_else(|e| println!("Failed to wait for service termination: {}", e));
         }
     }
-
-    Ok(())
-}
-
-enum RunSignal {
-    Kill,
 }

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::ErrorKind;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(PartialEq)]
 pub enum IncrementalRunResult<T> {
@@ -17,12 +17,12 @@ pub enum IncrementalRunResult<T> {
     Run(T),
 }
 
-pub struct IncrementalRunner<'a> {
-    checksum_dir: &'a Path,
+pub struct IncrementalRunner {
+    checksum_dir: PathBuf,
 }
 
-impl<'a> IncrementalRunner<'a> {
-    pub fn new(checksum_dir: &'a Path) -> Self {
+impl IncrementalRunner {
+    pub fn new(checksum_dir: PathBuf) -> Self {
         Self { checksum_dir }
     }
 
@@ -125,7 +125,7 @@ impl<'a> IncrementalRunner<'a> {
     }
 
     pub fn remove_checksum_dir(&self) -> Result<()> {
-        match fs::remove_dir_all(self.checksum_dir) {
+        match fs::remove_dir_all(&self.checksum_dir) {
             Ok(_) => {}
             Err(e) if e.kind() == ErrorKind::NotFound => {}
             Err(e) => {

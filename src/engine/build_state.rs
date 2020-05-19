@@ -1,35 +1,39 @@
-use super::builder::BuildReport;
 use super::incremental::IncrementalRunResult;
 use crate::domain::{Target, TargetId};
-use anyhow::{Error, Result};
-use crossbeam::channel::{unbounded, Receiver, Sender, TryRecvError};
+use anyhow::Result;
 
 pub struct TargetBuildStates<'a> {
     targets: &'a [Target],
     build_states: Vec<TargetBuildState>,
-    pub tx: Sender<BuildReport>,
-    rx: Receiver<BuildReport>,
 }
 
 impl<'a> TargetBuildStates<'a> {
     pub fn new(targets: &'a [Target]) -> Self {
-        let (tx, rx) = unbounded();
         Self {
             targets,
             build_states: vec![TargetBuildState::new(); targets.len()],
-            tx,
-            rx,
         }
     }
 
-    pub fn set_builds_invalidated(&mut self, target_ids: &[TargetId]) {
-        for &target_id in target_ids {
-            self.build_states[target_id].build_invalidated();
-        }
+    pub fn set_build_invalidated(&mut self, target_id: TargetId) {
+        self.build_states[target_id].build_invalidated();
     }
 
     pub fn set_build_started(&mut self, target_id: TargetId) {
         self.build_states[target_id].build_started();
+    }
+
+    pub fn set_build_finished(
+        &mut self,
+        target_id: TargetId,
+        result: &IncrementalRunResult<Result<()>>,
+    ) {
+        let target_build_state = &mut self.build_states[target_id];
+        if let IncrementalRunResult::Run(Err(_)) = result {
+            target_build_state.build_failed();
+        } else {
+            target_build_state.build_succeeded();
+        }
     }
 
     pub fn get_ready_to_build_targets(&self) -> Vec<TargetId> {
@@ -54,23 +58,6 @@ impl<'a> TargetBuildStates<'a> {
         self.build_states
             .iter()
             .all(|build_state| build_state.built)
-    }
-
-    pub fn get_finished_build(&mut self) -> Result<Option<BuildReport>> {
-        match self.rx.try_recv() {
-            Ok(result) => {
-                let target_build_state = &mut self.build_states[result.target_id];
-                if let IncrementalRunResult::Run(Err(_)) = &result.result {
-                    target_build_state.build_failed();
-                } else {
-                    target_build_state.build_succeeded();
-                }
-
-                Ok(Some(result))
-            }
-            Err(TryRecvError::Empty) => Ok(None),
-            Err(e) => Err(Error::new(e).context("Crossbeam parallelism failure")),
-        }
     }
 }
 
