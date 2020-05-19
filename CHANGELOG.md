@@ -2,6 +2,8 @@
 
 ## TBD
 
+## 0.7.0 (2020-05-19)
+
 ### BREAKING CHANGES
 
 - `targets.<target_name>.service` now affects the execution of Žinoma, even when `--watch` is not provided.
