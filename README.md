@@ -1,5 +1,5 @@
 # Žinoma
- 
+
 Make your build flow incremental
 
 [![Crates.io](https://img.shields.io/crates/v/zinoma.svg)](https://crates.io/crates/zinoma)
@@ -32,28 +32,28 @@ Finally, Žinoma offers a watch mode, which waits for filesystem updates and re-
 
 Prerequisites:
 
-- Homebrew: https://brew.sh/
+- [Homebrew](https://brew.sh/)
 
 ```shell script
-$ brew install fbecart/tap/zinoma
+brew install fbecart/tap/zinoma
 ```
 
 ### Via .deb file (for Debian-based Linux distros)
 
-Download the relevant .deb file from the latest release on https://github.com/fbecart/zinoma/releases. Then, run:
+Download the relevant .deb file from the [releases page](https://github.com/fbecart/zinoma/releases). Then, run:
 
 ```shell script
-$ dpkg -i zinoma_*.deb
+dpkg -i zinoma_*.deb
 ```
 
 ### Via Cargo (for Linux, Windows or macOS)
 
 Prerequisites:
 
-- Rust toolchain: https://rustup.rs/
+- [Rust toolchain](https://rustup.rs/)
 
 ```shell script
-$ cargo install zinoma
+cargo install zinoma
 ```
 
 ## Documentation
@@ -80,7 +80,7 @@ The key `target_name` is a string and its value is a map of the target's configu
 You must replace `<target_name>` with a string that is unique to the `targets` object.
 The `<target_name>` must start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.
 
-__Example__
+##### Example
 
 ```yaml
 targets:
@@ -90,9 +90,9 @@ targets:
 
 In this example:
 
-- `$ zinoma my_first_target` will attempt to execute `my_first_target`
-- `$ zinoma my_second_target` will attempt to execute `my_second_target`
-- `$ zinoma my_first_target my_second_target` will run both targets.
+- `zinoma my_first_target` will attempt to execute `my_first_target`
+- `zinoma my_second_target` will attempt to execute `my_second_target`
+- `zinoma my_first_target my_second_target` will run both targets.
 
 #### `targets.<target_name>.dependencies`
 
@@ -101,7 +101,7 @@ It should be an array of strings.
 
 If a target fails, targets that depend on it will not be executed.
 
-__Example__
+##### Example
 
 ```yaml
 targets:
@@ -114,15 +114,15 @@ targets:
 
 In this example, `target1` must complete successfully before `target2` begins, while `target3` waits for `target2` to complete.
 
-`$ zinoma target2` will run sequentially `target1` and `target2`.
+`zinoma target2` will run sequentially `target1` and `target2`.
 
-`$ zinoma target3` will run sequentially `target1`, `target2` and `target3`.
+`zinoma target3` will run sequentially `target1`, `target2` and `target3`.
 
 #### `targets.<target_name>.build`
 
 Use this keyword to specify the build script of this target. It should be string, which can have one or multiple lines.
 
-__Example__
+##### Example
 
 ```yaml
 targets:
@@ -132,7 +132,7 @@ targets:
       touch deep/dir/my_file
 ```
 
-In this example, running `$ zinoma create_my_file` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.
+In this example, running `zinoma create_my_file` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.
 
 #### `targets.<target_name>.input_paths`
 
@@ -142,7 +142,7 @@ Lists the locations of the source files for this target.
 The keyword `input_paths` enables the incremental build for this target.
 This means that, at the time of executing the target, Žinoma will skip its build if its input files have not changed since its last successful completion.
 
-__Example__
+##### Example
 
 ```yaml
 targets:
@@ -151,8 +151,8 @@ targets:
     build: npm install
 ```
 
-In this example, running `$ zinoma npm_install` once will execute `npm install`.
-Subsequent runs of `$ zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
+In this example, running `zinoma npm_install` once will execute `npm install`.
+Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
 
 #### `targets.<target_name>.output_paths`
 
@@ -164,7 +164,7 @@ If the `--clean` flag is provided to `zinoma`, the files or directories specifie
 The incremental build takes in account the `output_paths`.
 Just like with `targets.<target_name>.input_paths`, if any of the target output paths were altered since its previous successful execution, the target state will be invalidated and its build will be run again.
 
-__Example__
+##### Example
 
 ```yaml
 targets:
@@ -174,9 +174,9 @@ targets:
     build: npm install
 ```
 
-In this example, running `$ zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.
+In this example, running `zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.
 
-Running `$ zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
+Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
 
 #### `targets.<target_name>.service`
 
@@ -189,7 +189,7 @@ On the contrary, if at least one target defines a service, `zinoma` will keep ru
 
 In watch mode (when the `--watch` flag is passed to `zinoma`), services are restarted every time the target `build` runs to completion.
 
-__Example__
+##### Example
 
 ```yaml
 targets:
@@ -199,7 +199,7 @@ targets:
     service: npm start
 ```
 
-In this example, `$ zinoma npm_server` will run `npm install` and then `npm start`.
+In this example, `zinoma npm_server` will run `npm install` and then `npm start`.
 
 ### Command line
 
@@ -303,9 +303,9 @@ targets:
 
 Some example of commands:
 
-- `$ zinoma check` will ensure the code complies to the test suites and the coding standards.
-- `$ zinoma start --watch` will run the application and restart it whenever the sources are updated.
-- `$ zinoma --clean build` will generate a clean artifact, ready to be deployed.
+- `zinoma check` will ensure the code complies to the test suites and the coding standards.
+- `zinoma start --watch` will run the application and restart it whenever the sources are updated.
+- `zinoma --clean build` will generate a clean artifact, ready to be deployed.
 
 ## Building
 
@@ -324,7 +324,7 @@ $ ./target/release/zinoma --version
 To run the test suite, use:
 
 ```shell script
-$ cargo test
+cargo test
 ```
 
 ## Žinoma for the curious
@@ -340,7 +340,7 @@ It is also a recursive acronym for "Žinoma Is NOt MAke!".
 
 ## Acknowledgements
 
-This project started as a fork of https://github.com/Stovoy/buildy.
+This project started as a fork of [Steve Mostovoy's buildy](https://github.com/Stovoy/buildy).
 
 ## License
 

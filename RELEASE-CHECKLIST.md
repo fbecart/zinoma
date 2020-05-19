@@ -1,5 +1,4 @@
-Release Checklist
------------------
+# Release Checklist
 
 * Run `cargo update` and review dependency updates. Commit updated `Cargo.lock`.
 * Run `cargo outdated` and review semver incompatible updates. Unless there is a strong motivation otherwise, review and update every dependency.
