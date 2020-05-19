@@ -132,7 +132,7 @@ impl Engine {
         &'a self,
         scope: &Scope<'s>,
         target_build_states: &mut TargetBuildStates,
-        build_report_sender: &Sender<BuildReport>,
+        build_report_sender: &'s Sender<BuildReport>,
         termination_events: &'s Receiver<()>,
     ) where
         'a: 's,
@@ -141,28 +141,39 @@ impl Engine {
             target_build_states.set_build_started(target_id);
 
             let target = self.targets.get(target_id).unwrap();
-            let build_report_sender = build_report_sender.clone();
             scope.spawn(move |_| {
-                let result = self
-                    .incremental_runner
-                    .run(&target, || {
-                        let termination_events = termination_events.clone();
-                        build_target(&target, termination_events)
-                    })
-                    .with_context(|| format!("{} - Build failed", target.name))
-                    .unwrap();
-
-                if let IncrementalRunResult::Skipped = result {
-                    log::info!("{} - Build skipped (Not Modified)", target.name);
-                }
-
-                build_report_sender
-                    .send(BuildReport::new(target.id, result))
-                    .with_context(|| "Sender error")
-                    .unwrap();
+                build_target_incrementally(
+                    target,
+                    &self.incremental_runner,
+                    termination_events,
+                    &build_report_sender,
+                )
             });
         }
     }
+}
+
+fn build_target_incrementally(
+    target: &Target,
+    incremental_runner: &IncrementalRunner,
+    termination_events: &Receiver<()>,
+    build_report_sender: &Sender<BuildReport>,
+) {
+    let result = incremental_runner
+        .run(&target, || {
+            build_target(&target, termination_events.clone())
+        })
+        .with_context(|| format!("{} - Build failed", target.name))
+        .unwrap();
+
+    if let IncrementalRunResult::Skipped = result {
+        log::info!("{} - Build skipped (Not Modified)", target.name);
+    }
+
+    build_report_sender
+        .send(BuildReport::new(target.id, result))
+        .with_context(|| "Sender error")
+        .unwrap();
 }
 
 pub struct BuildReport {
