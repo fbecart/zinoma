@@ -1,0 +1,3 @@
+[submodule "examples/node/docker-test"]
+	path = examples/node/docker-test
+	url = https://github.com/sazzer/docker-test
