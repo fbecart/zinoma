@@ -22,25 +22,31 @@ fn main() -> Result<()> {
         .unwrap();
 
     let project_dir = Path::new(arg_matches.value_of(cli::arg::PROJECT_DIR).unwrap());
-    let config = Config::load(project_dir)?;
+    let config = Config::load(project_dir.to_path_buf())?;
     let all_target_names = config.get_target_names();
 
     let arg_matches = cli::get_app()
         .mut_arg(cli::arg::TARGETS, |arg| {
-            arg.possible_values(&all_target_names)
-                .required_unless(cli::arg::CLEAN)
+            arg.possible_values(
+                &all_target_names
+                    .iter()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>(),
+            )
+            .required_unless(cli::arg::CLEAN)
         })
         .get_matches();
 
     let requested_targets = arg_matches.values_of_lossy(cli::arg::TARGETS);
-    let targets = config.into_targets(project_dir, &requested_targets)?;
+    let has_requested_targets = requested_targets.is_some();
+    let targets = config.into_targets(requested_targets)?;
 
     if arg_matches.is_present(cli::arg::CLEAN) {
         incremental::clean_checksums(project_dir, &targets)?;
         clean_target_outputs(&targets)?;
     }
 
-    if requested_targets.is_some() {
+    if has_requested_targets {
         let engine = Engine::new(targets);
         let (termination_sender, termination_events) = unbounded();
         terminate_on_ctrlc(termination_sender.clone())?;

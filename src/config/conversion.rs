@@ -2,46 +2,56 @@ use crate::config;
 use crate::domain;
 use anyhow::{Context, Result};
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::PathBuf;
 
 pub fn into_targets(
-    mut parsed_targets: HashMap<String, config::Target>,
-    project_dir: &Path,
-    requested_targets: &Option<Vec<String>>,
+    parsed_projects: HashMap<PathBuf, config::Project>,
+    requested_targets: Option<Vec<String>>,
 ) -> Result<Vec<domain::Target>> {
-    let all_target_names: Vec<_> = parsed_targets.keys().cloned().collect();
-    let requested_targets = requested_targets.as_ref().unwrap_or(&all_target_names);
+    let requested_targets = requested_targets.unwrap_or_else(|| {
+        parsed_projects
+            .values()
+            .flat_map(|project| project.targets.keys().cloned())
+            .collect::<Vec<_>>()
+    });
     let mut targets = Vec::with_capacity(requested_targets.len());
     let mut mapping = HashMap::with_capacity(requested_targets.len());
+
+    let mut parsed_targets: HashMap<String, (PathBuf, config::Target)> = parsed_projects
+        .into_iter()
+        .flat_map(|(project_dir, project)| {
+            project
+                .targets
+                .into_iter()
+                .map(|(target_name, target)| (target_name, (project_dir.clone(), target)))
+                .collect::<Vec<_>>()
+        })
+        .collect();
 
     fn add_target(
         mut targets: &mut Vec<domain::Target>,
         mut mapping: &mut HashMap<String, domain::TargetId>,
-        project_dir: &Path,
-        parsed_targets: &mut HashMap<String, config::Target>,
+        parsed_targets: &mut HashMap<String, (PathBuf, config::Target)>,
         target_name: &str,
     ) -> Result<()> {
         if mapping.contains_key(target_name) {
             return Ok(());
         }
 
-        let config::Target {
-            dependencies,
-            input_paths,
-            output_paths,
-            build,
-            service,
-        } = parsed_targets
+        let (
+            project_dir,
+            config::Target {
+                dependencies,
+                input_paths,
+                output_paths,
+                build,
+                service,
+            },
+        ) = parsed_targets
             .remove(target_name)
             .with_context(|| format!("Target {} does not exist", target_name))?;
         for dependency in &dependencies {
-            add_target(
-                &mut targets,
-                &mut mapping,
-                project_dir,
-                parsed_targets,
-                dependency,
-            )?
+            add_target(&mut targets, &mut mapping, parsed_targets, dependency)?
         }
 
         let target_id = targets.len();
@@ -76,7 +86,6 @@ pub fn into_targets(
         add_target(
             &mut targets,
             &mut mapping,
-            project_dir,
             &mut parsed_targets,
             requested_target,
         )?;
@@ -89,8 +98,9 @@ pub fn into_targets(
 mod tests {
     use super::into_targets;
     use crate::config::tests::build_targets;
-    use crate::config::Target;
-    use std::path::Path;
+    use crate::config::{Project, Target};
+    use std::collections::HashMap;
+    use std::path::PathBuf;
 
     #[test]
     fn test_into_targets_should_return_the_requested_targets() {
@@ -98,10 +108,12 @@ mod tests {
             ("target_1", build_target()),
             ("target_2", build_target()),
         ]);
+        let projects: HashMap<_, _> = vec![(PathBuf::from("."), Project { targets })]
+            .into_iter()
+            .collect();
 
-        let actual_targets =
-            into_targets(targets, Path::new("."), &Some(vec!["target_2".to_string()]))
-                .expect("Conversion of valid targets should be successful");
+        let actual_targets = into_targets(projects, Some(vec!["target_2".to_string()]))
+            .expect("Conversion of valid targets should be successful");
 
         assert_eq!(actual_targets.len(), 1);
         assert_eq!(actual_targets[0].name, "target_2");
@@ -110,13 +122,12 @@ mod tests {
     #[test]
     fn test_into_targets_should_reject_requested_target_not_found() {
         let targets = build_targets(vec![("target_1", build_target())]);
+        let projects: HashMap<_, _> = vec![(PathBuf::from("."), Project { targets })]
+            .into_iter()
+            .collect();
 
-        into_targets(
-            targets,
-            Path::new("."),
-            &Some(vec!["not_a_target".to_string()]),
-        )
-        .expect_err("Should reject an invalid requested target");
+        into_targets(projects, Some(vec!["not_a_target".to_string()]))
+            .expect_err("Should reject an invalid requested target");
     }
 
     fn build_target() -> Target {

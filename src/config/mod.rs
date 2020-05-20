@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
+use std::path::PathBuf;
 use validation::validate_targets;
 
 #[derive(Debug, Deserialize)]
@@ -24,42 +24,47 @@ pub struct Target {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Config {
+pub struct Project {
     #[serde(default)]
     targets: HashMap<String, Target>,
 }
 
+pub struct Config {
+    projects: HashMap<PathBuf, Project>,
+}
+
 impl Config {
-    pub fn load(project_dir: &Path) -> Result<Self> {
-        let config_file = project_dir.join("zinoma.yml");
+    pub fn load(root_project_dir: PathBuf) -> Result<Self> {
+        let config_file = root_project_dir.join("zinoma.yml");
         let contents = fs::read_to_string(&config_file)
             .with_context(|| format!("Something went wrong reading {}", config_file.display()))?;
-        let config: Self = serde_yaml::from_str(&contents)
+        let project: Project = serde_yaml::from_str(&contents)
             .with_context(|| format!("Invalid format for {}", config_file.display()))?;
 
-        validate_targets(&config.targets).with_context(|| {
+        validate_targets(&project.targets).with_context(|| {
             format!(
                 "Invalid configuration found in file {}",
                 config_file.display()
             )
         })?;
 
-        Ok(config)
+        let projects = vec![(root_project_dir, project)].into_iter().collect();
+
+        Ok(Self { projects })
     }
 
-    pub fn get_target_names(&self) -> Vec<&str> {
-        self.targets
-            .keys()
-            .map(|target_name| target_name.as_str())
+    pub fn get_target_names(&self) -> Vec<String> {
+        self.projects
+            .values()
+            .flat_map(|project| project.targets.keys().cloned())
             .collect()
     }
 
     pub fn into_targets(
         self,
-        project_dir: &Path,
-        requested_targets: &Option<Vec<String>>,
+        requested_targets: Option<Vec<String>>,
     ) -> Result<Vec<domain::Target>> {
-        conversion::into_targets(self.targets, project_dir, requested_targets)
+        conversion::into_targets(self.projects, requested_targets)
     }
 }
 
