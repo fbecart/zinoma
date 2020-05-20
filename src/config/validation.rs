@@ -3,17 +3,13 @@ use anyhow::{Context, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
-pub fn validate_targets(targets: &HashMap<String, Target>) -> Result<()> {
-    for (target_name, target) in targets.iter() {
-        if !is_valid_target_name(target_name) {
-            return Err(anyhow::anyhow!(
-                "{} is not a valid target name",
-                target_name
-            ));
-        }
-
-        validate_target(target_name, target, &[], targets)
+pub fn validate_targets_dependency_graph(
+    targets: &HashMap<String, (PathBuf, Target)>,
+) -> Result<()> {
+    for (target_name, (_, target)) in targets.iter() {
+        validate_target_graph(target_name, target, &[], targets)
             .with_context(|| format!("Target {} is invalid", target_name))?;
     }
 
@@ -31,11 +27,11 @@ pub fn is_valid_target_name(target_name: &str) -> bool {
 ///
 /// Ensures that all target dependencies (both direct and transitive) exist,
 /// and that the dependency graph has no circular dependency.
-fn validate_target(
+fn validate_target_graph(
     target_name: &str,
     target: &Target,
     parent_targets: &[&str],
-    targets: &HashMap<String, Target>,
+    targets: &HashMap<String, (PathBuf, Target)>,
 ) -> Result<()> {
     if parent_targets.contains(&target_name) {
         return Err(anyhow::anyhow!(
@@ -47,11 +43,11 @@ fn validate_target(
 
     let targets_chain = [parent_targets, &[target_name]].concat();
     for dependency_name in &target.dependencies {
-        let dependency = targets.get(dependency_name).ok_or_else(|| {
+        let (_, dependency) = targets.get(dependency_name).ok_or_else(|| {
             anyhow::anyhow!("{} - Dependency {} not found", target_name, dependency_name)
         })?;
 
-        validate_target(dependency_name, dependency, &targets_chain, &targets)?;
+        validate_target_graph(dependency_name, dependency, &targets_chain, &targets)?;
     }
 
     Ok(())
@@ -60,7 +56,7 @@ fn validate_target(
 #[cfg(test)]
 mod tests {
     use super::is_valid_target_name;
-    use super::validate_targets;
+    use super::validate_targets_dependency_graph;
     use crate::config::tests::build_targets;
     use crate::config::Target;
 
@@ -71,7 +67,7 @@ mod tests {
             ("target_2", build_target_with_dependencies(vec![])),
         ]);
 
-        validate_targets(&targets).expect("Valid targets should be accepted");
+        validate_targets_dependency_graph(&targets).expect("Valid targets should be accepted");
     }
 
     #[test]
@@ -81,7 +77,8 @@ mod tests {
             build_target_with_dependencies(vec!["target_2"]),
         )]);
 
-        validate_targets(&targets).expect_err("Unknown dependencies should be rejected");
+        validate_targets_dependency_graph(&targets)
+            .expect_err("Unknown dependencies should be rejected");
     }
 
     #[test]
@@ -92,7 +89,8 @@ mod tests {
             ("target_3", build_target_with_dependencies(vec!["target_1"])),
         ]);
 
-        validate_targets(&targets).expect_err("Circular dependencies should be rejected");
+        validate_targets_dependency_graph(&targets)
+            .expect_err("Circular dependencies should be rejected");
     }
 
     #[test]
