@@ -26,7 +26,8 @@ pub struct Target {
 #[derive(Debug, Deserialize)]
 pub struct Project {
     #[serde(default)]
-    import: Vec<String>,
+    imports: Vec<String>,
+    #[serde(default)]
     targets: HashMap<String, Target>,
 }
 
@@ -35,13 +36,8 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load(root_project_dir: PathBuf) -> Result<Self> {
-        let config_file = root_project_dir.join("zinoma.yml");
-        let project = Self::load_project(&root_project_dir)?;
-
-        let projects: HashMap<PathBuf, Project> = vec![(root_project_dir.canonicalize()?, project)]
-            .into_iter()
-            .collect();
+    pub fn load(root_project_dir: &Path) -> Result<Self> {
+        let projects = Self::load_projects(root_project_dir)?;
 
         let targets: HashMap<String, (PathBuf, Target)> = projects
             .into_iter()
@@ -54,21 +50,47 @@ impl Config {
             })
             .collect();
 
-        validate_targets_dependency_graph(&targets).with_context(|| {
-            format!(
-                "Invalid configuration found in file {}",
-                config_file.display()
-            )
-        })?;
+        validate_targets_dependency_graph(&targets).with_context(|| "Invalid configuration")?;
 
         Ok(Self { targets })
     }
 
+    fn load_projects(root_project_dir: &Path) -> Result<HashMap<PathBuf, Project>> {
+        let mut projects = HashMap::new();
+
+        fn add_project(project_dir: &Path, projects: &mut HashMap<PathBuf, Project>) -> Result<()> {
+            let project_dir = project_dir.canonicalize()?;
+            dbg!(&project_dir);
+            if projects.contains_key(&project_dir) {
+                return Ok(());
+            }
+
+            let project = Config::load_project(&project_dir)?;
+            let import_paths: Vec<_> = project
+                .imports
+                .iter()
+                .map(|import| project_dir.join(import))
+                .collect();
+            projects.insert(project_dir, project);
+
+            for import_path in import_paths {
+                add_project(&import_path, projects)?;
+            }
+
+            Ok(())
+        }
+
+        add_project(root_project_dir, &mut projects)?;
+
+        Ok(projects)
+    }
+
     fn load_project(project_dir: &Path) -> Result<Project> {
         let config_file = project_dir.join("zinoma.yml");
-        let contents = fs::read_to_string(&config_file)
+        let content = fs::read_to_string(&config_file)
             .with_context(|| format!("Something went wrong reading {}", config_file.display()))?;
-        let project: Project = serde_yaml::from_str(&contents)
+        // TODO Use serde_yaml::from_reader instead
+        let project: Project = serde_yaml::from_str(&content)
             .with_context(|| format!("Invalid format for {}", config_file.display()))?;
 
         if let Some(invalid_target_name) = project

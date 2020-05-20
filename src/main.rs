@@ -22,7 +22,7 @@ fn main() -> Result<()> {
         .unwrap();
 
     let project_dir = Path::new(arg_matches.value_of(cli::arg::PROJECT_DIR).unwrap());
-    let config = Config::load(project_dir.to_path_buf())?;
+    let config = Config::load(project_dir)?;
     let all_target_names = config.get_target_names();
 
     let arg_matches = cli::get_app()
