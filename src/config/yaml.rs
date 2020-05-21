@@ -1,9 +1,10 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Error, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Deserialize)]
@@ -35,7 +36,15 @@ impl Projects {
         let mut projects = HashMap::new();
 
         fn add_project(project_dir: &Path, projects: &mut HashMap<PathBuf, Project>) -> Result<()> {
-            let project_dir = project_dir.canonicalize()?;
+            let project_dir = project_dir.canonicalize().map_err(|e| {
+                let context = if e.kind() == ErrorKind::NotFound {
+                    format!("Directory {} does not exist", project_dir.display())
+                } else {
+                    format!("Invalid directory: {}", project_dir.display())
+                };
+                Error::new(e).context(context)
+            })?;
+
             if projects.contains_key(&project_dir) {
                 return Ok(());
             }
