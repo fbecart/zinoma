@@ -2,6 +2,8 @@
 
 ## TBD
 
+## 0.8.0 (2020-05-21)
+
 Feature enhancements:
 
 - [FEATURE #8](https://github.com/fbecart/zinoma/issues/8): Split build flow configuration in multiple projects.
