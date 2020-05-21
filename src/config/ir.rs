@@ -4,25 +4,32 @@ use crate::domain;
 use anyhow::Context;
 use anyhow::Result;
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::path::PathBuf;
 
 pub struct Targets(HashMap<String, (PathBuf, yaml::Target)>);
 
-impl From<Projects> for Targets {
-    fn from(projects: Projects) -> Self {
-        Self(
-            projects
-                .0
-                .into_iter()
-                .flat_map(|(project_dir, project)| {
-                    project
-                        .targets
-                        .into_iter()
-                        .map(|(target_name, target)| (target_name, (project_dir.clone(), target)))
-                        .collect::<Vec<_>>()
-                })
-                .collect(),
-        )
+impl TryFrom<Projects> for Targets {
+    type Error = anyhow::Error;
+    fn try_from(projects: Projects) -> Result<Self> {
+        let mut targets: HashMap<String, (PathBuf, yaml::Target)> = HashMap::new();
+
+        for (project_dir, project) in projects.0.into_iter() {
+            for (target_name, target) in project.targets.into_iter() {
+                if let Some((homonym_dir, _)) = targets.get(&target_name) {
+                    return Err(anyhow::anyhow!(
+                        "Projects {} and {} contain targets with the same name: {}. Please disambiguate.",
+                        project_dir.display(),
+                        homonym_dir.display(),
+                        target_name,
+                    ));
+                }
+
+                targets.insert(target_name, (project_dir.clone(), target));
+            }
+        }
+
+        Ok(Self(targets))
     }
 }
 
