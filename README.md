@@ -67,7 +67,7 @@ This is the documentation of the format of this file. It assumes prior knowledge
 
 #### `targets`
 
-__Required__ A build flow is made of targets. Each target is a unit of work to perform as part of this build flow.
+A build flow is made of targets. Each target is a unit of work to perform as part of this build flow.
 
 Targets run in parallel by default.
 To run targets sequentially, you can define dependencies on other targets using the `targets.<target_name>.dependencies` keyword.
@@ -200,6 +200,43 @@ targets:
 ```
 
 In this example, `zinoma npm_server` will run `npm install` and then `npm start`.
+
+#### `imports`
+
+Use the `imports` keyword to import targets from a different project.
+It should be an array of strings, each element being a path to another zinoma project.
+
+##### Example
+
+`api/zinoma.yml`:
+
+```yaml
+targets:
+  api_test:
+    build: cargo test
+```
+
+`webapp/zinoma.yml`:
+
+```yaml
+targets:
+  webapp_test:
+    build: cargo test
+```
+
+`./zinoma.yml`:
+
+```yaml
+imports:
+  - api
+  - webapp
+
+targets:
+  test_all:
+    dependencies: [api_test, webapp_test]
+```
+
+In this example, the target `test_all` depend from targets defined in different projects.
 
 ### Command line
 
