@@ -5,6 +5,7 @@ use crate::domain;
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::fs;
 use std::path::{Path, PathBuf};
 use validation::{is_valid_target_name, validate_targets_dependency_graph};
@@ -31,31 +32,10 @@ pub struct Project {
     targets: HashMap<String, Target>,
 }
 
-pub struct Config {
-    targets: HashMap<String, (PathBuf, Target)>,
-}
+pub struct Projects(HashMap<PathBuf, Project>);
 
-impl Config {
+impl Projects {
     pub fn load(root_project_dir: &Path) -> Result<Self> {
-        let projects = Self::load_projects(root_project_dir)?;
-
-        let targets: HashMap<String, (PathBuf, Target)> = projects
-            .into_iter()
-            .flat_map(|(project_dir, project)| {
-                project
-                    .targets
-                    .into_iter()
-                    .map(|(target_name, target)| (target_name, (project_dir.clone(), target)))
-                    .collect::<Vec<_>>()
-            })
-            .collect();
-
-        validate_targets_dependency_graph(&targets).with_context(|| "Invalid configuration")?;
-
-        Ok(Self { targets })
-    }
-
-    fn load_projects(root_project_dir: &Path) -> Result<HashMap<PathBuf, Project>> {
         let mut projects = HashMap::new();
 
         fn add_project(project_dir: &Path, projects: &mut HashMap<PathBuf, Project>) -> Result<()> {
@@ -65,7 +45,7 @@ impl Config {
                 return Ok(());
             }
 
-            let project = Config::load_project(&project_dir)?;
+            let project = Projects::load_project(&project_dir)?;
             let import_paths: Vec<_> = project
                 .imports
                 .iter()
@@ -82,7 +62,7 @@ impl Config {
 
         add_project(root_project_dir, &mut projects)?;
 
-        Ok(projects)
+        Ok(Self(projects))
     }
 
     fn load_project(project_dir: &Path) -> Result<Project> {
@@ -107,15 +87,46 @@ impl Config {
         Ok(project)
     }
 
+    pub fn get_project_dirs(&self) -> Vec<PathBuf> {
+        self.0.keys().cloned().collect()
+    }
+}
+
+// TODO Extract to separate file, including conversion to domain targets
+pub struct Targets(HashMap<String, (PathBuf, Target)>);
+
+impl Targets {
     pub fn get_target_names(&self) -> Vec<String> {
-        self.targets.keys().cloned().collect()
+        self.0.keys().cloned().collect()
     }
 
-    pub fn into_targets(
+    pub fn try_into_domain_targets(
         self,
         requested_targets: Option<Vec<String>>,
     ) -> Result<Vec<domain::Target>> {
-        conversion::into_targets(self.targets, requested_targets)
+        conversion::into_targets(self.0, requested_targets)
+    }
+}
+
+impl TryFrom<Projects> for Targets {
+    type Error = anyhow::Error;
+
+    fn try_from(projects: Projects) -> Result<Self, Self::Error> {
+        let targets: HashMap<String, (PathBuf, Target)> = projects
+            .0
+            .into_iter()
+            .flat_map(|(project_dir, project)| {
+                project
+                    .targets
+                    .into_iter()
+                    .map(|(target_name, target)| (target_name, (project_dir.clone(), target)))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+
+        validate_targets_dependency_graph(&targets).with_context(|| "Invalid configuration")?;
+
+        Ok(Self(targets))
     }
 }
 

@@ -57,7 +57,7 @@ pub fn into_targets(
             id: target_id,
             name: target_name.to_string(),
             dependencies,
-            path: project_dir.to_path_buf(),
+            path: project_dir,
             input_paths,
             output_paths,
             build,

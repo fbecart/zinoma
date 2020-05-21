@@ -2,11 +2,9 @@ use crate::domain::Target;
 use anyhow::{Context, Result};
 use std::path::Path;
 
-pub fn clean_target_outputs(targets: &[Target]) -> Result<()> {
-    for target in targets.iter() {
-        for output_path in &target.output_paths {
-            clean_path(output_path)?;
-        }
+pub fn clean_target_output_paths(target: &Target) -> Result<()> {
+    for output_path in &target.output_paths {
+        clean_path(output_path)?;
     }
 
     Ok(())
