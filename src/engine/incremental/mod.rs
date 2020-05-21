@@ -83,7 +83,7 @@ fn read_target_checksums(target: &Target) -> Result<Option<TargetChecksums>> {
     }
 }
 
-fn remove_target_checksums(target: &Target) -> Result<()> {
+pub fn remove_target_checksums(target: &Target) -> Result<()> {
     let checksum_file = get_checksum_file_path(target);
     if checksum_file.exists() {
         fs::remove_file(&checksum_file).with_context(|| {
@@ -103,19 +103,8 @@ fn write_target_checksums(target: &Target, checksums: &TargetChecksums) -> Resul
         .with_context(|| format!("Failed to serialize checksums for {}", target.name))
 }
 
-pub fn clean_checksums(project_dir: &Path, targets: &[Target]) -> Result<()> {
-    if targets.is_empty() {
-        remove_checksum_dir(project_dir)
-    } else {
-        for target in targets.iter() {
-            remove_target_checksums(target)?;
-        }
-        Ok(())
-    }
-}
-
-fn remove_checksum_dir(project_dir: &Path) -> Result<()> {
-    let checksum_dir = get_checksum_dir_path(project_dir);
+pub fn remove_checksum_dir(project_dir: PathBuf) -> Result<()> {
+    let checksum_dir = get_checksum_dir_path(&project_dir);
     match fs::remove_dir_all(&checksum_dir) {
         Ok(_) => {}
         Err(e) if e.kind() == ErrorKind::NotFound => {}
