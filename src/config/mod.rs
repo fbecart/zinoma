@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::fs;
+use std::fs::File;
 use std::path::{Path, PathBuf};
 use validation::{is_valid_target_name, validate_targets_dependency_graph};
 
@@ -66,12 +66,12 @@ impl Projects {
     }
 
     fn load_project(project_dir: &Path) -> Result<Project> {
-        let config_file = project_dir.join("zinoma.yml");
-        let content = fs::read_to_string(&config_file)
-            .with_context(|| format!("Something went wrong reading {}", config_file.display()))?;
-        // TODO Use serde_yaml::from_reader instead
-        let project: Project = serde_yaml::from_str(&content)
-            .with_context(|| format!("Invalid format for {}", config_file.display()))?;
+        let config_file_path = project_dir.join("zinoma.yml");
+        let config_file = File::open(&config_file_path).with_context(|| {
+            format!("Failed to open config file {}", config_file_path.display())
+        })?;
+        let project: Project = serde_yaml::from_reader(config_file)
+            .with_context(|| format!("Invalid format for {}", config_file_path.display()))?;
 
         if let Some(invalid_target_name) = project
             .targets
