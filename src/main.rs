@@ -6,10 +6,10 @@ mod engine;
 
 use anyhow::{Context, Result};
 use clean::clean_target_output_paths;
+use config::{ir, yaml};
 use crossbeam::channel::{unbounded, Sender};
 use engine::incremental::{remove_checksum_dir, remove_target_checksums};
 use engine::Engine;
-use std::convert::TryInto;
 use std::path::Path;
 
 fn main() -> Result<()> {
@@ -22,9 +22,9 @@ fn main() -> Result<()> {
         .unwrap();
 
     let project_dir = Path::new(arg_matches.value_of(cli::arg::PROJECT_DIR).unwrap());
-    let projects = config::Projects::load(project_dir)?;
+    let projects = yaml::Projects::load(project_dir)?;
     let project_dirs = projects.get_project_dirs();
-    let targets: config::Targets = projects.try_into()?;
+    let targets: ir::Targets = projects.into();
     let all_target_names = targets.get_target_names();
 
     let arg_matches = cli::get_app()
