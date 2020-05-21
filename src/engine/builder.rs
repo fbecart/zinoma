@@ -32,7 +32,7 @@ pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result
                         }
                         let target_build_duration = target_start.elapsed();
                         log::info!(
-                            "{} - Built (took: {}ms)",
+                            "{} - Build success (took: {}ms)",
                             target.name,
                             target_build_duration.as_millis()
                         );
