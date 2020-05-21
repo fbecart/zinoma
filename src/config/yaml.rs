@@ -36,7 +36,6 @@ impl Projects {
 
         fn add_project(project_dir: &Path, projects: &mut HashMap<PathBuf, Project>) -> Result<()> {
             let project_dir = project_dir.canonicalize()?;
-            dbg!(&project_dir);
             if projects.contains_key(&project_dir) {
                 return Ok(());
             }
