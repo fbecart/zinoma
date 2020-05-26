@@ -344,7 +344,7 @@ Some example of commands:
 - `zinoma start --watch` will run the application and restart it whenever the sources are updated.
 - `zinoma --clean build` will generate a clean artifact, ready to be deployed.
 
-A more advanced example project is available in [this repository](https://github.com/fbecart/zinoma-node-example)
+A fully functional and more advanced example project is available in [fbecart/zinoma-node-example](https://github.com/fbecart/zinoma-node-example).
 
 ## Building
 
