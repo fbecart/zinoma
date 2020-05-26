@@ -1,0 +1,3 @@
+targets:
+  say_hello:
+    build: echo "Hello, World!"
