@@ -321,7 +321,7 @@ targets:
   start:
     dependencies: [ download_dependencies ]
     input_paths: [ package.json, src ]
-    service: npm run start
+    service: exec npm run start
 
   build:
     dependencies: [ check ]
@@ -343,6 +343,8 @@ Some example of commands:
 - `zinoma check` will ensure the code complies to the test suites and the coding standards.
 - `zinoma start --watch` will run the application and restart it whenever the sources are updated.
 - `zinoma --clean build` will generate a clean artifact, ready to be deployed.
+
+A more advanced example project is available in [this repository](https://github.com/fbecart/zinoma-node-example)
 
 ## Building
 
