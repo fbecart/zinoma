@@ -13,10 +13,10 @@ use engine::Engine;
 use std::convert::TryInto;
 use std::path::Path;
 
-#[cfg(not(target_env = "msvc"))]
+#[cfg(all(not(target_env = "msvc"), target_pointer_width = "64"))]
 use jemallocator::Jemalloc;
 
-#[cfg(not(target_env = "msvc"))]
+#[cfg(all(not(target_env = "msvc"), target_pointer_width = "64"))]
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
