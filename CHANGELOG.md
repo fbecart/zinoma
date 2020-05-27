@@ -2,6 +2,8 @@
 
 ## TBD
 
+## 0.10.0 (2020-05-27)
+
 Feature enhancements:
 
 - [FEATURE #31](https://github.com/fbecart/zinoma/issues/31) Generate schema for the syntax of the Yaml configuration.
