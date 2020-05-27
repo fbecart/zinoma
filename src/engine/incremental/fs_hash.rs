@@ -9,9 +9,7 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 pub fn compute_file_hashes_in_paths(paths: &[PathBuf]) -> Result<HashMap<PathBuf, u64>> {
-    let files = list_files(paths).with_context(|| "Failed to list checksum files".to_string())?;
-
-    files
+    list_files(paths)
         .into_par_iter()
         .map(|file| {
             let file_hash = compute_file_hash(&file)
@@ -25,8 +23,7 @@ pub fn file_hashes_eq(
     lookup_paths: &[PathBuf],
     saved_file_hashes: &HashMap<PathBuf, u64>,
 ) -> Result<bool> {
-    let files =
-        list_files(lookup_paths).with_context(|| "Failed to list checksum files".to_string())?;
+    let files = list_files(lookup_paths);
 
     if files.len() != saved_file_hashes.len() {
         return Ok(false);
@@ -45,22 +42,24 @@ pub fn file_hashes_eq(
     }))
 }
 
-fn list_files(paths: &[PathBuf]) -> Result<HashSet<PathBuf>> {
+fn list_files(paths: &[PathBuf]) -> HashSet<PathBuf> {
     let mut files = HashSet::new();
 
     for path in paths {
         for entry in WalkDir::new(path) {
-            let path = entry
-                .with_context(|| format!("Failed to traverse directory {}", path.display()))?
-                .path()
-                .to_path_buf();
-            if path.is_file() {
-                files.insert(path);
+            match entry {
+                Err(e) => log::debug!("Failed to walk dir {}: {}", path.display(), e),
+                Ok(entry) => {
+                    let path = entry.path().to_path_buf();
+                    if path.is_file() {
+                        files.insert(path);
+                    }
+                }
             }
         }
     }
 
-    Ok(files)
+    files
 }
 
 fn compute_file_hash(file_path: &Path) -> Result<u64> {

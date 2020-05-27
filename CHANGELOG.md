@@ -2,6 +2,10 @@
 
 ## TBD
 
+Bug fixes:
+
+- An input or output path missing from the filesystem causes Žinoma to fail.
+
 ## 0.8.0 (2020-05-21)
 
 Feature enhancements:
