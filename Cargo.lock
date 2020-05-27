@@ -1070,7 +1070,7 @@ dependencies = [
 
 [[package]]
 name = "zinoma"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "anyhow 1.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "assert_cmd 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
