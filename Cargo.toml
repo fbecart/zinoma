@@ -12,7 +12,7 @@ documentation = "https://github.com/fbecart/zinoma/blob/master/README.md"
 readme = "README.md"
 categories = ["command-line-utilities", "development-tools::build-utils"]
 keywords = ["parallel", "incremental", "build", "tool", "watch"]
-build = "build.rs"
+build = "build/main.rs"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
