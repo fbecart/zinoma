@@ -1,0 +1,5 @@
+task npmInstall(type: Exec) {
+    inputs.files 'package.json', 'package-lock.json'
+    outputs.dir 'node_modules'
+    commandLine 'npm', 'install'
+}
