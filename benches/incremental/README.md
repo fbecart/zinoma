@@ -25,24 +25,24 @@ Versions:
 
 - npm 6.14.5
 - Gradle 6.4.1 with JVM 1.8.0_101 (Oracle Corporation 25.101-b13)
-- Žinoma 0.8.1
+- Žinoma 0.9.0
 
 ```shell script
-$ hyperfine 'npm install' 'gradle npmInstall' 'zinoma npm_install'
+$ hyperfine --warmup 1 'npm install' 'gradle npmInstall' 'zinoma npm_install'
 Benchmark #1: npm install
-  Time (mean ± σ):      7.045 s ±  0.401 s    [User: 6.693 s, System: 0.408 s]
-  Range (min … max):    6.646 s …  7.594 s    10 runs
+  Time (mean ± σ):      7.115 s ±  0.408 s    [User: 6.741 s, System: 0.415 s]
+  Range (min … max):    6.739 s …  7.701 s    10 runs
 
 Benchmark #2: gradle npmInstall
-  Time (mean ± σ):     836.8 ms ±  13.7 ms    [User: 883.6 ms, System: 92.9 ms]
-  Range (min … max):   823.3 ms … 867.2 ms    10 runs
+  Time (mean ± σ):     834.3 ms ±   6.3 ms    [User: 875.3 ms, System: 93.4 ms]
+  Range (min … max):   822.2 ms … 844.3 ms    10 runs
 
 Benchmark #3: zinoma npm_install
-  Time (mean ± σ):     445.6 ms ±   4.8 ms    [User: 300.8 ms, System: 857.3 ms]
-  Range (min … max):   440.2 ms … 456.9 ms    10 runs
+  Time (mean ± σ):     431.0 ms ±   6.3 ms    [User: 282.7 ms, System: 865.8 ms]
+  Range (min … max):   425.1 ms … 445.5 ms    10 runs
 
 Summary
   'zinoma npm_install' ran
-    1.88 ± 0.04 times faster than 'gradle npmInstall'
-   15.81 ± 0.92 times faster than 'npm install'
+    1.94 ± 0.03 times faster than 'gradle npmInstall'
+   16.51 ± 0.98 times faster than 'npm install'
 ```

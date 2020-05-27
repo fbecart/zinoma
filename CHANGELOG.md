@@ -2,6 +2,10 @@
 
 ## TBD
 
+Performance improvements:
+
+- [PERF #13](https://github.com/fbecart/zinoma/issues/13) Use Jemalloc as the global allocator.
+
 ## 0.8.1 (2020-05-27)
 
 This patch version fixes a bug, improves documentation (configuration examples) and introduces the first benchmarks.
