@@ -1,7 +1,8 @@
-use serde::Deserialize;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct Target {
     #[serde(default)]
     pub dependencies: Vec<String>,
@@ -15,7 +16,7 @@ pub struct Target {
     pub service: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct Project {
     #[serde(default)]
     pub imports: Vec<String>,

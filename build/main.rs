@@ -1,3 +1,4 @@
+mod config_schema;
 mod shell_completion;
 
 use std::env;
@@ -27,4 +28,5 @@ fn main() {
     }
 
     shell_completion::generate_shell_completion_scripts(&outdir);
+    config_schema::generate_config_json_schema(&outdir);
 }
