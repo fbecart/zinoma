@@ -2,6 +2,10 @@
 
 ## TBD
 
+## 0.8.1 (2020-05-27)
+
+This patch version fixes a bug, improves documentation (configuration examples) and introduces the first benchmarks.
+
 Bug fixes:
 
 - An input or output path missing from the filesystem causes Žinoma to fail.
