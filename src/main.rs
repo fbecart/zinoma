@@ -13,6 +13,13 @@ use engine::Engine;
 use std::convert::TryInto;
 use std::path::Path;
 
+#[cfg(not(target_env = "msvc"))]
+use jemallocator::Jemalloc;
+
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
 fn main() -> Result<()> {
     let arg_matches = cli::get_app().get_matches();
 
