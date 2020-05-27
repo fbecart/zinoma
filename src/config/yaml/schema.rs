@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Target {
     #[serde(default)]
     pub dependencies: Vec<String>,
@@ -17,6 +18,7 @@ pub struct Target {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Project {
     #[serde(default)]
     pub imports: Vec<String>,
