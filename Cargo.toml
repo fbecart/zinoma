@@ -12,7 +12,7 @@ documentation = "https://github.com/fbecart/zinoma/blob/master/README.md"
 readme = "README.md"
 categories = ["command-line-utilities", "development-tools::build-utils"]
 keywords = ["parallel", "incremental", "build", "tool", "watch"]
-build = "build.rs"
+build = "build/main.rs"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
@@ -32,6 +32,7 @@ rayon = "1.3.0"
 bincode = "1.2.1"
 run_script = "0.6.3"
 ctrlc = { version = "3.1.4", features = ["termination"] }
+schemars = "0.7.6"
 
 [target.'cfg(all(not(target_env = "msvc"), target_pointer_width = "64"))'.dependencies]
 jemallocator = "0.3.2"
@@ -43,6 +44,9 @@ predicates = "1.0"
 [build-dependencies]
 clap = "3.0.0-beta.1"
 clap_generate = "3.0.0-beta.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.53"
+schemars = "0.7.6"
 
 [package.metadata.deb]
 section = "utils"

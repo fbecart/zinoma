@@ -1,33 +1,13 @@
+mod schema;
+
 use anyhow::{Context, Error, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde::Deserialize;
+pub use schema::{Project, Target};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
-
-#[derive(Debug, Deserialize)]
-pub struct Target {
-    #[serde(default)]
-    pub dependencies: Vec<String>,
-    #[serde(default)]
-    pub input_paths: Vec<String>,
-    #[serde(default)]
-    pub output_paths: Vec<String>,
-    #[serde(default)]
-    pub build: Option<String>,
-    #[serde(default)]
-    pub service: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct Project {
-    #[serde(default)]
-    pub imports: Vec<String>,
-    #[serde(default)]
-    pub targets: HashMap<String, Target>,
-}
 
 pub struct Projects(pub HashMap<PathBuf, Project>);
 

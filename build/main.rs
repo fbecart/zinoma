@@ -1,6 +1,6 @@
-include!("src/cli.rs");
+mod config_schema;
+mod shell_completion;
 
-use clap_generate::{generate_to, generators};
 use std::env;
 use std::fs::{self, File};
 use std::path::Path;
@@ -27,10 +27,6 @@ fn main() {
         panic!("failed to write {}: {}", stamp_path.display(), err);
     }
 
-    // Use clap to build completion files.
-    let mut app = get_app();
-    generate_to::<generators::Bash, _, _>(&mut app, "zinoma", &outdir);
-    generate_to::<generators::Zsh, _, _>(&mut app, "zinoma", &outdir);
-    generate_to::<generators::Fish, _, _>(&mut app, "zinoma", &outdir);
-    generate_to::<generators::PowerShell, _, _>(&mut app, "zinoma", &outdir);
+    shell_completion::generate_shell_completion_scripts(&outdir);
+    config_schema::generate_config_json_schema(&outdir);
 }
