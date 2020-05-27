@@ -244,9 +244,12 @@ jobs:
           name: artifacts
           path: artifacts
 
-      - name: Get release version
+      - name: Get release upload URL and release version
         shell: bash
         run: |
+          release_upload_url="$(cat artifacts/release-upload-url)"
+          echo "::set-env name=RELEASE_UPLOAD_URL::$release_upload_url"
+          echo "release upload url: $release_upload_url"
           release_version="$(cat artifacts/release-version)"
           echo "::set-env name=RELEASE_VERSION::$release_version"
           echo "release version: $release_version"
@@ -274,6 +277,23 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: publish
+
+      - name: Find outdir
+        shell: bash
+        run: |
+          outdir="$(ci/cargo-out-dir.sh ./target)"
+          echo "::set-env name=OUTDIR::$outdir"
+          echo "outdir path: $outdir"
+
+      - name: Upload configuration schema
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ env.RELEASE_UPLOAD_URL }}
+          asset_path: ${{ env.OUTDIR }}/zinoma-schema.json
+          asset_name: zinoma-schema.json
+          asset_content_type: application/octet-stream
 
       - name: Trigger publication to Homebrew
         uses: peter-evans/repository-dispatch@v1
