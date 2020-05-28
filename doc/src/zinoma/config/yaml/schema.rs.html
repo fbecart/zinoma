@@ -241,6 +241,7 @@
 <span id="241">241</span>
 <span id="242">242</span>
 <span id="243">243</span>
+<span id="244">244</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">schemars</span>::<span class="ident">JsonSchema</span>;
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
@@ -400,7 +401,8 @@
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="kw">pub</span> <span class="ident">dependencies</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// Use this keyword to specify the build script of this target. It should be string, which can have one or multiple lines.</span>
+    <span class="doccomment">/// Use this keyword to specify the build script of this target.</span>
+    <span class="doccomment">/// It should be a string which can have one or multiple lines.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// __Example__</span>
     <span class="doccomment">///</span>
