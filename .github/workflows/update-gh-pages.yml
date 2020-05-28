@@ -27,4 +27,5 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
-          FOLDER: target/doc/zinoma
+          FOLDER: target/doc
+          TARGET_FOLDER: doc
