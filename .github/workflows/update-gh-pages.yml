@@ -1,0 +1,29 @@
+name: update-gh-pages
+on:
+  push:
+    branches:
+      - master
+jobs:
+  upload-doc:
+    name: upload-doc
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Generate doc
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+      - name: Upload to Github Pages
+        uses: JamesIves/github-pages-deploy-action@releases/v3
+        with:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: target/doc/zinoma
