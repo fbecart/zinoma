@@ -21,6 +21,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: doc
+          args: --no-deps
       - name: Upload to Github Pages
         uses: JamesIves/github-pages-deploy-action@releases/v3
         with:
