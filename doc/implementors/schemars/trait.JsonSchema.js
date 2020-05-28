@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["zinoma"] = [{"text":"impl JsonSchema for <a class=\"struct\" href=\"zinoma/config/yaml/schema/struct.Project.html\" title=\"struct zinoma::config::yaml::schema::Project\">Project</a>","synthetic":false,"types":["zinoma::config::yaml::schema::Project"]},{"text":"impl JsonSchema for <a class=\"struct\" href=\"zinoma/config/yaml/schema/struct.Target.html\" title=\"struct zinoma::config::yaml::schema::Target\">Target</a>","synthetic":false,"types":["zinoma::config::yaml::schema::Target"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
