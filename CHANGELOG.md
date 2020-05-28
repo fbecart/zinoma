@@ -2,6 +2,16 @@
 
 ## TBD
 
+## 0.11.0 (2020-05-28)
+
+### BREAKING CHANGES
+
+- The Yaml parser now denies additional properties.
+
+Feature enhancements:
+
+- [FEATURE #31](https://github.com/fbecart/zinoma/issues/31) Document Yaml configuration schema for improved IDE experience.
+
 ## 0.10.0 (2020-05-27)
 
 Feature enhancements:
