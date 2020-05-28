@@ -156,7 +156,8 @@ pub struct Target {
     #[serde(default)]
     pub dependencies: Vec<String>,
 
-    /// Use this keyword to specify the build script of this target. It should be string, which can have one or multiple lines.
+    /// Use this keyword to specify the build script of this target.
+    /// It should be a string which can have one or multiple lines.
     ///
     /// __Example__
     ///
