@@ -64,7 +64,7 @@ impl Engine {
                         target_build_states.set_build_finished(target_id, &result);
 
                         if let IncrementalRunResult::Run(Err(e)) = result {
-                            log::warn!("{} - {}", target.name, e);
+                            log::warn!("{} - {}", target, e);
                         } else {
                             services_runner.restart_service(target)?;
                         }
@@ -156,7 +156,7 @@ fn build_target_incrementally(
     .unwrap();
 
     if let IncrementalRunResult::Skipped = result {
-        log::info!("{} - Build skipped (Not Modified)", target.name);
+        log::info!("{} - Build skipped (Not Modified)", target);
     }
 
     build_report_sender

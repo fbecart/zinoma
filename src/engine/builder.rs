@@ -11,12 +11,12 @@ use crate::domain::Target;
 pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result<()> {
     if let Some(script) = &target.build {
         let target_start = Instant::now();
-        log::info!("{} - Building", &target.name);
+        log::info!("{} - Building", target);
 
         let mut options = ScriptOptions::new();
         options.exit_on_error = true;
         options.output_redirection = IoOptions::Inherit;
-        options.working_directory = Some(target.path.to_path_buf());
+        options.working_directory = Some(target.project.dir.to_owned());
 
         let mut build_process = run_script::spawn(&script, &vec![], &options)
             .with_context(|| "Build script execution error")?;
@@ -33,7 +33,7 @@ pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result
                         let target_build_duration = target_start.elapsed();
                         log::info!(
                             "{} - Build success (took: {}ms)",
-                            target.name,
+                            target,
                             target_build_duration.as_millis()
                         );
                         break;

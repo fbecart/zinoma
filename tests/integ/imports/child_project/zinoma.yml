@@ -1,0 +1,5 @@
+name: my_child_project
+
+targets:
+  target_1:
+    build: echo 'This is target 1'

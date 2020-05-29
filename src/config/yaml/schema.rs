@@ -91,6 +91,10 @@ pub struct Project {
     #[serde(default)]
     pub targets: HashMap<String, Target>,
 
+    // TODO Document
+    #[serde(default)]
+    pub name: Option<String>,
+
     /// Use the `imports` keyword to import targets from a different project.
     /// It should be an array of strings, each element being a path to another zinoma project.
     ///
@@ -126,7 +130,7 @@ pub struct Project {
     ///
     /// In this example, the target `test_all` depend from targets defined in different projects.
     #[serde(default)]
-    pub imports: Vec<String>,
+    pub imports: HashMap<String, String>, // TODO Update documentation
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]

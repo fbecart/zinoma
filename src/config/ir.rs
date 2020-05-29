@@ -1,99 +1,138 @@
 use super::yaml;
-use super::yaml::Projects;
 use crate::domain;
 use anyhow::Context;
 use anyhow::Result;
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use std::path::PathBuf;
 
-pub struct Targets(HashMap<String, (PathBuf, yaml::Target)>);
+pub struct Config {
+    root_project_name: Option<String>,
+    projects: HashMap<Option<String>, (PathBuf, yaml::Project)>,
+}
 
-impl TryFrom<Projects> for Targets {
-    type Error = anyhow::Error;
-    fn try_from(projects: Projects) -> Result<Self> {
-        let mut targets: HashMap<String, (PathBuf, yaml::Target)> = HashMap::new();
-
-        for (project_dir, project) in projects.0.into_iter() {
-            for (target_name, target) in project.targets.into_iter() {
-                if let Some((homonym_dir, _)) = targets.get(&target_name) {
-                    return Err(anyhow::anyhow!(
-                        "Projects {} and {} contain targets with the same name: {}. Please disambiguate.",
-                        project_dir.display(),
-                        homonym_dir.display(),
-                        target_name,
-                    ));
-                }
-
-                targets.insert(target_name, (project_dir.clone(), target));
-            }
+impl From<yaml::Config> for Config {
+    fn from(config: yaml::Config) -> Self {
+        let yaml::Config {
+            root_project_dir,
+            projects,
+        } = config;
+        Self {
+            root_project_name: projects[&root_project_dir].name.to_owned(),
+            projects: projects
+                .into_iter()
+                .map(|(project_dir, project)| (project.name.clone(), (project_dir, project)))
+                .collect(),
         }
-
-        Ok(Self(targets))
     }
 }
 
-impl Targets {
-    pub fn get_target_names(&self) -> Vec<String> {
-        self.0.keys().cloned().collect()
+impl Config {
+    pub fn list_all_target_names(&self) -> Vec<String> {
+        let mut target_names: Vec<_> = self.projects[&self.root_project_name]
+            .1
+            .targets
+            .keys()
+            .cloned()
+            .collect();
+        target_names.extend(
+            self.projects
+                .iter()
+                .filter(|(project_name, _)| project_name.is_some())
+                .flat_map(|(project_name, (_project_dir, project))| {
+                    project
+                        .targets
+                        .keys()
+                        .map(|target_name| format_target_canonical_name(&project_name, target_name))
+                        .collect::<Vec<_>>()
+                }),
+        );
+        target_names
     }
 
     pub fn try_into_domain_targets(
         self,
         requested_targets: Option<Vec<String>>,
     ) -> Result<Vec<domain::Target>> {
-        let requested_targets =
-            requested_targets.unwrap_or_else(|| self.0.keys().cloned().collect());
+        let requested_targets = requested_targets.unwrap_or_else(|| self.list_all_target_names());
 
         self.validate_dependency_graph(&requested_targets)?;
 
-        let mut yaml_targets = self.0;
+        let Config {
+            root_project_name,
+            mut projects,
+        } = self;
         let mut targets = Vec::with_capacity(requested_targets.len());
         let mut mapping = HashMap::with_capacity(requested_targets.len());
 
         fn add_target(
             mut targets: &mut Vec<domain::Target>,
-            mut mapping: &mut HashMap<String, domain::TargetId>,
-            yaml_targets: &mut HashMap<String, (PathBuf, yaml::Target)>,
-            target_name: &str,
+            mut mapping: &mut HashMap<(Option<String>, String), domain::TargetId>,
+            projects: &mut HashMap<Option<String>, (PathBuf, yaml::Project)>,
+            target_canonical_name: &(Option<String>, String),
         ) -> Result<()> {
-            if mapping.contains_key(target_name) {
+            if mapping.contains_key(&target_canonical_name) {
                 return Ok(());
             }
 
-            let (
-                project_dir,
-                yaml::Target {
-                    dependencies,
-                    input_paths,
-                    output_paths,
-                    build,
-                    service,
-                },
-            ) = yaml_targets.remove(target_name).unwrap();
+            let (project_name, target_name) = target_canonical_name;
+            let project_dir = projects[&project_name].0.clone();
+            let yaml::Target {
+                dependencies,
+                input_paths,
+                output_paths,
+                build,
+                service,
+            } = projects
+                .get_mut(&project_name)
+                .unwrap()
+                .1
+                .targets
+                .remove(target_name)
+                .unwrap();
+
+            let dependencies = dependencies
+                .into_iter()
+                .map(|dependency_canonical_name| {
+                    parse_target_canonical_name(&dependency_canonical_name).map(
+                        |(dependency_project_name, dependency_name)| {
+                            let dependency_project_name =
+                                dependency_project_name.or_else(|| project_name.to_owned());
+                            (dependency_project_name, dependency_name)
+                        },
+                    )
+                })
+                .collect::<Result<Vec<(_, _)>>>()?;
+
             for dependency in &dependencies {
-                add_target(&mut targets, &mut mapping, yaml_targets, dependency)?
+                add_target(&mut targets, &mut mapping, projects, dependency)?
             }
 
             let target_id = targets.len();
-            mapping.insert(target_name.to_string(), target_id);
+            mapping.insert((project_name.clone(), target_name.clone()), target_id);
             let dependencies = dependencies
                 .into_iter()
-                .map(|target_name| *mapping.get(&target_name).unwrap())
+                .map(|(dependency_project_name, dependency_name)| {
+                    *mapping
+                        .get(&(dependency_project_name, dependency_name))
+                        .unwrap()
+                })
                 .collect();
             let input_paths = input_paths
                 .into_iter()
-                .map(|path| project_dir.join(path))
+                .map(|path| (&project_dir).join(path))
                 .collect();
             let output_paths = output_paths
                 .into_iter()
-                .map(|path| project_dir.join(path))
+                .map(|path| (&project_dir).join(path))
                 .collect();
             targets.push(domain::Target {
                 id: target_id,
-                name: target_name.to_string(),
+                name: target_name.clone(),
+                project: domain::Project {
+                    dir: project_dir,
+                    name: project_name.clone(),
+                },
                 dependencies,
-                path: project_dir,
                 input_paths,
                 output_paths,
                 build,
@@ -104,11 +143,13 @@ impl Targets {
         }
 
         for requested_target in requested_targets.iter() {
+            let (pj_name, tg_name) = parse_target_canonical_name(requested_target)?;
+            let pj_name = pj_name.or_else(|| root_project_name.clone());
             add_target(
                 &mut targets,
                 &mut mapping,
-                &mut yaml_targets,
-                requested_target,
+                &mut projects,
+                &(pj_name, tg_name),
             )?;
         }
 
@@ -119,14 +160,25 @@ impl Targets {
     ///
     /// Ensures that all target dependencies (both direct and transitive) exist,
     /// and that the dependency graph has no circular dependency.
-    fn validate_dependency_graph(&self, target_names: &[String]) -> Result<()> {
-        for target_name in target_names {
-            let (_, target) = self
-                .0
-                .get(target_name)
-                .ok_or_else(|| anyhow::anyhow!("Target {} not found", target_name))?;
-            self.validate_target_graph(target_name, &target, &[])
-                .with_context(|| format!("Target {} is invalid", target_name))?;
+    fn validate_dependency_graph(&self, requested_targets: &[String]) -> Result<()> {
+        for target_canonical_name in requested_targets {
+            let (project_name, target_name) = parse_target_canonical_name(target_canonical_name)?;
+            let project_name = project_name.or_else(|| self.root_project_name.clone());
+            let target = self
+                .projects
+                .get(&project_name)
+                .unwrap()
+                .1
+                .targets
+                .get(&target_name)
+                .ok_or_else(|| anyhow::anyhow!("Target {} not found", target_canonical_name))?;
+            self.validate_target_graph(
+                &(project_name, target_name.to_owned()),
+                &target,
+                &[],
+                &self.root_project_name,
+            )
+            .with_context(|| format!("Target {} is invalid", target_name))?;
         }
 
         Ok(())
@@ -134,45 +186,101 @@ impl Targets {
 
     fn validate_target_graph(
         &self,
-        target_name: &str,
+        target_canonical_name: &(Option<String>, String),
         target: &yaml::Target,
-        parent_targets: &[&str],
+        parent_targets: &[&(Option<String>, String)],
+        current_project: &Option<String>,
     ) -> Result<()> {
-        if parent_targets.contains(&target_name) {
+        if parent_targets.contains(&target_canonical_name) {
             return Err(anyhow::anyhow!(
                 "Circular dependency: {} -> {}",
-                parent_targets.join(" -> "),
-                target_name
+                parent_targets
+                    .iter()
+                    .map(|(project_name, target_name)| format_target_canonical_name(
+                        &project_name,
+                        &target_name
+                    ))
+                    .collect::<Vec<_>>()
+                    .join(" -> "),
+                format_target_canonical_name(&target_canonical_name.0, &target_canonical_name.1),
             ));
         }
 
-        let targets_chain = [parent_targets, &[target_name]].concat();
-        for dependency_name in &target.dependencies {
-            let (_, dependency) = self.0.get(dependency_name).ok_or_else(|| {
-                anyhow::anyhow!("{} - Dependency {} not found", target_name, dependency_name)
-            })?;
+        let targets_chain = [parent_targets, &[target_canonical_name]].concat();
+        for dependency_canonical_name in &target.dependencies {
+            let dependency_canonical_name = parse_target_canonical_name(dependency_canonical_name)?;
+            let dependency_project = dependency_canonical_name
+                .0
+                .clone()
+                .or_else(|| current_project.clone());
+            let dependency = self
+                .projects
+                .get(&dependency_project)
+                .unwrap()
+                .1
+                .targets
+                .get(&dependency_canonical_name.1)
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "{} - Dependency {} not found",
+                        format_target_canonical_name(
+                            &target_canonical_name.0,
+                            &target_canonical_name.1
+                        ),
+                        format_target_canonical_name(
+                            &dependency_canonical_name.0,
+                            &dependency_canonical_name.1
+                        ),
+                    )
+                })?;
 
-            self.validate_target_graph(dependency_name, dependency, &targets_chain)?;
+            self.validate_target_graph(
+                &dependency_canonical_name,
+                dependency,
+                &targets_chain,
+                &target_canonical_name.0,
+            )?;
         }
 
         Ok(())
     }
 }
 
+fn format_target_canonical_name(project_name: &Option<String>, target_name: &str) -> String {
+    if let Some(project_name) = project_name {
+        format!("{}::{}", project_name, target_name)
+    } else {
+        target_name.to_owned()
+    }
+}
+
+fn parse_target_canonical_name(target_canonical_name: &str) -> Result<(Option<String>, String)> {
+    let parts = target_canonical_name.split("::").collect::<Vec<_>>();
+    match parts[..] {
+        [project_name, target_name] => Ok((Some(project_name.to_owned()), target_name.to_owned())),
+        [target_name] => Ok((None, target_name.to_owned())),
+        _ => Err(anyhow::anyhow!(
+            "Invalid target canonical name: {} (expected a maximum of one '::' delimiter)",
+            target_canonical_name
+        )),
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::Targets;
+    use super::Config;
     use crate::config::yaml;
+    use std::collections::HashMap;
     use std::path::PathBuf;
 
     #[test]
     fn test_into_targets_should_return_the_requested_targets() {
-        let targets = build_targets(vec![
+        let projects = build_projects(vec![
             ("target_1", build_target()),
             ("target_2", build_target()),
         ]);
 
-        let actual_targets = targets
+        let actual_targets = projects
             .try_into_domain_targets(Some(vec!["target_2".to_string()]))
             .expect("Conversion of valid targets should be successful");
 
@@ -182,46 +290,46 @@ mod tests {
 
     #[test]
     fn test_into_targets_should_reject_requested_target_not_found() {
-        let targets = build_targets(vec![("target_1", build_target())]);
+        let projects = build_projects(vec![("target_1", build_target())]);
 
-        targets
+        projects
             .try_into_domain_targets(Some(vec!["not_a_target".to_string()]))
             .expect_err("Should reject an invalid requested target");
     }
 
     #[test]
     fn test_validate_targets_on_valid_targets() {
-        let targets = build_targets(vec![
+        let projects = build_projects(vec![
             ("target_1", build_target_with_dependencies(vec!["target_2"])),
             ("target_2", build_target_with_dependencies(vec![])),
         ]);
 
-        targets
+        projects
             .validate_dependency_graph(&vec!["target_1".to_string(), "target_2".to_string()])
             .expect("Valid targets should be accepted");
     }
 
     #[test]
     fn test_validate_targets_with_unknown_dependency() {
-        let targets = build_targets(vec![(
+        let projects = build_projects(vec![(
             "target_1",
             build_target_with_dependencies(vec!["target_2"]),
         )]);
 
-        targets
+        projects
             .validate_dependency_graph(&vec!["target_1".to_string()])
             .expect_err("Unknown dependencies should be rejected");
     }
 
     #[test]
     fn test_validate_targets_with_circular_dependency() {
-        let targets = build_targets(vec![
+        let projects = build_projects(vec![
             ("target_1", build_target_with_dependencies(vec!["target_2"])),
             ("target_2", build_target_with_dependencies(vec!["target_3"])),
             ("target_3", build_target_with_dependencies(vec!["target_1"])),
         ]);
 
-        targets
+        projects
             .validate_dependency_graph(&vec![
                 "target_1".to_string(),
                 "target_2".to_string(),
@@ -244,11 +352,26 @@ mod tests {
         build_target_with_dependencies(vec![])
     }
 
-    pub fn build_targets(data: Vec<(&str, yaml::Target)>) -> Targets {
-        Targets(
-            data.into_iter()
-                .map(|(k, v)| (k.to_string(), (PathBuf::from("."), v)))
-                .collect(),
-        )
+    pub fn build_projects(targets: Vec<(&str, yaml::Target)>) -> Config {
+        let mut projects = HashMap::new();
+        projects.insert(
+            None,
+            (
+                PathBuf::new(),
+                yaml::Project {
+                    name: None,
+                    imports: HashMap::new(),
+                    targets: targets
+                        .into_iter()
+                        .map(|(k, v)| (k.to_string(), v))
+                        .collect(),
+                },
+            ),
+        );
+
+        Config {
+            root_project_name: None,
+            projects,
+        }
     }
 }
