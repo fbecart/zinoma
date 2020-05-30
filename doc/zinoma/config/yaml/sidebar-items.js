@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["is_valid_target_name",""]],"mod":[["schema",""]],"struct":[["Projects",""]]});
+initSidebarItems({"fn":[["canonicalize_dir",""],["is_valid_project_name",""],["is_valid_target_name",""]],"mod":[["schema",""]],"struct":[["Config",""]]});

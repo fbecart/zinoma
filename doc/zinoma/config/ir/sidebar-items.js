@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Targets",""]]});
+initSidebarItems({"struct":[["Config",""],["TargetCanonicalName",""]]});
