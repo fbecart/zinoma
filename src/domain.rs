@@ -20,8 +20,7 @@ impl fmt::Display for Target {
         if let Some(project_name) = &self.project.name {
             fmt.write_fmt(format_args!("{}::", project_name))?;
         }
-        fmt.write_str(&self.name)?;
-        Ok(())
+        fmt.write_str(&self.name)
     }
 }
 

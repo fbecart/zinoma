@@ -33,7 +33,7 @@ fn main() -> Result<()> {
     let config = yaml::Config::load(&root_project_dir)?;
     let project_dirs = config.get_project_dirs();
     let config: ir::Config = config.try_into()?;
-    let all_target_names = config.list_all_target_names();
+    let all_target_names = config.list_all_available_target_names();
 
     let arg_matches = cli::get_app()
         .mut_arg(cli::arg::TARGETS, |arg| {
