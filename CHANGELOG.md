@@ -2,6 +2,8 @@
 
 ## TBD
 
+## 0.12.0 (2020-05-30)
+
 ### BREAKING CHANGES
 
 - Imported projects need to have a name defined.
