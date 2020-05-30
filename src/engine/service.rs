@@ -21,7 +21,7 @@ impl ServicesRunner {
 
     pub fn restart_service(&mut self, target: &Target) -> Result<()> {
         if let Some(Some(service_process)) = self.service_processes.get_mut(target.id) {
-            log::trace!("{} - Stopping service", target.name);
+            log::trace!("{} - Stopping service", target);
             process::kill_and_wait(service_process)
                 .with_context(|| format!("Failed to kill service {}", target.name))?;
         }
@@ -31,12 +31,12 @@ impl ServicesRunner {
 
     pub fn start_service(&mut self, target: &Target) -> Result<()> {
         if let Some(script) = &target.service {
-            log::info!("{} - Starting service", target.name);
+            log::info!("{} - Starting service", target);
 
             let mut options = ScriptOptions::new();
             options.exit_on_error = true;
             options.output_redirection = IoOptions::Inherit;
-            options.working_directory = Some(target.path.to_path_buf());
+            options.working_directory = Some(target.project.dir.to_owned());
 
             let service_process = run_script::spawn(&script, &vec![], &options)
                 .with_context(|| format!("Failed to start service {}", target.name))?;

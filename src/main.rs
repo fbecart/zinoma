@@ -11,7 +11,7 @@ use crossbeam::channel::{unbounded, Sender};
 use engine::incremental::{remove_checksum_dir, remove_target_checksums};
 use engine::Engine;
 use std::convert::TryInto;
-use std::path::Path;
+use std::path::PathBuf;
 
 #[cfg(all(not(target_env = "msvc"), target_pointer_width = "64"))]
 use jemallocator::Jemalloc;
@@ -29,11 +29,11 @@ fn main() -> Result<()> {
         .init()
         .unwrap();
 
-    let project_dir = Path::new(arg_matches.value_of(cli::arg::PROJECT_DIR).unwrap());
-    let projects = yaml::Projects::load(project_dir)?;
-    let project_dirs = projects.get_project_dirs();
-    let targets: ir::Targets = projects.try_into()?;
-    let all_target_names = targets.get_target_names();
+    let root_project_dir = PathBuf::from(arg_matches.value_of(cli::arg::PROJECT_DIR).unwrap());
+    let config = yaml::Config::load(&root_project_dir)?;
+    let project_dirs = config.get_project_dirs();
+    let config: ir::Config = config.try_into()?;
+    let all_target_names = config.list_all_available_target_names();
 
     let arg_matches = cli::get_app()
         .mut_arg(cli::arg::TARGETS, |arg| {
@@ -49,7 +49,7 @@ fn main() -> Result<()> {
 
     let requested_targets = arg_matches.values_of_lossy(cli::arg::TARGETS);
     let has_requested_targets = requested_targets.is_some();
-    let targets = targets.try_into_domain_targets(requested_targets)?;
+    let targets = config.try_into_domain_targets(requested_targets)?;
 
     if arg_matches.is_present(cli::arg::CLEAN) {
         if has_requested_targets {

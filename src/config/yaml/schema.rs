@@ -91,24 +91,41 @@ pub struct Project {
     #[serde(default)]
     pub targets: HashMap<String, Target>,
 
-    /// Use the `imports` keyword to import targets from a different project.
-    /// It should be an array of strings, each element being a path to another zinoma project.
+    /// Name of the project
+    ///
+    /// A project name must be a string. It should start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.
+    ///
+    /// Project names should be unique. Two projects cannot have the same name.
+    #[serde(default)]
+    pub name: Option<String>,
+
+    /// Use the `imports` keyword to import targets from a different Žinoma project.
+    /// It should be an object, the keys being the project names and the values their respective paths.
+    ///
+    /// Before importing a project, you should make sure this project has its name defined.
+    /// You should use the same name as key in the `imports` object.
+    ///
+    /// Once a project is imported, targets from that project can be referenced by specifying their fully qualified name: `imported_project_name::target_name`.
     ///
     /// __Example__
     ///
-    /// `api/zinoma.yml`:
+    /// `packages/api/zinoma.yml`:
     ///
     /// ```yaml
+    /// name: api
+    ///
     /// targets:
-    ///   api_test:
+    ///   test:
     ///     build: cargo test
     /// ```
     ///
-    /// `webapp/zinoma.yml`:
+    /// `packages/webapp/zinoma.yml`:
     ///
     /// ```yaml
+    /// name: webapp
+    ///
     /// targets:
-    ///   webapp_test:
+    ///   test:
     ///     build: cargo test
     /// ```
     ///
@@ -116,17 +133,17 @@ pub struct Project {
     ///
     /// ```yaml
     /// imports:
-    ///   - api
-    ///   - webapp
+    ///   api: packages/api
+    ///   webapp: packages/webapp
     ///
     /// targets:
     ///   test_all:
-    ///     dependencies: [api_test, webapp_test]
+    ///     dependencies: [api::test, webapp::test]
     /// ```
     ///
     /// In this example, the target `test_all` depend from targets defined in different projects.
     #[serde(default)]
-    pub imports: Vec<String>,
+    pub imports: HashMap<String, String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]

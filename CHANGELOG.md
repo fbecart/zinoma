@@ -2,6 +2,16 @@
 
 ## TBD
 
+### BREAKING CHANGES
+
+- Imported projects need to have a name defined.
+  This name becomes a key to the `imports` object.
+  Imported targets should be referred to with their fully qualified name: `project_name::target_name`.
+
+Feature enhancements:
+
+- [FEATURE #27](https://github.com/fbecart/zinoma/issues/27) Each project should be a namespace for target names.
+
 ## 0.11.0 (2020-05-28)
 
 ### BREAKING CHANGES

@@ -1,0 +1,6 @@
+imports:
+  my_child_project: child_project
+
+targets:
+  target_2:
+    dependencies: [my_child_project::target_1]

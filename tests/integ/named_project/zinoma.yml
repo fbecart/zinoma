@@ -1,0 +1,9 @@
+name: my_project
+
+targets:
+  target_1:
+    build: echo 'This is target 1'
+  target_2:
+    dependencies: [target_1]
+  target_3:
+    dependencies: [my_project::target_2]

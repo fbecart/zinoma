@@ -36,7 +36,7 @@ impl TargetWatcher {
                 }) => {
                     log::warn!(
                         "{} - Skipping watch on non-existing path: {}",
-                        target.name,
+                        target,
                         path.display(),
                     );
                 }
@@ -44,7 +44,7 @@ impl TargetWatcher {
                     return Err(Error::new(e).context(format!(
                         "Error watching path {} for target {}",
                         path.display(),
-                        target.name,
+                        target,
                     )));
                 }
             }

@@ -43,7 +43,7 @@ fn get_checksum_dir_path(project_dir: &Path) -> PathBuf {
 }
 
 fn get_checksum_file_path(target: &Target) -> PathBuf {
-    get_checksum_dir_path(&target.path).join(format!("{}.checksum", target.name))
+    get_checksum_dir_path(&target.project.dir).join(format!("{}.checksum", target.name))
 }
 
 fn files_have_not_changed_since_last_successful_execution(target: &Target) -> Result<bool> {
@@ -71,7 +71,7 @@ fn read_target_checksums(target: &Target) -> Result<Option<TargetChecksums>> {
             Err(e) => {
                 log::trace!(
                     "{} - Dropping corrupted checksum file (Error: {})",
-                    &target.name,
+                    target,
                     e
                 );
                 remove_target_checksums(&target)?;
@@ -94,7 +94,7 @@ pub fn remove_target_checksums(target: &Target) -> Result<()> {
 }
 
 fn write_target_checksums(target: &Target, checksums: &TargetChecksums) -> Result<()> {
-    fs::create_dir(get_checksum_dir_path(&target.path)).ok();
+    fs::create_dir(get_checksum_dir_path(&target.project.dir)).ok();
 
     let file_path = get_checksum_file_path(target);
     let file = File::create(&file_path)
