@@ -33,17 +33,16 @@ impl Config {
             .list_all_targets()
             .iter()
             .map(ToString::to_string)
-            .collect();
+            .collect::<Vec<_>>();
 
         if self.root_project_name.is_some() {
             // Add root project targets without their namespace
-            target_names = self
-                .get_project(&self.root_project_name)
-                .targets
-                .keys()
-                .cloned()
-                .chain(target_names)
-                .collect();
+            target_names.extend(
+                self.get_project(&self.root_project_name)
+                    .targets
+                    .keys()
+                    .cloned(),
+            );
         }
 
         target_names
