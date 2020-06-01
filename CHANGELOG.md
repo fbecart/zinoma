@@ -2,6 +2,14 @@
 
 ## TBD
 
+Feature enhancements:
+
+- [FEATURE #36](https://github.com/fbecart/zinoma/issues/36) Directory `.zinoma` should be ignored in watchers and incremental builds.
+
+Bug fixes:
+
+- Žinoma would not work on Windows due to [`Path::canonicalize` returning an UNC path](https://github.com/rust-lang/rust/issues/42869#issuecomment-346362633).
+
 ## 0.12.0 (2020-05-30)
 
 ### BREAKING CHANGES
