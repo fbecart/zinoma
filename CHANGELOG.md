@@ -2,6 +2,8 @@
 
 ## TBD
 
+## 0.13.0 (2020-06-01)
+
 Feature enhancements:
 
 - [FEATURE #36](https://github.com/fbecart/zinoma/issues/36) Directory `.zinoma` should be ignored in watchers and incremental builds.
