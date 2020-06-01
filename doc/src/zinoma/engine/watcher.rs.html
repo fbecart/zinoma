@@ -93,7 +93,9 @@
 <span id="93">93</span>
 <span id="94">94</span>
 <span id="95">95</span>
+<span id="96">96</span>
 </pre><div class="example-wrap"><pre class="rust ">
+<span class="kw">use</span> <span class="kw">super</span>::<span class="ident">incremental</span>::<span class="ident">is_in_checksum_dir</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::{<span class="ident">Target</span>, <span class="ident">TargetId</span>};
 <span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">Context</span>, <span class="ident">Error</span>, <span class="prelude-ty">Result</span>};
 <span class="kw">use</span> <span class="ident">crossbeam</span>::<span class="ident">channel</span>::<span class="ident">Sender</span>;
@@ -113,7 +115,7 @@
                     .<span class="ident">unwrap</span>()
                     .<span class="ident">paths</span>
                     .<span class="ident">iter</span>()
-                    .<span class="ident">any</span>(<span class="op">|</span><span class="ident">path</span><span class="op">|</span> <span class="op">!</span><span class="ident">is_tmp_editor_file</span>(<span class="ident">path</span>))
+                    .<span class="ident">any</span>(<span class="op">|</span><span class="ident">path</span><span class="op">|</span> <span class="op">!</span><span class="ident">is_tmp_editor_file</span>(<span class="ident">path</span>) <span class="kw-2">&amp;</span><span class="op">&amp;</span> <span class="op">!</span><span class="ident">is_in_checksum_dir</span>(<span class="ident">path</span>))
                 {
                     <span class="ident">target_invalidated_sender</span>
                         .<span class="ident">send</span>(<span class="ident">target_id</span>)
