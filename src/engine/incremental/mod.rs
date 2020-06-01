@@ -9,7 +9,10 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::ErrorKind;
-use std::path::{Path, PathBuf};
+use std::path::{self, Path, PathBuf};
+
+/// Name of the directory in which Žinoma stores checksums of the targets inputs and outputs.
+const CHECKSUM_DIR_NAME: &str = ".zinoma";
 
 #[derive(PartialEq)]
 pub enum IncrementalRunResult<T> {
@@ -38,8 +41,30 @@ where
     Ok(IncrementalRunResult::Run(result))
 }
 
+pub fn is_in_checksum_dir(path: &Path) -> bool {
+    path.components().any(|component| match component {
+        path::Component::Normal(name) => name == CHECKSUM_DIR_NAME,
+        _ => false,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_in_checksum_dir;
+    use std::path::Path;
+
+    #[test]
+    fn test_is_in_checksum_dir() {
+        assert!(is_in_checksum_dir(Path::new(".zinoma/my/file.json")));
+        assert!(is_in_checksum_dir(Path::new(
+            "/my/project/.zinoma/my/file.json"
+        )));
+        assert!(!is_in_checksum_dir(Path::new("/my/file.json")));
+    }
+}
+
 fn get_checksum_dir_path(project_dir: &Path) -> PathBuf {
-    project_dir.join(".zinoma")
+    project_dir.join(CHECKSUM_DIR_NAME)
 }
 
 fn get_checksum_file_path(target: &Target) -> PathBuf {

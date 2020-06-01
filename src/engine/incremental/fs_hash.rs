@@ -1,3 +1,4 @@
+use super::is_in_checksum_dir;
 use anyhow::{Context, Result};
 use rayon::prelude::*;
 use seahash::SeaHasher;
@@ -51,7 +52,7 @@ fn list_files(paths: &[PathBuf]) -> HashSet<PathBuf> {
                 Err(e) => log::debug!("Failed to walk dir {}: {}", path.display(), e),
                 Ok(entry) => {
                     let path = entry.path().to_path_buf();
-                    if path.is_file() {
+                    if path.is_file() && !is_in_checksum_dir(&path) {
                         files.insert(path);
                     }
                 }
