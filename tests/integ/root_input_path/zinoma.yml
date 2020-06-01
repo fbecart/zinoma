@@ -1,0 +1,4 @@
+targets:
+  print_source:
+    input_paths: [.]
+    build: cat source.txt
