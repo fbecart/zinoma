@@ -103,7 +103,7 @@ impl Config {
 }
 
 fn canonicalize_dir(dir: &Path) -> Result<PathBuf> {
-    dir.canonicalize().map_err(|e| {
+    dunce::canonicalize(dir).map_err(|e| {
         let context = if e.kind() == ErrorKind::NotFound {
             format!("Directory {} does not exist", dir.display())
         } else {
