@@ -1,5 +1,5 @@
 targets:
   print_source:
     inputs:
-      - fs_path: .
+      - paths: [.]
     build: cat source.txt

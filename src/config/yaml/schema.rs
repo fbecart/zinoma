@@ -266,7 +266,7 @@ pub struct Target {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 pub enum Input {
-    FsPath { fs_path: String },
+    Paths { paths: Vec<String> },
     CmdStdout { cmd_stdout: String },
 }
 
@@ -274,6 +274,6 @@ pub enum Input {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 pub enum Output {
-    FsPath { fs_path: String },
+    Paths { paths: Vec<String> },
     CmdStdout { cmd_stdout: String },
 }

@@ -120,8 +120,10 @@ impl Config {
                 .into_iter()
                 .fold(EnvProbes::new(), |mut env_probes, input| {
                     match input {
-                        yaml::Input::FsPath { fs_path } => {
-                            env_probes.paths.push((&project_dir).join(fs_path))
+                        yaml::Input::Paths { paths } => {
+                            for path in paths {
+                                env_probes.paths.push((&project_dir).join(path))
+                            }
                         }
                         yaml::Input::CmdStdout { cmd_stdout } => {
                             env_probes.cmd_outputs.push(cmd_stdout)
@@ -133,8 +135,10 @@ impl Config {
                 .into_iter()
                 .fold(EnvProbes::new(), |mut env_probes, output| {
                     match output {
-                        yaml::Output::FsPath { fs_path } => {
-                            env_probes.paths.push((&project_dir).join(fs_path))
+                        yaml::Output::Paths { paths } => {
+                            for path in paths {
+                                env_probes.paths.push((&project_dir).join(path))
+                            }
                         }
                         yaml::Output::CmdStdout { cmd_stdout } => {
                             env_probes.cmd_outputs.push(cmd_stdout)
