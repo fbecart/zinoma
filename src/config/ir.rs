@@ -198,8 +198,8 @@ impl Config {
     fn validate_dependency_graph(&self, root_targets: &[TargetCanonicalName]) -> Result<()> {
         for target_canonical_name in root_targets {
             let target = self
-                .get_target(&target_canonical_name)
-                .ok_or_else(|| anyhow::anyhow!("Target {} not found", &target_canonical_name))?;
+                .try_get_target(&target_canonical_name)
+                .with_context(|| anyhow::anyhow!("Target {} is invalid", &target_canonical_name))?;
             self.validate_target_graph(&target_canonical_name, &target, &[])
                 .with_context(|| format!("Target {} is invalid", target_canonical_name))?;
         }
@@ -231,13 +231,15 @@ impl Config {
                 dependency_name,
                 &target_canonical_name.project_name,
             )?;
-            let dependency = self.get_target(&dependency_canonical_name).ok_or_else(|| {
-                anyhow::anyhow!(
-                    "{} - Dependency {} not found",
-                    &target_canonical_name,
-                    &dependency_canonical_name,
-                )
-            })?;
+            let dependency = self
+                .try_get_target(&dependency_canonical_name)
+                .with_context(|| {
+                    anyhow::anyhow!(
+                        "{} - Dependency {} is invalid",
+                        &target_canonical_name,
+                        &dependency_canonical_name,
+                    )
+                })?;
 
             self.validate_target_graph(&dependency_canonical_name, dependency, &targets_chain)?;
         }
@@ -257,10 +259,24 @@ impl Config {
         &mut self.projects.get_mut(&project_name).unwrap().1
     }
 
-    fn get_target(&self, target_canonical_name: &TargetCanonicalName) -> Option<&yaml::Target> {
-        self.get_project(&target_canonical_name.project_name)
-            .targets
-            .get(&target_canonical_name.target_name)
+    fn try_get_target(&self, target_canonical_name: &TargetCanonicalName) -> Result<&yaml::Target> {
+        let project = match &self.projects.get(&target_canonical_name.project_name) {
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Project {} does not exist",
+                    target_canonical_name.project_name.to_owned().unwrap(),
+                ))
+            }
+            Some((_project_dir, project)) => project,
+        };
+
+        match project.targets.get(&target_canonical_name.target_name) {
+            None => Err(anyhow::anyhow!(
+                "Target {} does not exist",
+                target_canonical_name
+            )),
+            Some(target) => Ok(target),
+        }
     }
 }
 

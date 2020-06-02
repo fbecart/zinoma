@@ -9,6 +9,7 @@ use std::fs::File;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug)]
 pub struct Config {
     pub root_project_dir: PathBuf,
     pub projects: HashMap<PathBuf, Project>,
