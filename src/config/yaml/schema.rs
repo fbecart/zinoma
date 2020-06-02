@@ -267,7 +267,6 @@ pub struct Target {
 #[serde(untagged)]
 pub enum Input {
     FsPath { fs_path: String },
-    EnvVar { env_var: String },
     CmdStdout { cmd_stdout: String },
 }
 

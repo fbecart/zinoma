@@ -1,11 +1,9 @@
 mod cmd_outputs;
-mod env_vars;
 mod fs;
 
 use crate::domain::{EnvProbes, Target};
 use anyhow::{Context, Error, Result};
 use cmd_outputs::EnvCmdOutputsState;
-use env_vars::EnvVarsState;
 use fs::EnvFsState;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -166,7 +164,6 @@ fn hash_env(env_probes: &EnvProbes, project_dir: &Path) -> Result<EnvState> {
     Ok(EnvState {
         fs: EnvFsState::current(&env_probes.paths)?,
         cmd_stdouts: EnvCmdOutputsState::current(&env_probes.cmd_outputs, project_dir)?,
-        vars: EnvVarsState::current(&env_probes.env_vars)?,
     })
 }
 
@@ -190,14 +187,12 @@ impl TargetEnvState {
 struct EnvState {
     fs: EnvFsState,
     cmd_stdouts: EnvCmdOutputsState,
-    vars: EnvVarsState,
 }
 
 impl EnvState {
     fn eq_current_state(&self, env_probes: &EnvProbes, project_dir: &Path) -> Result<bool> {
         Ok((&self.fs).eq_current_state(&env_probes.paths)?
-            && (&self.cmd_stdouts).eq_current_state(&env_probes.cmd_outputs, project_dir)?
-            && (&self.vars).eq_current_state(&env_probes.env_vars)?)
+            && (&self.cmd_stdouts).eq_current_state(&env_probes.cmd_outputs, project_dir)?)
     }
 }
 

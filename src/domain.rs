@@ -34,7 +34,6 @@ pub struct Project {
 pub struct EnvProbes {
     pub paths: Vec<PathBuf>,
     pub cmd_outputs: Vec<String>,
-    pub env_vars: Vec<String>,
 }
 
 impl EnvProbes {
@@ -42,11 +41,10 @@ impl EnvProbes {
         Self {
             paths: vec![],
             cmd_outputs: vec![],
-            env_vars: vec![],
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.paths.is_empty() && self.cmd_outputs.is_empty() && self.env_vars.is_empty()
+        self.paths.is_empty() && self.cmd_outputs.is_empty()
     }
 }

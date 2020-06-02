@@ -126,7 +126,6 @@ impl Config {
                         yaml::Input::CmdStdout { cmd_stdout } => {
                             env_probes.cmd_outputs.push(cmd_stdout)
                         }
-                        yaml::Input::EnvVar { env_var } => env_probes.env_vars.push(env_var),
                     };
                     env_probes
                 });

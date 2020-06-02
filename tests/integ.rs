@@ -74,25 +74,6 @@ fn root_input_path() {
 }
 
 #[test]
-fn env_var_input() {
-    zinoma_command("env_var_input", &["--clean", "my_target"])
-        .assert()
-        .success()
-        .stderr(predicate::str::contains("my_target - Build success"));
-
-    zinoma_command("env_var_input", &["my_target"])
-        .assert()
-        .success()
-        .stderr(predicate::str::contains("my_target - Build skipped"));
-
-    zinoma_command("env_var_input", &["my_target"])
-        .env("TEST_VAR", "new_value")
-        .assert()
-        .success()
-        .stderr(predicate::str::contains("my_target - Build success"));
-}
-
-#[test]
 fn cmd_stdout_input() {
     zinoma_command("cmd_stdout_input", &["--clean", "random", "stable"])
         .assert()
