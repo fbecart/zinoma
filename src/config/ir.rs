@@ -2,6 +2,7 @@ use super::yaml;
 use crate::domain;
 use anyhow::Context;
 use anyhow::Result;
+use domain::EnvProbes;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -82,10 +83,11 @@ impl Config {
                 .to_owned();
             let yaml::Target {
                 dependencies,
-                input_paths,
-                output_paths,
+                inputs,
+                outputs,
                 build,
                 service,
+                ..
             } = config
                 .get_project_mut(&target_canonical_name.project_name)
                 .targets
@@ -114,14 +116,33 @@ impl Config {
                 project_name,
                 target_name,
             } = target_canonical_name;
-            let input_paths = input_paths
+            let inputs = inputs
                 .into_iter()
-                .map(|path| (&project_dir).join(path))
-                .collect();
-            let output_paths = output_paths
+                .fold(EnvProbes::new(), |mut env_probes, input| {
+                    match input {
+                        yaml::Input::FsPath { fs_path } => {
+                            env_probes.paths.push((&project_dir).join(fs_path))
+                        }
+                        yaml::Input::CmdStdout { cmd_stdout } => {
+                            env_probes.cmd_outputs.push(cmd_stdout)
+                        }
+                        yaml::Input::EnvVar { env_var } => env_probes.env_vars.push(env_var),
+                    };
+                    env_probes
+                });
+            let outputs = outputs
                 .into_iter()
-                .map(|path| (&project_dir).join(path))
-                .collect();
+                .fold(EnvProbes::new(), |mut env_probes, output| {
+                    match output {
+                        yaml::Output::FsPath { fs_path } => {
+                            env_probes.paths.push((&project_dir).join(fs_path))
+                        }
+                        yaml::Output::CmdStdout { cmd_stdout } => {
+                            env_probes.cmd_outputs.push(cmd_stdout)
+                        }
+                    };
+                    env_probes
+                });
             domain_targets.push(domain::Target {
                 id: target_id,
                 name: target_name,
@@ -130,8 +151,8 @@ impl Config {
                     name: project_name,
                 },
                 dependencies: dependency_ids,
-                input_paths,
-                output_paths,
+                inputs,
+                outputs,
                 build,
                 service,
             });
@@ -358,8 +379,8 @@ mod tests {
     fn build_target_with_dependencies(dependencies: Vec<&str>) -> yaml::Target {
         yaml::Target {
             dependencies: dependencies.into_iter().map(str::to_string).collect(),
-            input_paths: vec![],
-            output_paths: vec![],
+            inputs: vec![],
+            outputs: vec![],
             build: None,
             service: None,
         }

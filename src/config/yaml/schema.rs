@@ -207,8 +207,9 @@ pub struct Target {
     ///
     /// In this example, running `zinoma npm_install` once will execute `npm install`.
     /// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
+    // TODO Update doc
     #[serde(default)]
-    pub input_paths: Vec<String>,
+    pub inputs: Vec<Input>,
 
     /// This keyword lists the locations where this target produce its artifacts.
     /// Similarly to [`input_paths`], it should be an array of strings, each representing a path to a file or directory.
@@ -233,8 +234,9 @@ pub struct Target {
     /// In this example, running `zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.
     ///
     /// Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
+    // TODO Update doc
     #[serde(default)]
-    pub output_paths: Vec<String>,
+    pub outputs: Vec<Output>,
 
     /// Specifies a command to run upon successful build of the target. It should be a string.
     ///
@@ -258,4 +260,21 @@ pub struct Target {
     /// In this example, `zinoma npm_server` will run `npm install` and then `npm start`.
     #[serde(default)]
     pub service: Option<String>,
+}
+
+// TODO Document
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum Input {
+    FsPath { fs_path: String },
+    EnvVar { env_var: String },
+    CmdStdout { cmd_stdout: String },
+}
+
+// TODO Document
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum Output {
+    FsPath { fs_path: String },
+    CmdStdout { cmd_stdout: String },
 }

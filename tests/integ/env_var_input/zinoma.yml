@@ -1,0 +1,7 @@
+targets:
+  my_target:
+    inputs:
+      - env_var: TEST_VAR
+    outputs:
+      - fs_path: out.txt
+    build: echo TEST_VAR > out.txt

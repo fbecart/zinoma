@@ -1,4 +1,4 @@
-use super::incremental::is_in_checksum_dir;
+use super::incremental::is_in_checksums_dir;
 use crate::domain::{Target, TargetId};
 use anyhow::{Context, Error, Result};
 use crossbeam::channel::Sender;
@@ -18,7 +18,7 @@ impl TargetWatcher {
                     .unwrap()
                     .paths
                     .iter()
-                    .any(|path| !is_tmp_editor_file(path) && !is_in_checksum_dir(path))
+                    .any(|path| !is_tmp_editor_file(path) && !is_in_checksums_dir(path))
                 {
                     target_invalidated_sender
                         .send(target_id)
@@ -28,7 +28,7 @@ impl TargetWatcher {
             })
             .with_context(|| "Error creating watcher")?;
 
-        for path in &target.input_paths {
+        for path in &target.inputs.paths {
             match watcher.watch(path, RecursiveMode::Recursive) {
                 Ok(_) => {}
                 Err(notify::Error {

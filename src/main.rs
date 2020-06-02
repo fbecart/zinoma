@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use clean::clean_target_output_paths;
 use config::{ir, yaml};
 use crossbeam::channel::{unbounded, Sender};
-use engine::incremental::{remove_checksum_dir, remove_target_checksums};
+use engine::incremental::{delete_saved_env_state, remove_checksums_dir};
 use engine::Engine;
 use std::convert::TryInto;
 use std::path::PathBuf;
@@ -53,9 +53,11 @@ fn main() -> Result<()> {
 
     if arg_matches.is_present(cli::arg::CLEAN) {
         if has_requested_targets {
-            targets.iter().try_for_each(remove_target_checksums)?;
+            targets.iter().try_for_each(delete_saved_env_state)?;
         } else {
-            project_dirs.into_iter().try_for_each(remove_checksum_dir)?;
+            project_dirs
+                .into_iter()
+                .try_for_each(remove_checksums_dir)?;
         }
 
         targets.iter().try_for_each(clean_target_output_paths)?;

@@ -1,18 +1,19 @@
-mod fs_hash;
+mod cmd_outputs;
+mod env_vars;
+mod fs;
 
-use crate::domain::Target;
-use crate::engine::incremental::fs_hash::file_hashes_eq;
+use crate::domain::{EnvProbes, Target};
 use anyhow::{Context, Error, Result};
-use fs_hash::compute_file_hashes_in_paths;
+use cmd_outputs::EnvCmdOutputsState;
+use env_vars::EnvVarsState;
+use fs::EnvFsState;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fs;
 use std::fs::File;
 use std::io::ErrorKind;
 use std::path::{self, Path, PathBuf};
 
 /// Name of the directory in which Žinoma stores checksums of the targets inputs and outputs.
-const CHECKSUM_DIR_NAME: &str = ".zinoma";
+const CHECKSUMS_DIR_NAME: &str = ".zinoma";
 
 #[derive(PartialEq)]
 pub enum IncrementalRunResult<T> {
@@ -24,61 +25,61 @@ pub fn run<T, F>(target: &Target, function: F) -> Result<IncrementalRunResult<Re
 where
     F: Fn() -> Result<T>,
 {
-    if files_have_not_changed_since_last_successful_execution(target)? {
+    if env_state_has_not_changed_since_last_successful_execution(target)? {
         return Ok(IncrementalRunResult::Skipped);
     }
 
-    remove_target_checksums(&target)?;
+    delete_saved_env_state(&target)?;
 
     let result = function();
 
     if result.is_ok() {
-        if let Some(target_checksums) = compute_target_checksums(target)? {
-            write_target_checksums(&target, &target_checksums)?;
+        if let Some(env_state) = compute_target_env_state(target)? {
+            save_env_state(&target, &env_state)?;
         }
     }
 
     Ok(IncrementalRunResult::Run(result))
 }
 
-pub fn is_in_checksum_dir(path: &Path) -> bool {
+pub fn is_in_checksums_dir(path: &Path) -> bool {
     path.components().any(|component| match component {
-        path::Component::Normal(name) => name == CHECKSUM_DIR_NAME,
+        path::Component::Normal(name) => name == CHECKSUMS_DIR_NAME,
         _ => false,
     })
 }
 
 #[cfg(test)]
 mod tests {
-    use super::is_in_checksum_dir;
+    use super::is_in_checksums_dir;
     use std::path::Path;
 
     #[test]
-    fn test_is_in_checksum_dir() {
-        assert!(is_in_checksum_dir(Path::new(".zinoma/my/file.json")));
-        assert!(is_in_checksum_dir(Path::new(
+    fn test_is_in_checksums_dir() {
+        assert!(is_in_checksums_dir(Path::new(".zinoma/my/file.json")));
+        assert!(is_in_checksums_dir(Path::new(
             "/my/project/.zinoma/my/file.json"
         )));
-        assert!(!is_in_checksum_dir(Path::new("/my/file.json")));
+        assert!(!is_in_checksums_dir(Path::new("/my/file.json")));
     }
 }
 
-fn get_checksum_dir_path(project_dir: &Path) -> PathBuf {
-    project_dir.join(CHECKSUM_DIR_NAME)
+fn get_checksums_dir_path(project_dir: &Path) -> PathBuf {
+    project_dir.join(CHECKSUMS_DIR_NAME)
 }
 
-fn get_checksum_file_path(target: &Target) -> PathBuf {
-    get_checksum_dir_path(&target.project.dir).join(format!("{}.checksum", target.name))
+fn get_checksums_file_path(target: &Target) -> PathBuf {
+    get_checksums_dir_path(&target.project.dir).join(format!("{}.checksums", target.name))
 }
 
-fn files_have_not_changed_since_last_successful_execution(target: &Target) -> Result<bool> {
-    let saved_checksums = read_target_checksums(target)
-        .with_context(|| format!("Failed to read saved checksums for {}", target.name))?;
+fn env_state_has_not_changed_since_last_successful_execution(target: &Target) -> Result<bool> {
+    let saved_state = read_saved_target_env_state(target)
+        .with_context(|| format!("Failed to read saved env state for {}", target.name))?;
 
-    match saved_checksums {
-        Some(saved_checksums) => saved_checksums.eq_fs_checksum(target).with_context(|| {
+    match saved_state {
+        Some(saved_state) => saved_state.eq_current_state(target).with_context(|| {
             format!(
-                "Failed to compare saved checksums with filesystem checksums for {}",
+                "Failed to compare saved env state with current env state for {}",
                 target.name
             )
         }),
@@ -86,20 +87,20 @@ fn files_have_not_changed_since_last_successful_execution(target: &Target) -> Re
     }
 }
 
-fn read_target_checksums(target: &Target) -> Result<Option<TargetChecksums>> {
-    let file_path = get_checksum_file_path(target);
+fn read_saved_target_env_state(target: &Target) -> Result<Option<TargetEnvState>> {
+    let file_path = get_checksums_file_path(target);
     if file_path.exists() {
         let file = File::open(&file_path)
-            .with_context(|| format!("Failed to open checksum file {}", file_path.display()))?;
+            .with_context(|| format!("Failed to open checksums file {}", file_path.display()))?;
         match bincode::deserialize_from(file) {
             Ok(checksums) => Ok(Some(checksums)),
             Err(e) => {
                 log::trace!(
-                    "{} - Dropping corrupted checksum file (Error: {})",
+                    "{} - Dropping corrupted checksums file (Error: {})",
                     target,
                     e
                 );
-                remove_target_checksums(&target)?;
+                delete_saved_env_state(&target)?;
                 Ok(None)
             }
         }
@@ -108,35 +109,38 @@ fn read_target_checksums(target: &Target) -> Result<Option<TargetChecksums>> {
     }
 }
 
-pub fn remove_target_checksums(target: &Target) -> Result<()> {
-    let checksum_file = get_checksum_file_path(target);
-    if checksum_file.exists() {
-        fs::remove_file(&checksum_file).with_context(|| {
-            format!("Failed to delete checksum file {}", checksum_file.display())
+pub fn delete_saved_env_state(target: &Target) -> Result<()> {
+    let checksums_file = get_checksums_file_path(target);
+    if checksums_file.exists() {
+        std::fs::remove_file(&checksums_file).with_context(|| {
+            format!(
+                "Failed to delete checksums file {}",
+                checksums_file.display()
+            )
         })?;
     }
     Ok(())
 }
 
-fn write_target_checksums(target: &Target, checksums: &TargetChecksums) -> Result<()> {
-    fs::create_dir(get_checksum_dir_path(&target.project.dir)).ok();
+fn save_env_state(target: &Target, checksums: &TargetEnvState) -> Result<()> {
+    std::fs::create_dir(get_checksums_dir_path(&target.project.dir)).ok();
 
-    let file_path = get_checksum_file_path(target);
+    let file_path = get_checksums_file_path(target);
     let file = File::create(&file_path)
-        .with_context(|| format!("Failed to create checksum file {}", file_path.display()))?;
+        .with_context(|| format!("Failed to create checksums file {}", file_path.display()))?;
     bincode::serialize_into(file, checksums)
         .with_context(|| format!("Failed to serialize checksums for {}", target.name))
 }
 
-pub fn remove_checksum_dir(project_dir: PathBuf) -> Result<()> {
-    let checksum_dir = get_checksum_dir_path(&project_dir);
-    match fs::remove_dir_all(&checksum_dir) {
+pub fn remove_checksums_dir(project_dir: PathBuf) -> Result<()> {
+    let checksums_dir = get_checksums_dir_path(&project_dir);
+    match std::fs::remove_dir_all(&checksums_dir) {
         Ok(_) => {}
         Err(e) if e.kind() == ErrorKind::NotFound => {}
         Err(e) => {
             return Err(Error::new(e).context(format!(
-                "Failed to remove checksum directory {}",
-                checksum_dir.display()
+                "Failed to remove checksums directory {}",
+                checksums_dir.display()
             )));
         }
     }
@@ -144,26 +148,57 @@ pub fn remove_checksum_dir(project_dir: PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn compute_target_checksums(target: &Target) -> Result<Option<TargetChecksums>> {
-    if target.input_paths.is_empty() {
+fn compute_target_env_state(target: &Target) -> Result<Option<TargetEnvState>> {
+    if target.inputs.is_empty() {
         Ok(None)
     } else {
-        Ok(Some(TargetChecksums {
-            inputs: compute_file_hashes_in_paths(&target.input_paths)?,
-            outputs: compute_file_hashes_in_paths(&target.output_paths)?,
+        let project_dir = &target.project.dir;
+        Ok(Some(TargetEnvState {
+            inputs: hash_env(&target.inputs, project_dir)?,
+            outputs: hash_env(&target.outputs, project_dir)?,
         }))
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq)]
-struct TargetChecksums {
-    inputs: HashMap<PathBuf, u64>,
-    outputs: HashMap<PathBuf, u64>,
+// TODO Hash or checksum? make up your mind
+// Hash is function, checksum is result
+fn hash_env(env_probes: &EnvProbes, project_dir: &Path) -> Result<EnvState> {
+    Ok(EnvState {
+        fs: EnvFsState::current(&env_probes.paths)?,
+        cmd_stdouts: EnvCmdOutputsState::current(&env_probes.cmd_outputs, project_dir)?,
+        vars: EnvVarsState::current(&env_probes.env_vars)?,
+    })
 }
 
-impl TargetChecksums {
-    fn eq_fs_checksum(&self, target: &Target) -> Result<bool> {
-        Ok(file_hashes_eq(&target.input_paths, &self.inputs)?
-            && file_hashes_eq(&target.output_paths, &self.outputs)?)
+#[derive(Serialize, Deserialize, PartialEq)]
+struct TargetEnvState {
+    inputs: EnvState,
+    outputs: EnvState,
+}
+
+impl TargetEnvState {
+    fn eq_current_state(&self, target: &Target) -> Result<bool> {
+        let project_dir = &target.project.dir;
+        Ok(self.inputs.eq_current_state(&target.inputs, &project_dir)?
+            && self
+                .outputs
+                .eq_current_state(&target.outputs, &project_dir)?)
     }
 }
+
+#[derive(Serialize, Deserialize, PartialEq)]
+struct EnvState {
+    fs: EnvFsState,
+    cmd_stdouts: EnvCmdOutputsState,
+    vars: EnvVarsState,
+}
+
+impl EnvState {
+    fn eq_current_state(&self, env_probes: &EnvProbes, project_dir: &Path) -> Result<bool> {
+        Ok((&self.fs).eq_current_state(&env_probes.paths)?
+            && (&self.cmd_stdouts).eq_current_state(&env_probes.cmd_outputs, project_dir)?
+            && (&self.vars).eq_current_state(&env_probes.env_vars)?)
+    }
+}
+
+// TODO Run all computations in parallel?

@@ -9,8 +9,8 @@ pub struct Target {
     pub name: String,
     pub project: Project,
     pub dependencies: Vec<TargetId>,
-    pub input_paths: Vec<PathBuf>,
-    pub output_paths: Vec<PathBuf>,
+    pub inputs: EnvProbes,
+    pub outputs: EnvProbes,
     pub build: Option<String>,
     pub service: Option<String>,
 }
@@ -28,4 +28,25 @@ impl fmt::Display for Target {
 pub struct Project {
     pub dir: PathBuf,
     pub name: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct EnvProbes {
+    pub paths: Vec<PathBuf>,
+    pub cmd_outputs: Vec<String>,
+    pub env_vars: Vec<String>,
+}
+
+impl EnvProbes {
+    pub fn new() -> Self {
+        Self {
+            paths: vec![],
+            cmd_outputs: vec![],
+            env_vars: vec![],
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.paths.is_empty() && self.cmd_outputs.is_empty() && self.env_vars.is_empty()
+    }
 }
