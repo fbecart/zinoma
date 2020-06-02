@@ -1,4 +1,4 @@
-use super::is_in_checksums_dir;
+use super::super::is_in_checksums_dir;
 use anyhow::{Context, Result};
 use rayon::prelude::*;
 use seahash::SeaHasher;
@@ -11,9 +11,9 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 #[derive(Serialize, Deserialize, PartialEq)]
-pub struct EnvFsState(HashMap<PathBuf, u64>);
+pub struct EnvState(HashMap<PathBuf, u64>);
 
-impl EnvFsState {
+impl EnvState {
     pub fn current(paths: &[PathBuf]) -> Result<Self> {
         Ok(Self(
             list_files(paths)
