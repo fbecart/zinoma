@@ -32,7 +32,7 @@ where
     let result = function();
 
     if result.is_ok() {
-        if let Some(env_state) = compute_target_env_state(target)? {
+        if let Some(env_state) = TargetEnvState::current(target)? {
             save_env_state(&target, &env_state)?;
         }
     }
@@ -120,13 +120,13 @@ pub fn delete_saved_env_state(target: &Target) -> Result<()> {
     Ok(())
 }
 
-fn save_env_state(target: &Target, checksums: &TargetEnvState) -> Result<()> {
+fn save_env_state(target: &Target, env_state: &TargetEnvState) -> Result<()> {
     std::fs::create_dir(get_checksums_dir_path(&target.project.dir)).ok();
 
     let file_path = get_checksums_file_path(target);
     let file = File::create(&file_path)
         .with_context(|| format!("Failed to create checksums file {}", file_path.display()))?;
-    bincode::serialize_into(file, checksums)
+    bincode::serialize_into(file, env_state)
         .with_context(|| format!("Failed to serialize checksums for {}", target.name))
 }
 
@@ -146,27 +146,6 @@ pub fn remove_checksums_dir(project_dir: PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn compute_target_env_state(target: &Target) -> Result<Option<TargetEnvState>> {
-    if target.inputs.is_empty() {
-        Ok(None)
-    } else {
-        let project_dir = &target.project.dir;
-        Ok(Some(TargetEnvState {
-            inputs: hash_env(&target.inputs, project_dir)?,
-            outputs: hash_env(&target.outputs, project_dir)?,
-        }))
-    }
-}
-
-// TODO Hash or checksum? make up your mind
-// Hash is function, checksum is result
-fn hash_env(env_probes: &EnvProbes, project_dir: &Path) -> Result<EnvState> {
-    Ok(EnvState {
-        fs: EnvFsState::current(&env_probes.paths)?,
-        cmd_stdouts: EnvCmdOutputsState::current(&env_probes.cmd_outputs, project_dir)?,
-    })
-}
-
 #[derive(Serialize, Deserialize, PartialEq)]
 struct TargetEnvState {
     inputs: EnvState,
@@ -174,6 +153,18 @@ struct TargetEnvState {
 }
 
 impl TargetEnvState {
+    fn current(target: &Target) -> Result<Option<Self>> {
+        if target.inputs.is_empty() {
+            Ok(None)
+        } else {
+            let project_dir = &target.project.dir;
+            Ok(Some(TargetEnvState {
+                inputs: EnvState::current(&target.inputs, project_dir)?,
+                outputs: EnvState::current(&target.outputs, project_dir)?,
+            }))
+        }
+    }
+
     fn eq_current_state(&self, target: &Target) -> Result<bool> {
         let project_dir = &target.project.dir;
         Ok(self.inputs.eq_current_state(&target.inputs, &project_dir)?
@@ -190,6 +181,13 @@ struct EnvState {
 }
 
 impl EnvState {
+    fn current(env_probes: &EnvProbes, project_dir: &Path) -> Result<Self> {
+        Ok(Self {
+            fs: EnvFsState::current(&env_probes.paths)?,
+            cmd_stdouts: EnvCmdOutputsState::current(&env_probes.cmd_outputs, project_dir)?,
+        })
+    }
+
     fn eq_current_state(&self, env_probes: &EnvProbes, project_dir: &Path) -> Result<bool> {
         Ok((&self.fs).eq_current_state(&env_probes.paths)?
             && (&self.cmd_stdouts).eq_current_state(&env_probes.cmd_outputs, project_dir)?)
