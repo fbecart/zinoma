@@ -209,7 +209,7 @@ pub struct Target {
     /// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
     // TODO Update doc
     #[serde(default)]
-    pub inputs: Vec<Input>,
+    pub input: Vec<Input>,
 
     /// This keyword lists the locations where this target produce its artifacts.
     /// Similarly to [`input_paths`], it should be an array of strings, each representing a path to a file or directory.
@@ -236,7 +236,7 @@ pub struct Target {
     /// Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
     // TODO Update doc
     #[serde(default)]
-    pub outputs: Vec<Output>,
+    pub output: Vec<Output>,
 
     /// Specifies a command to run upon successful build of the target. It should be a string.
     ///

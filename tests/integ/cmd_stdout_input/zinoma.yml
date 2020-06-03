@@ -1,14 +1,14 @@
 targets:
   random:
-    inputs:
+    input:
       - cmd_stdout: echo $RANDOM
-    outputs:
+    output:
       - paths: [random_output.txt]
     build: echo $RANDOM > random_output.txt
 
   stable:
-    inputs:
+    input:
       - cmd_stdout: echo $SHELL
-    outputs:
+    output:
       - paths: [stable_output.txt]
     build: echo $SHELL > stable_output.txt

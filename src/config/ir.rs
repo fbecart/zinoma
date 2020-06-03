@@ -83,11 +83,10 @@ impl Config {
                 .to_owned();
             let yaml::Target {
                 dependencies,
-                inputs,
-                outputs,
+                input,
+                output,
                 build,
                 service,
-                ..
             } = config
                 .get_project_mut(&target_canonical_name.project_name)
                 .targets
@@ -116,7 +115,7 @@ impl Config {
                 project_name,
                 target_name,
             } = target_canonical_name;
-            let inputs = inputs
+            let input = input
                 .into_iter()
                 .fold(EnvProbes::new(), |mut env_probes, input| {
                     match input {
@@ -131,7 +130,7 @@ impl Config {
                     };
                     env_probes
                 });
-            let outputs = outputs
+            let output = output
                 .into_iter()
                 .fold(EnvProbes::new(), |mut env_probes, output| {
                     match output {
@@ -154,8 +153,8 @@ impl Config {
                     name: project_name,
                 },
                 dependencies: dependency_ids,
-                inputs,
-                outputs,
+                input,
+                output,
                 build,
                 service,
             });
@@ -398,8 +397,8 @@ mod tests {
     fn build_target_with_dependencies(dependencies: Vec<&str>) -> yaml::Target {
         yaml::Target {
             dependencies: dependencies.into_iter().map(str::to_string).collect(),
-            inputs: vec![],
-            outputs: vec![],
+            input: vec![],
+            output: vec![],
             build: None,
             service: None,
         }

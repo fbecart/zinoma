@@ -9,8 +9,8 @@ pub struct Target {
     pub name: String,
     pub project: Project,
     pub dependencies: Vec<TargetId>,
-    pub inputs: EnvProbes,
-    pub outputs: EnvProbes,
+    pub input: EnvProbes,
+    pub output: EnvProbes,
     pub build: Option<String>,
     pub service: Option<String>,
 }

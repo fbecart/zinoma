@@ -50,28 +50,26 @@ fn env_state_has_not_changed_since_last_successful_execution(target: &Target) ->
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct TargetEnvState {
-    inputs: EnvState,
-    outputs: EnvState,
+    input: EnvState,
+    output: EnvState,
 }
 
 impl TargetEnvState {
     pub fn current(target: &Target) -> Result<Option<Self>> {
-        if target.inputs.is_empty() {
+        if target.input.is_empty() {
             Ok(None)
         } else {
             let project_dir = &target.project.dir;
             Ok(Some(TargetEnvState {
-                inputs: EnvState::current(&target.inputs, project_dir)?,
-                outputs: EnvState::current(&target.outputs, project_dir)?,
+                input: EnvState::current(&target.input, project_dir)?,
+                output: EnvState::current(&target.output, project_dir)?,
             }))
         }
     }
 
     pub fn eq_current_state(&self, target: &Target) -> Result<bool> {
         let project_dir = &target.project.dir;
-        Ok(self.inputs.eq_current_state(&target.inputs, &project_dir)?
-            && self
-                .outputs
-                .eq_current_state(&target.outputs, &project_dir)?)
+        Ok(self.input.eq_current_state(&target.input, &project_dir)?
+            && self.output.eq_current_state(&target.output, &project_dir)?)
     }
 }
