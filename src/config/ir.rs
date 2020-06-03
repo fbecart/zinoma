@@ -2,7 +2,6 @@ use super::yaml;
 use crate::domain;
 use anyhow::Context;
 use anyhow::Result;
-use domain::EnvProbes;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -115,46 +114,16 @@ impl Config {
                 project_name,
                 target_name,
             } = target_canonical_name;
-            let input = input
-                .into_iter()
-                .fold(EnvProbes::new(), |mut env_probes, input| {
-                    match input {
-                        yaml::Input::Paths { paths } => {
-                            for path in paths {
-                                env_probes.paths.push((&project_dir).join(path))
-                            }
-                        }
-                        yaml::Input::CmdStdout { cmd_stdout } => {
-                            env_probes.cmd_outputs.push(cmd_stdout)
-                        }
-                    };
-                    env_probes
-                });
-            let output = output
-                .into_iter()
-                .fold(EnvProbes::new(), |mut env_probes, output| {
-                    match output {
-                        yaml::Output::Paths { paths } => {
-                            for path in paths {
-                                env_probes.paths.push((&project_dir).join(path))
-                            }
-                        }
-                        yaml::Output::CmdStdout { cmd_stdout } => {
-                            env_probes.cmd_outputs.push(cmd_stdout)
-                        }
-                    };
-                    env_probes
-                });
             domain_targets.push(domain::Target {
                 id: target_id,
                 name: target_name,
+                input: Config::into_domain_env_probes(input, &project_dir),
+                output: Config::into_domain_env_probes(output, &project_dir),
                 project: domain::Project {
                     dir: project_dir,
                     name: project_name,
                 },
                 dependencies: dependency_ids,
-                input,
-                output,
                 build,
                 service,
             });
@@ -172,6 +141,27 @@ impl Config {
         }
 
         Ok(domain_targets)
+    }
+
+    fn into_domain_env_probes(
+        yaml_env_probes: Vec<yaml::EnvProbe>,
+        project_dir: &Path,
+    ) -> domain::EnvProbes {
+        yaml_env_probes.into_iter().fold(
+            domain::EnvProbes::new(),
+            |mut domain_env_probes, yaml_env_probe| {
+                match yaml_env_probe {
+                    yaml::EnvProbe::Paths { paths } => {
+                        let paths = paths.iter().map(|path| project_dir.join(path));
+                        domain_env_probes.paths.extend(paths)
+                    }
+                    yaml::EnvProbe::CmdStdout { cmd_stdout } => {
+                        domain_env_probes.cmd_outputs.push(cmd_stdout)
+                    }
+                };
+                domain_env_probes
+            },
+        )
     }
 
     fn list_all_targets(&self) -> Vec<TargetCanonicalName> {
