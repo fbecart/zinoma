@@ -33,18 +33,18 @@ pub struct Project {
 #[derive(Clone, Debug)]
 pub struct EnvProbes {
     pub paths: Vec<PathBuf>,
-    pub cmd_outputs: Vec<String>,
+    pub cmds: Vec<String>,
 }
 
 impl EnvProbes {
     pub fn new() -> Self {
         Self {
             paths: vec![],
-            cmd_outputs: vec![],
+            cmds: vec![],
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.paths.is_empty() && self.cmd_outputs.is_empty()
+        self.paths.is_empty() && self.cmds.is_empty()
     }
 }

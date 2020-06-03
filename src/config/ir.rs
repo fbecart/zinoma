@@ -156,7 +156,7 @@ impl Config {
                         domain_env_probes.paths.extend(paths)
                     }
                     yaml::EnvProbe::CmdStdout { cmd_stdout } => {
-                        domain_env_probes.cmd_outputs.push(cmd_stdout)
+                        domain_env_probes.cmds.push(cmd_stdout)
                     }
                 };
                 domain_env_probes
