@@ -52,5 +52,5 @@ pub fn save_env_state(target: &Target, env_state: &TargetEnvState) -> Result<()>
     let file = File::create(&file_path)
         .with_context(|| format!("Failed to create checksums file {}", file_path.display()))?;
     bincode::serialize_into(file, env_state)
-        .with_context(|| format!("Failed to serialize checksums for {}", target.name))
+        .with_context(|| format!("Failed to serialize checksums for {}", target))
 }

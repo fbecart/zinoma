@@ -35,13 +35,13 @@ where
 
 fn env_state_has_not_changed_since_last_successful_execution(target: &Target) -> Result<bool> {
     let saved_state = storage::read_saved_target_env_state(target)
-        .with_context(|| format!("Failed to read saved env state for {}", target.name))?;
+        .with_context(|| format!("Failed to read saved env state for {}", target))?;
 
     match saved_state {
         Some(saved_state) => saved_state.eq_current_state(target).with_context(|| {
             format!(
                 "Failed to compare saved env state with current env state for {}",
-                target.name
+                target
             )
         }),
         _ => Ok(false),
