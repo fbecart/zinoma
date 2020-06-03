@@ -11,9 +11,9 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 #[derive(Serialize, Deserialize, PartialEq)]
-pub struct EnvState(HashMap<PathBuf, u64>);
+pub struct ResourcesState(HashMap<PathBuf, u64>);
 
-impl EnvState {
+impl ResourcesState {
     pub fn current(paths: &[PathBuf]) -> Result<Self> {
         Ok(Self(
             list_files(paths)

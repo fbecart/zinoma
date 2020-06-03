@@ -1,10 +1,10 @@
-mod env_state;
+mod resources_state;
 pub mod storage;
 
 use crate::domain::Target;
 use anyhow::{Context, Result};
-use env_state::EnvState;
 use rayon::prelude::*;
+use resources_state::ResourcesState;
 use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq)]
@@ -45,8 +45,8 @@ fn env_state_has_not_changed_since_last_successful_execution(target: &Target) ->
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct TargetEnvState {
-    input: EnvState,
-    output: EnvState,
+    input: ResourcesState,
+    output: ResourcesState,
 }
 
 impl TargetEnvState {
@@ -56,8 +56,8 @@ impl TargetEnvState {
         } else {
             let project_dir = &target.project.dir;
             Ok(Some(TargetEnvState {
-                input: EnvState::current(&target.input, project_dir)?,
-                output: EnvState::current(&target.output, project_dir)?,
+                input: ResourcesState::current(&target.input, project_dir)?,
+                output: ResourcesState::current(&target.output, project_dir)?,
             }))
         }
     }

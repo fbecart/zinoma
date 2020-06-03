@@ -5,9 +5,9 @@ use std::collections::HashMap;
 use std::path::Path;
 
 #[derive(Serialize, Deserialize, PartialEq)]
-pub struct EnvState(HashMap<String, String>);
+pub struct ResourcesState(HashMap<String, String>);
 
-impl EnvState {
+impl ResourcesState {
     pub fn current(cmds: &[String], dir: &Path) -> Result<Self> {
         let state = cmds
             .par_iter()

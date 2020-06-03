@@ -9,8 +9,8 @@ pub struct Target {
     pub name: String,
     pub project: Project,
     pub dependencies: Vec<TargetId>,
-    pub input: EnvProbes,
-    pub output: EnvProbes,
+    pub input: Resources,
+    pub output: Resources,
     pub build: Option<String>,
     pub service: Option<String>,
 }
@@ -31,12 +31,12 @@ pub struct Project {
 }
 
 #[derive(Clone, Debug)]
-pub struct EnvProbes {
+pub struct Resources {
     pub paths: Vec<PathBuf>,
     pub cmds: Vec<String>,
 }
 
-impl EnvProbes {
+impl Resources {
     pub fn new() -> Self {
         Self {
             paths: vec![],

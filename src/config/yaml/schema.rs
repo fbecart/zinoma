@@ -224,7 +224,7 @@ pub struct Target {
     /// In this example, running `zinoma npm_install` once will execute `npm install`.
     /// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
     #[serde(default)]
-    pub input: Vec<EnvProbe>,
+    pub input: Vec<Resource>,
 
     /// This keyword lists resources identifying the artifacts produced by this target.
     /// Similarly to [`input`], it should be an array of objects.
@@ -254,7 +254,7 @@ pub struct Target {
     ///
     /// Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
     #[serde(default)]
-    pub output: Vec<EnvProbe>,
+    pub output: Vec<Resource>,
 
     /// Specifies a command to run upon successful build of the target. It should be a string.
     ///
@@ -283,7 +283,7 @@ pub struct Target {
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
-pub enum EnvProbe {
+pub enum Resource {
     Paths {
         /// Lists paths to files or directories.
         /// It should be an array of strings.

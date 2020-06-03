@@ -117,8 +117,8 @@ impl Config {
             domain_targets.push(domain::Target {
                 id: target_id,
                 name: target_name,
-                input: Config::yaml_to_domain_env_probes(input, &project_dir),
-                output: Config::yaml_to_domain_env_probes(output, &project_dir),
+                input: Config::yaml_to_domain_resources(input, &project_dir),
+                output: Config::yaml_to_domain_resources(output, &project_dir),
                 project: domain::Project {
                     dir: project_dir,
                     name: project_name,
@@ -143,23 +143,23 @@ impl Config {
         Ok(domain_targets)
     }
 
-    fn yaml_to_domain_env_probes(
-        yaml_env_probes: Vec<yaml::EnvProbe>,
+    fn yaml_to_domain_resources(
+        yaml_resources: Vec<yaml::Resource>,
         project_dir: &Path,
-    ) -> domain::EnvProbes {
-        yaml_env_probes.into_iter().fold(
-            domain::EnvProbes::new(),
-            |mut domain_env_probes, yaml_env_probe| {
-                match yaml_env_probe {
-                    yaml::EnvProbe::Paths { paths } => {
+    ) -> domain::Resources {
+        yaml_resources.into_iter().fold(
+            domain::Resources::new(),
+            |mut domain_resources, yaml_resource| {
+                match yaml_resource {
+                    yaml::Resource::Paths { paths } => {
                         let paths = paths.iter().map(|path| project_dir.join(path));
-                        domain_env_probes.paths.extend(paths)
+                        domain_resources.paths.extend(paths)
                     }
-                    yaml::EnvProbe::CmdStdout { cmd_stdout } => {
-                        domain_env_probes.cmds.push(cmd_stdout)
+                    yaml::Resource::CmdStdout { cmd_stdout } => {
+                        domain_resources.cmds.push(cmd_stdout)
                     }
                 };
-                domain_env_probes
+                domain_resources
             },
         )
     }
