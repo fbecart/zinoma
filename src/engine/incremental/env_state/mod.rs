@@ -21,7 +21,8 @@ impl EnvState {
     }
 
     pub fn eq_current_state(&self, env_probes: &EnvProbes, project_dir: &Path) -> Result<bool> {
+        // TODO Parallelize this computation
         Ok((&self.fs).eq_current_state(&env_probes.paths)?
-            && (&self.cmd_stdouts).eq_current_state(&env_probes.cmd_outputs, project_dir)?)
+            && (&self.cmd_stdouts).eq_current_state(&env_probes.cmd_outputs, project_dir))
     }
 }
