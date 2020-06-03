@@ -4,6 +4,7 @@ pub mod storage;
 use crate::domain::Target;
 use anyhow::{Context, Result};
 use env_state::EnvState;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq)]
@@ -37,15 +38,9 @@ fn env_state_has_not_changed_since_last_successful_execution(target: &Target) ->
     let saved_state = storage::read_saved_target_env_state(target)
         .with_context(|| format!("Failed to read saved env state for {}", target))?;
 
-    match saved_state {
-        Some(saved_state) => saved_state.eq_current_state(target).with_context(|| {
-            format!(
-                "Failed to compare saved env state with current env state for {}",
-                target
-            )
-        }),
-        _ => Ok(false),
-    }
+    Ok(saved_state
+        .map(|saved_state| saved_state.eq_current_state(target))
+        .unwrap_or(false))
 }
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -67,9 +62,19 @@ impl TargetEnvState {
         }
     }
 
-    pub fn eq_current_state(&self, target: &Target) -> Result<bool> {
+    pub fn eq_current_state(&self, target: &Target) -> bool {
         let project_dir = &target.project.dir;
-        Ok(self.input.eq_current_state(&target.input, &project_dir)?
-            && self.output.eq_current_state(&target.output, &project_dir)?)
+
+        [(&self.input, &target.input), (&self.output, &target.output)]
+            .par_iter()
+            .all(|(env_state, env_probes)| {
+                match env_state.eq_current_state(env_probes, project_dir) {
+                    Ok(res) => res,
+                    Err(e) => {
+                        log::error!("Failed to run {} incrementally: {}", target, e);
+                        false
+                    }
+                }
+            })
     }
 }

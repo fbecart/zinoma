@@ -25,5 +25,3 @@ impl EnvState {
             && (&self.cmd_stdouts).eq_current_state(&env_probes.cmd_outputs, project_dir)?)
     }
 }
-
-// TODO Run all computations in parallel?
