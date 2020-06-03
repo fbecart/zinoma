@@ -15,7 +15,7 @@ targets:
     output_paths: [my_output]
 ```
 
-You should now have:
+You should now use:
 
 ```yaml
 targets:
@@ -29,25 +29,7 @@ targets:
 Feature enhancements:
 
 - [FEATURE #16](https://github.com/fbecart/zinoma/issues/16) Accept more options for target inputs and outputs.
-
-It is now possible to use a command as a command input or output.
-
-__Example__ _(from [zinoma-node-example](https://github.com/fbecart/zinoma-node-example/blob/master/zinoma.yml))_
-
-```yaml
-targets:
-  e2e_docker_run:
-    dependencies:
-      [backend::docker_build, webapp::docker_build, e2e::docker_build]
-    input:
-      - paths: [docker-compose.e2e.yml, docker-compose.yml]
-      - cmd_stdout: 'docker image ls todos/backend:latest --format "{{.ID}}"'
-      - cmd_stdout: 'docker image ls todos/webapp:latest --format "{{.ID}}"'
-      - cmd_stdout: 'docker image ls todos/e2e:latest --format "{{.ID}}"'
-    output:
-      - paths: [target]
-    build: docker-compose -f docker-compose.yml -f docker-compose.e2e.yml up --exit-code-from todos-e2e
-```
+  It is now possible to use a shell command as a target input or output.
 
 ## 0.13.0 (2020-06-01)
 
