@@ -117,8 +117,8 @@ impl Config {
             domain_targets.push(domain::Target {
                 id: target_id,
                 name: target_name,
-                input: Config::into_domain_env_probes(input, &project_dir),
-                output: Config::into_domain_env_probes(output, &project_dir),
+                input: Config::yaml_to_domain_env_probes(input, &project_dir),
+                output: Config::yaml_to_domain_env_probes(output, &project_dir),
                 project: domain::Project {
                     dir: project_dir,
                     name: project_name,
@@ -143,7 +143,7 @@ impl Config {
         Ok(domain_targets)
     }
 
-    fn into_domain_env_probes(
+    fn yaml_to_domain_env_probes(
         yaml_env_probes: Vec<yaml::EnvProbe>,
         project_dir: &Path,
     ) -> domain::EnvProbes {
