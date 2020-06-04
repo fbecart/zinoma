@@ -26,8 +26,14 @@ where
     let result = function();
 
     if result.is_ok() {
-        if let Some(env_state) = TargetEnvState::current(target)? {
-            storage::save_env_state(&target, &env_state)?;
+        match TargetEnvState::current(target) {
+            Ok(Some(env_state)) => storage::save_env_state(&target, &env_state)?,
+            Ok(None) => {}
+            Err(e) => log::error!(
+                "{} - Failed to compute state of inputs and outputs: {}",
+                target,
+                e
+            ),
         }
     }
 

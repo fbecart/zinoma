@@ -33,7 +33,7 @@ fn get_cmd_stdout(cmd: &str, dir: &Path) -> Result<String> {
         let comspec = std::env::var_os("COMSPEC").unwrap_or_else(|| "cmd.exe".into());
         (comspec, "/C")
     } else {
-        ("/bin/sh".into(), "-c")
+        ("/bin/sh".into(), "-ce")
     };
 
     let output = Command::new(program)
