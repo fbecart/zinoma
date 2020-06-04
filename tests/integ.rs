@@ -83,16 +83,16 @@ fn cmd_stdout_input() {
         "cmd_stdout_input"
     };
 
-    zinoma_command(integ_test_dir_name, &["--clean", "random", "stable"])
+    zinoma_command(integ_test_dir_name, &["--clean", "changing", "stable"])
         .assert()
         .success()
-        .stderr(predicate::str::contains("random - Build success"))
+        .stderr(predicate::str::contains("changing - Build success"))
         .stderr(predicate::str::contains("stable - Build success"));
 
-    zinoma_command(integ_test_dir_name, &["random", "stable"])
+    zinoma_command(integ_test_dir_name, &["changing", "stable"])
         .assert()
         .success()
-        .stderr(predicate::str::contains("random - Build success"))
+        .stderr(predicate::str::contains("changing - Build success"))
         .stderr(predicate::str::contains("stable - Build skipped"));
 }
 

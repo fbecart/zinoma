@@ -1,10 +1,10 @@
 targets:
-  random:
+  changing:
     input:
       - cmd_stdout: echo $RANDOM
     output:
-      - paths: [random_output.txt]
-    build: echo $RANDOM > random_output.txt
+      - paths: [changing_output.txt]
+    build: echo $RANDOM > changing_output.txt
 
   stable:
     input:

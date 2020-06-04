@@ -1,10 +1,10 @@
 targets:
-  random:
+  changing:
     input:
       - cmd_stdout: date +%N
     output:
-      - paths: [random_output.txt]
-    build: date +%N > random_output.txt
+      - paths: [changing_output.txt]
+    build: date +%N > changing_output.txt
 
   stable:
     input:
