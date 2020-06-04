@@ -77,6 +77,8 @@ fn root_input_path() {
 fn cmd_stdout_input() {
     let integ_test_dir_name = if cfg!(windows) {
         "cmd_stdout_input_windows"
+    } else if cfg!(target_os = "macos") {
+        "cmd_stdout_input_macos"
     } else {
         "cmd_stdout_input"
     };
