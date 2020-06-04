@@ -1,0 +1,14 @@
+targets:
+  changing:
+    input:
+      - cmd_stdout: w32tm /query /status /verbose
+    output:
+      - paths: [changing_output.txt]
+    build: w32tm /query /status /verbose > changing_output.txt
+
+  stable:
+    input:
+      - cmd_stdout: echo %COMSPEC%
+    output:
+      - paths: [stable_output.txt]
+    build: echo %COMSPEC% > stable_output.txt

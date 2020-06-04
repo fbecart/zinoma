@@ -3,12 +3,13 @@ mod schema;
 use anyhow::{Context, Error, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
-pub use schema::{Project, Target};
+pub use schema::{Project, Resource, Target};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug)]
 pub struct Config {
     pub root_project_dir: PathBuf,
     pub projects: HashMap<PathBuf, Project>,

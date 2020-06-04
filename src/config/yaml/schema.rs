@@ -14,36 +14,43 @@ use std::collections::HashMap;
 /// ```yaml
 /// targets:
 ///   download_dependencies:
-///     input_paths: [ package.json, package-lock.json ]
-///     output_paths: [ node_modules ]
+///     input:
+///       - paths: [package.json, package-lock.json]
+///     output:
+///       - paths: [node_modules]
 ///     build: npm install
 ///
 ///   test:
-///     dependencies: [ download_dependencies ]
-///     input_paths: [ package.json, node_modules, src, test ]
+///     dependencies: [download_dependencies]
+///     input:
+///       - paths: [package.json, node_modules, src, test]
 ///     build: npm test
 ///
 ///   lint:
-///     dependencies: [ download_dependencies ]
-///     input_paths: [ package.json, node_modules, src, test ]
+///     dependencies: [download_dependencies]
+///     input:
+///       - paths: [package.json, node_modules, src, test]
 ///     build: npm run lint
 ///
 ///   check:
-///     dependencies: [ test, lint ]
+///     dependencies: [test, lint]
 ///
 ///   start:
-///     dependencies: [ download_dependencies ]
-///     input_paths: [ package.json, src ]
+///     dependencies: [download_dependencies]
+///     input:
+///       - paths: [package.json, src]
 ///     service: exec npm run start
 ///
 ///   build:
-///     dependencies: [ check ]
-///     input_paths:
-///       - Dockerfile
-///       - package.json
-///       - package-lock.json
-///       - src
-///     output_paths: [ lambda.zip ]
+///     dependencies: [check]
+///     input:
+///       - paths:
+///         - Dockerfile
+///         - package.json
+///         - package-lock.json
+///         - src
+///     output:
+///       - paths: [lambda.zip]
 ///     build: |
 ///       docker build -t build-my-project:latest .
 ///       docker create -ti --name build-my-project build-my-project:latest bash
@@ -96,6 +103,12 @@ pub struct Project {
     /// A project name must be a string. It should start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.
     ///
     /// Project names should be unique. Two projects cannot have the same name.
+    ///
+    /// __Example__
+    ///
+    /// ```yaml
+    /// name: my_project
+    /// ```
     #[serde(default)]
     pub name: Option<String>,
 
@@ -190,43 +203,50 @@ pub struct Target {
     #[serde(default)]
     pub build: Option<String>,
 
-    /// Lists the locations of the source files for this target.
-    /// `input_paths` should be an array of strings, each representing the path to a file or directory.
+    /// Lists resources the target depends on.
+    /// `input` should be an array of objects.
     ///
-    /// The keyword `input_paths` enables the incremental build for this target.
-    /// This means that, at the time of executing the target, Žinoma will skip its build if its input files have not changed since its last successful completion.
+    /// Specifying a target's `input` enables the incremental build for this target.
+    /// This means that, at the time of executing the target, Žinoma will skip its build if its input resources (and [`output`] resources, if any) have not changed since its last successful completion.
+    ///
+    /// [`output`]: #structfield.output
     ///
     /// __Example__
     ///
     /// ```yaml
     /// targets:
     ///   npm_install:
-    ///     input_paths: [ package.json, package-lock.json ]
+    ///     input:
+    ///       - paths: [package.json, package-lock.json]
     ///     build: npm install
     /// ```
     ///
     /// In this example, running `zinoma npm_install` once will execute `npm install`.
     /// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
     #[serde(default)]
-    pub input_paths: Vec<String>,
+    pub input: Vec<Resource>,
 
-    /// This keyword lists the locations where this target produce its artifacts.
-    /// Similarly to [`input_paths`], it should be an array of strings, each representing a path to a file or directory.
+    /// This keyword lists resources identifying the artifacts produced by this target.
+    /// Similarly to [`input`], it should be an array of objects.
     ///
-    /// If the `--clean` flag is provided to `zinoma`, the files or directories specified in `output_paths` will be deleted before running the build flow.
+    /// If the `--clean` flag is provided to `zinoma`, the files or directories specified in [`output.paths`] will be deleted before running the build flow.
     ///
-    /// The incremental build takes in account the `output_paths`.
-    /// Just like with [`input_paths`], if any of the target output paths were altered since its previous successful execution, the target state will be invalidated and its build will be run again.
+    /// [`output.paths`]: enum.EnvProbe.html#variant.Paths.field.paths
     ///
-    /// [`input_paths`]: #structfield.input_paths
+    /// The incremental build takes in account the target `output`.
+    /// Just like with [`input`], if any of the target output resources were altered since its previous successful execution, the target state will be invalidated and its build will be run again.
+    ///
+    /// [`input`]: #structfield.input
     ///
     /// __Example__
     ///
     /// ```yaml
     /// targets:
     ///   npm_install:
-    ///     input_paths: [ package.json, package-lock.json ]
-    ///     output_paths: [ node_modules ]
+    ///     input:
+    ///       - paths: [package.json, package-lock.json]
+    ///     output:
+    ///       - paths: [node_modules]
     ///     build: npm install
     /// ```
     ///
@@ -234,7 +254,7 @@ pub struct Target {
     ///
     /// Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
     #[serde(default)]
-    pub output_paths: Vec<String>,
+    pub output: Vec<Resource>,
 
     /// Specifies a command to run upon successful build of the target. It should be a string.
     ///
@@ -250,7 +270,8 @@ pub struct Target {
     /// ```yaml
     /// targets:
     ///   npm_server:
-    ///     input_paths: [ package.json, index.js ]
+    ///     input:
+    ///       - paths: [package.json, index.js]
     ///     build: npm install
     ///     service: npm start
     /// ```
@@ -258,4 +279,44 @@ pub struct Target {
     /// In this example, `zinoma npm_server` will run `npm install` and then `npm start`.
     #[serde(default)]
     pub service: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum Resource {
+    Paths {
+        /// Lists paths to files or directories.
+        /// It should be an array of strings.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   npm_install:
+        ///     input:
+        ///       - paths: [package.json, package-lock.json]
+        ///     output:
+        ///       - paths: [node_modules]
+        ///     build: npm install
+        /// ```
+        paths: Vec<String>,
+    },
+    CmdStdout {
+        /// A shell command whose stdout identifies the state of a resource.
+        /// It should be a string.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   build_docker_image:
+        ///     input:
+        ///       - paths: [Dockerfile, src]
+        ///       - cmd_stdout: 'docker image ls base:latest --format "{{.ID}}"'
+        ///     output:
+        ///       - cmd_stdout: 'docker image ls webapp:latest --format "{{.ID}}"'
+        ///     build: docker build -t webapp .
+        /// ```
+        cmd_stdout: String,
+    },
 }

@@ -2,6 +2,35 @@
 
 ## TBD
 
+### BREAKING CHANGES
+
+- The way target inputs and outputs are declared was updated.
+
+Instead of:
+
+```yaml
+targets:
+  my_target:
+    input_paths: [my_input]
+    output_paths: [my_output]
+```
+
+You should now use:
+
+```yaml
+targets:
+  my_target:
+    input:
+      - paths: [my_input]
+    output:
+      - paths: [my_output]
+```
+
+Feature enhancements:
+
+- [FEATURE #16](https://github.com/fbecart/zinoma/issues/16) Accept more options for target inputs and outputs.
+  It is now possible to use a shell command as a target input or output.
+
 ## 0.13.0 (2020-06-01)
 
 Feature enhancements:

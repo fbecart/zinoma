@@ -1,0 +1,14 @@
+targets:
+  changing:
+    input:
+      - cmd_stdout: echo $RANDOM
+    output:
+      - paths: [changing_output.txt]
+    build: echo $RANDOM > changing_output.txt
+
+  stable:
+    input:
+      - cmd_stdout: echo $SHELL
+    output:
+      - paths: [stable_output.txt]
+    build: echo $SHELL > stable_output.txt

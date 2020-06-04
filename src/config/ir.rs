@@ -82,8 +82,8 @@ impl Config {
                 .to_owned();
             let yaml::Target {
                 dependencies,
-                input_paths,
-                output_paths,
+                input,
+                output,
                 build,
                 service,
             } = config
@@ -114,24 +114,16 @@ impl Config {
                 project_name,
                 target_name,
             } = target_canonical_name;
-            let input_paths = input_paths
-                .into_iter()
-                .map(|path| (&project_dir).join(path))
-                .collect();
-            let output_paths = output_paths
-                .into_iter()
-                .map(|path| (&project_dir).join(path))
-                .collect();
             domain_targets.push(domain::Target {
                 id: target_id,
                 name: target_name,
+                input: Config::yaml_to_domain_resources(input, &project_dir),
+                output: Config::yaml_to_domain_resources(output, &project_dir),
                 project: domain::Project {
                     dir: project_dir,
                     name: project_name,
                 },
                 dependencies: dependency_ids,
-                input_paths,
-                output_paths,
                 build,
                 service,
             });
@@ -149,6 +141,27 @@ impl Config {
         }
 
         Ok(domain_targets)
+    }
+
+    fn yaml_to_domain_resources(
+        yaml_resources: Vec<yaml::Resource>,
+        project_dir: &Path,
+    ) -> domain::Resources {
+        yaml_resources.into_iter().fold(
+            domain::Resources::new(),
+            |mut domain_resources, yaml_resource| {
+                match yaml_resource {
+                    yaml::Resource::Paths { paths } => {
+                        let paths = paths.iter().map(|path| project_dir.join(path));
+                        domain_resources.paths.extend(paths)
+                    }
+                    yaml::Resource::CmdStdout { cmd_stdout } => {
+                        domain_resources.cmds.push(cmd_stdout)
+                    }
+                };
+                domain_resources
+            },
+        )
     }
 
     fn list_all_targets(&self) -> Vec<TargetCanonicalName> {
@@ -174,8 +187,8 @@ impl Config {
     fn validate_dependency_graph(&self, root_targets: &[TargetCanonicalName]) -> Result<()> {
         for target_canonical_name in root_targets {
             let target = self
-                .get_target(&target_canonical_name)
-                .ok_or_else(|| anyhow::anyhow!("Target {} not found", &target_canonical_name))?;
+                .try_get_target(&target_canonical_name)
+                .with_context(|| anyhow::anyhow!("Target {} is invalid", &target_canonical_name))?;
             self.validate_target_graph(&target_canonical_name, &target, &[])
                 .with_context(|| format!("Target {} is invalid", target_canonical_name))?;
         }
@@ -207,13 +220,15 @@ impl Config {
                 dependency_name,
                 &target_canonical_name.project_name,
             )?;
-            let dependency = self.get_target(&dependency_canonical_name).ok_or_else(|| {
-                anyhow::anyhow!(
-                    "{} - Dependency {} not found",
-                    &target_canonical_name,
-                    &dependency_canonical_name,
-                )
-            })?;
+            let dependency = self
+                .try_get_target(&dependency_canonical_name)
+                .with_context(|| {
+                    anyhow::anyhow!(
+                        "{} - Dependency {} is invalid",
+                        &target_canonical_name,
+                        &dependency_canonical_name,
+                    )
+                })?;
 
             self.validate_target_graph(&dependency_canonical_name, dependency, &targets_chain)?;
         }
@@ -233,10 +248,24 @@ impl Config {
         &mut self.projects.get_mut(&project_name).unwrap().1
     }
 
-    fn get_target(&self, target_canonical_name: &TargetCanonicalName) -> Option<&yaml::Target> {
-        self.get_project(&target_canonical_name.project_name)
-            .targets
-            .get(&target_canonical_name.target_name)
+    fn try_get_target(&self, target_canonical_name: &TargetCanonicalName) -> Result<&yaml::Target> {
+        let project = match &self.projects.get(&target_canonical_name.project_name) {
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Project {} does not exist",
+                    target_canonical_name.project_name.to_owned().unwrap(),
+                ))
+            }
+            Some((_project_dir, project)) => project,
+        };
+
+        match project.targets.get(&target_canonical_name.target_name) {
+            None => Err(anyhow::anyhow!(
+                "Target {} does not exist",
+                target_canonical_name
+            )),
+            Some(target) => Ok(target),
+        }
     }
 }
 
@@ -358,8 +387,8 @@ mod tests {
     fn build_target_with_dependencies(dependencies: Vec<&str>) -> yaml::Target {
         yaml::Target {
             dependencies: dependencies.into_iter().map(str::to_string).collect(),
-            input_paths: vec![],
-            output_paths: vec![],
+            input: vec![],
+            output: vec![],
             build: None,
             service: None,
         }

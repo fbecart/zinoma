@@ -152,7 +152,7 @@ fn build_target_incrementally(
     let result = incremental::run(&target, || {
         build_target(&target, termination_events.clone())
     })
-    .with_context(|| format!("{} - Build failed", target.name))
+    .with_context(|| format!("{} - Build failed", target))
     .unwrap();
 
     if let IncrementalRunResult::Skipped = result {
