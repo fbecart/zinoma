@@ -6,7 +6,7 @@
 
 - The way target inputs and outputs are declared was updated.
 
-From:
+Instead of:
 
 ```yaml
 targets:
