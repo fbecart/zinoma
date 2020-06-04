@@ -18,13 +18,14 @@ impl ResourcesState {
     }
 
     pub fn eq_current_state(&self, cmds: &[String], dir: &Path) -> bool {
-        cmds.par_iter().all(|cmd| match get_cmd_stdout(cmd, dir) {
-            Ok(stdout) => dbg!(self.0.get(cmd)) == Some(&stdout),
-            Err(e) => {
-                log::error!("Command {} failed to execute: {}", cmd, e);
-                false
-            }
-        })
+        cmds.par_iter()
+            .all(|cmd| match dbg!(get_cmd_stdout(cmd, dir)) {
+                Ok(stdout) => dbg!(self.0.get(cmd)) == Some(&stdout),
+                Err(e) => {
+                    log::error!("Command {} failed to execute: {}", cmd, e);
+                    false
+                }
+            })
     }
 }
 
