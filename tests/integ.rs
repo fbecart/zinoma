@@ -75,13 +75,19 @@ fn root_input_path() {
 
 #[test]
 fn cmd_stdout_input() {
-    zinoma_command("cmd_stdout_input", &["--clean", "random", "stable"])
+    let integ_test_dir_name = if cfg!(windows) {
+        "cmd_stdout_input_windows"
+    } else {
+        "cmd_stdout_input"
+    };
+
+    zinoma_command(integ_test_dir_name, &["--clean", "random", "stable"])
         .assert()
         .success()
         .stderr(predicate::str::contains("random - Build success"))
         .stderr(predicate::str::contains("stable - Build success"));
 
-    zinoma_command("cmd_stdout_input", &["random", "stable"])
+    zinoma_command(integ_test_dir_name, &["random", "stable"])
         .assert()
         .success()
         .stderr(predicate::str::contains("random - Build success"))

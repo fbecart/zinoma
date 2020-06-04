@@ -1,0 +1,14 @@
+targets:
+  random:
+    input:
+      - cmd_stdout: (Get-Date).ToFileTimeUTC()
+    output:
+      - paths: [random_output.txt]
+    build: (Get-Date).ToFileTimeUTC() > random_output.txt
+
+  stable:
+    input:
+      - cmd_stdout: echo $SHELL
+    output:
+      - paths: [stable_output.txt]
+    build: echo $SHELL > stable_output.txt
