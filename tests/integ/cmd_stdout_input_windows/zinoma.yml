@@ -1,10 +1,10 @@
 targets:
   random:
     input:
-      - cmd_stdout: (Get-Date).ToFileTimeUTC()
+      - cmd_stdout: "%RANDOM%"
     output:
       - paths: [random_output.txt]
-    build: (Get-Date).ToFileTimeUTC() > random_output.txt
+    build: "%RANDOM% > random_output.txt"
 
   stable:
     input:
