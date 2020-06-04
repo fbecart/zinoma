@@ -19,7 +19,7 @@ impl ResourcesState {
 
     pub fn eq_current_state(&self, cmds: &[String], dir: &Path) -> bool {
         cmds.par_iter().all(|cmd| match get_cmd_stdout(cmd, dir) {
-            Ok(stdout) => self.0.get(cmd) == Some(&stdout),
+            Ok(stdout) => dbg!(self.0.get(cmd)) == Some(&stdout),
             Err(e) => {
                 log::error!("Command {} failed to execute: {}", cmd, e);
                 false
@@ -33,7 +33,8 @@ fn get_cmd_stdout(cmd: &str, dir: &Path) -> Result<String> {
     options.exit_on_error = true;
     options.working_directory = Some(dir.to_path_buf());
 
-    let (code, output, _error) = run_script::run(cmd, &vec![], &options).unwrap();
+    let (code, output, _error) = run_script::run(dbg!(cmd), &vec![], &options).unwrap();
+    dbg!(&code, &output, &_error);
     if code != 0 {
         return Err(anyhow::anyhow!(
             "Command {} return error code {}",
