@@ -2,6 +2,8 @@
 
 ## TBD
 
+## 0.14.0 (2020-06-04)
+
 ### BREAKING CHANGES
 
 - The way target inputs and outputs are declared was updated.
