@@ -28,5 +28,6 @@ targets:
     input:
       - paths: [Cargo.toml, Cargo.lock, src]
     output:
+      - cmd_stdout: which zinoma
       - cmd_stdout: zinoma --version
     build: exec cargo install --path .
