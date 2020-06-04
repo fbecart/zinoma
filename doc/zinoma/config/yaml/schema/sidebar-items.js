@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Project","In order to use Žinoma with your project, you need to create a file named `zinoma.yml`. We recommend putting this file in the root directory of your project."],["Target",""]]});
+initSidebarItems({"enum":[["Resource",""]],"struct":[["Project","In order to use Žinoma with your project, you need to create a file named `zinoma.yml`. We recommend putting this file in the root directory of your project."],["Target",""]]});

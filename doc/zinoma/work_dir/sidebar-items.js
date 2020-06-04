@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["WORK_DIR_NAME","Name of the directory in which Žinoma stores its own files."]],"fn":[["get_work_dir_path",""],["is_in_work_dir",""],["remove_work_dir",""]]});

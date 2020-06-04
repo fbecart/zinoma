@@ -259,6 +259,67 @@
 <span id="259">259</span>
 <span id="260">260</span>
 <span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">schemars</span>::<span class="ident">JsonSchema</span>;
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
@@ -276,36 +337,43 @@
 <span class="doccomment">/// ```yaml</span>
 <span class="doccomment">/// targets:</span>
 <span class="doccomment">///   download_dependencies:</span>
-<span class="doccomment">///     input_paths: [ package.json, package-lock.json ]</span>
-<span class="doccomment">///     output_paths: [ node_modules ]</span>
+<span class="doccomment">///     input:</span>
+<span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
+<span class="doccomment">///     output:</span>
+<span class="doccomment">///       - paths: [node_modules]</span>
 <span class="doccomment">///     build: npm install</span>
 <span class="doccomment">///</span>
 <span class="doccomment">///   test:</span>
-<span class="doccomment">///     dependencies: [ download_dependencies ]</span>
-<span class="doccomment">///     input_paths: [ package.json, node_modules, src, test ]</span>
+<span class="doccomment">///     dependencies: [download_dependencies]</span>
+<span class="doccomment">///     input:</span>
+<span class="doccomment">///       - paths: [package.json, node_modules, src, test]</span>
 <span class="doccomment">///     build: npm test</span>
 <span class="doccomment">///</span>
 <span class="doccomment">///   lint:</span>
-<span class="doccomment">///     dependencies: [ download_dependencies ]</span>
-<span class="doccomment">///     input_paths: [ package.json, node_modules, src, test ]</span>
+<span class="doccomment">///     dependencies: [download_dependencies]</span>
+<span class="doccomment">///     input:</span>
+<span class="doccomment">///       - paths: [package.json, node_modules, src, test]</span>
 <span class="doccomment">///     build: npm run lint</span>
 <span class="doccomment">///</span>
 <span class="doccomment">///   check:</span>
-<span class="doccomment">///     dependencies: [ test, lint ]</span>
+<span class="doccomment">///     dependencies: [test, lint]</span>
 <span class="doccomment">///</span>
 <span class="doccomment">///   start:</span>
-<span class="doccomment">///     dependencies: [ download_dependencies ]</span>
-<span class="doccomment">///     input_paths: [ package.json, src ]</span>
+<span class="doccomment">///     dependencies: [download_dependencies]</span>
+<span class="doccomment">///     input:</span>
+<span class="doccomment">///       - paths: [package.json, src]</span>
 <span class="doccomment">///     service: exec npm run start</span>
 <span class="doccomment">///</span>
 <span class="doccomment">///   build:</span>
-<span class="doccomment">///     dependencies: [ check ]</span>
-<span class="doccomment">///     input_paths:</span>
-<span class="doccomment">///       - Dockerfile</span>
-<span class="doccomment">///       - package.json</span>
-<span class="doccomment">///       - package-lock.json</span>
-<span class="doccomment">///       - src</span>
-<span class="doccomment">///     output_paths: [ lambda.zip ]</span>
+<span class="doccomment">///     dependencies: [check]</span>
+<span class="doccomment">///     input:</span>
+<span class="doccomment">///       - paths:</span>
+<span class="doccomment">///         - Dockerfile</span>
+<span class="doccomment">///         - package.json</span>
+<span class="doccomment">///         - package-lock.json</span>
+<span class="doccomment">///         - src</span>
+<span class="doccomment">///     output:</span>
+<span class="doccomment">///       - paths: [lambda.zip]</span>
 <span class="doccomment">///     build: |</span>
 <span class="doccomment">///       docker build -t build-my-project:latest .</span>
 <span class="doccomment">///       docker create -ti --name build-my-project build-my-project:latest bash</span>
@@ -358,6 +426,12 @@
     <span class="doccomment">/// A project name must be a string. It should start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Project names should be unique. Two projects cannot have the same name.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// __Example__</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```yaml</span>
+    <span class="doccomment">/// name: my_project</span>
+    <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="kw">pub</span> <span class="ident">name</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
 
@@ -452,43 +526,50 @@
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="kw">pub</span> <span class="ident">build</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// Lists the locations of the source files for this target.</span>
-    <span class="doccomment">/// `input_paths` should be an array of strings, each representing the path to a file or directory.</span>
+    <span class="doccomment">/// Lists resources the target depends on.</span>
+    <span class="doccomment">/// `input` should be an array of objects.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// The keyword `input_paths` enables the incremental build for this target.</span>
-    <span class="doccomment">/// This means that, at the time of executing the target, Žinoma will skip its build if its input files have not changed since its last successful completion.</span>
+    <span class="doccomment">/// Specifying a target&#39;s `input` enables the incremental build for this target.</span>
+    <span class="doccomment">/// This means that, at the time of executing the target, Žinoma will skip its build if its input resources (and [`output`] resources, if any) have not changed since its last successful completion.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// [`output`]: #structfield.output</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// __Example__</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// ```yaml</span>
     <span class="doccomment">/// targets:</span>
     <span class="doccomment">///   npm_install:</span>
-    <span class="doccomment">///     input_paths: [ package.json, package-lock.json ]</span>
+    <span class="doccomment">///     input:</span>
+    <span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
     <span class="doccomment">///     build: npm install</span>
     <span class="doccomment">/// ```</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// In this example, running `zinoma npm_install` once will execute `npm install`.</span>
     <span class="doccomment">/// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.</span>
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">input_paths</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">input</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Resource</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// This keyword lists the locations where this target produce its artifacts.</span>
-    <span class="doccomment">/// Similarly to [`input_paths`], it should be an array of strings, each representing a path to a file or directory.</span>
+    <span class="doccomment">/// This keyword lists resources identifying the artifacts produced by this target.</span>
+    <span class="doccomment">/// Similarly to [`input`], it should be an array of objects.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// If the `--clean` flag is provided to `zinoma`, the files or directories specified in `output_paths` will be deleted before running the build flow.</span>
+    <span class="doccomment">/// If the `--clean` flag is provided to `zinoma`, the files or directories specified in [`output.paths`] will be deleted before running the build flow.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// The incremental build takes in account the `output_paths`.</span>
-    <span class="doccomment">/// Just like with [`input_paths`], if any of the target output paths were altered since its previous successful execution, the target state will be invalidated and its build will be run again.</span>
+    <span class="doccomment">/// [`output.paths`]: enum.EnvProbe.html#variant.Paths.field.paths</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// [`input_paths`]: #structfield.input_paths</span>
+    <span class="doccomment">/// The incremental build takes in account the target `output`.</span>
+    <span class="doccomment">/// Just like with [`input`], if any of the target output resources were altered since its previous successful execution, the target state will be invalidated and its build will be run again.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// [`input`]: #structfield.input</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// __Example__</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// ```yaml</span>
     <span class="doccomment">/// targets:</span>
     <span class="doccomment">///   npm_install:</span>
-    <span class="doccomment">///     input_paths: [ package.json, package-lock.json ]</span>
-    <span class="doccomment">///     output_paths: [ node_modules ]</span>
+    <span class="doccomment">///     input:</span>
+    <span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
+    <span class="doccomment">///     output:</span>
+    <span class="doccomment">///       - paths: [node_modules]</span>
     <span class="doccomment">///     build: npm install</span>
     <span class="doccomment">/// ```</span>
     <span class="doccomment">///</span>
@@ -496,7 +577,7 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.</span>
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">output_paths</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">output</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Resource</span><span class="op">&gt;</span>,
 
     <span class="doccomment">/// Specifies a command to run upon successful build of the target. It should be a string.</span>
     <span class="doccomment">///</span>
@@ -512,7 +593,8 @@
     <span class="doccomment">/// ```yaml</span>
     <span class="doccomment">/// targets:</span>
     <span class="doccomment">///   npm_server:</span>
-    <span class="doccomment">///     input_paths: [ package.json, index.js ]</span>
+    <span class="doccomment">///     input:</span>
+    <span class="doccomment">///       - paths: [package.json, index.js]</span>
     <span class="doccomment">///     build: npm install</span>
     <span class="doccomment">///     service: npm start</span>
     <span class="doccomment">/// ```</span>
@@ -520,6 +602,46 @@
     <span class="doccomment">/// In this example, `zinoma npm_server` will run `npm install` and then `npm start`.</span>
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="kw">pub</span> <span class="ident">service</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
+}
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
+<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">untagged</span>)]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Resource</span> {
+    <span class="ident">Paths</span> {
+        <span class="doccomment">/// Lists paths to files or directories.</span>
+        <span class="doccomment">/// It should be an array of strings.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// __Example__</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// ```yaml</span>
+        <span class="doccomment">/// targets:</span>
+        <span class="doccomment">///   npm_install:</span>
+        <span class="doccomment">///     input:</span>
+        <span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
+        <span class="doccomment">///     output:</span>
+        <span class="doccomment">///       - paths: [node_modules]</span>
+        <span class="doccomment">///     build: npm install</span>
+        <span class="doccomment">/// ```</span>
+        <span class="ident">paths</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
+    },
+    <span class="ident">CmdStdout</span> {
+        <span class="doccomment">/// A shell command whose stdout identifies the state of a resource.</span>
+        <span class="doccomment">/// It should be a string.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// __Example__</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// ```yaml</span>
+        <span class="doccomment">/// targets:</span>
+        <span class="doccomment">///   build_docker_image:</span>
+        <span class="doccomment">///     input:</span>
+        <span class="doccomment">///       - paths: [Dockerfile, src]</span>
+        <span class="doccomment">///       - cmd_stdout: &#39;docker image ls base:latest --format &quot;{{.ID}}&quot;&#39;</span>
+        <span class="doccomment">///     output:</span>
+        <span class="doccomment">///       - cmd_stdout: &#39;docker image ls webapp:latest --format &quot;{{.ID}}&quot;&#39;</span>
+        <span class="doccomment">///     build: docker build -t webapp .</span>
+        <span class="doccomment">/// ```</span>
+        <span class="ident">cmd_stdout</span>: <span class="ident">String</span>,
+    },
 }
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../../../";window.currentCrate = "zinoma";</script><script src="../../../../aliases.js"></script><script src="../../../../main.js"></script><script src="../../../../source-script.js"></script><script src="../../../../source-files.js"></script><script defer src="../../../../search-index.js"></script></body></html>
