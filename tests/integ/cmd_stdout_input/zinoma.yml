@@ -1,10 +1,10 @@
 targets:
   random:
     input:
-      - cmd_stdout: echo $RANDOM
+      - cmd_stdout: echo $(gdate +%N || date +%N)
     output:
       - paths: [random_output.txt]
-    build: echo $RANDOM > random_output.txt
+    build: echo $(gdate +%N || date +%N) > random_output.txt
 
   stable:
     input:
