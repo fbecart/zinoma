@@ -1,5 +1,7 @@
 targets:
   npm_install:
-    input_paths: [package.json, package-lock.json]
-    output_paths: [node_modules]
+    input:
+      - paths: [package.json, package-lock.json]
+    output:
+      - paths: [node_modules]
     build: npm install
