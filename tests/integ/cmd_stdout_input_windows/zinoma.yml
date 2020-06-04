@@ -1,10 +1,10 @@
 targets:
   random:
     input:
-      - cmd_stdout: echo %RANDOM%
+      - cmd_stdout: w32tm /query /status /verbose
     output:
       - paths: [random_output.txt]
-    build: echo %RANDOM% > random_output.txt
+    build: w32tm /query /status /verbose > random_output.txt
 
   stable:
     input:
