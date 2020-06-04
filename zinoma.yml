@@ -1,7 +1,7 @@
 targets:
   test:
     input:
-      - paths: [Cargo.lock, Cargo.toml, src, tests]
+      - paths: [Cargo.toml, Cargo.lock, src, tests]
     build: exec cargo test
 
   clippy:
@@ -25,4 +25,8 @@ targets:
 
   install:
     dependencies: [check]
+    input:
+      - paths: [Cargo.toml, Cargo.lock, src]
+    output:
+      - cmd_stdout: zinoma --version
     build: exec cargo install --path .
