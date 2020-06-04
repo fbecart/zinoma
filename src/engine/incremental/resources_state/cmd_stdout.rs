@@ -1,8 +1,8 @@
-use anyhow::Result;
+use anyhow::{anyhow, Context, Result};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::Path;
+use std::{path::Path, process::Command};
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct ResourcesState(HashMap<String, String>);
@@ -29,19 +29,27 @@ impl ResourcesState {
 }
 
 fn get_cmd_stdout(cmd: &str, dir: &Path) -> Result<String> {
-    let mut options = run_script::ScriptOptions::new();
-    options.exit_on_error = true;
-    options.working_directory = Some(dir.to_path_buf());
+    let (program, run_arg) = if cfg!(windows) {
+        let comspec = std::env::var_os("COMSPEC").unwrap_or_else(|| "cmd.exe".into());
+        (comspec, "/C")
+    } else {
+        ("/bin/sh".into(), "-c")
+    };
 
-    let (code, output, _error) = run_script::run(dbg!(cmd), &vec![], &options).unwrap();
-    dbg!(&code, &output, &_error);
-    if code != 0 {
-        return Err(anyhow::anyhow!(
+    let output = Command::new(program)
+        .arg(run_arg)
+        .arg(cmd)
+        .current_dir(dir)
+        .output()
+        .with_context(|| format!("Failed to run command {}", cmd))?;
+
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(output.stdout.as_slice()).to_string())
+    } else {
+        Err(anyhow!(
             "Command {} return error code {}",
             cmd,
-            code
-        ));
+            output.status
+        ))
     }
-
-    Ok(output)
 }
