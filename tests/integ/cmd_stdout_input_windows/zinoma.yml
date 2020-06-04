@@ -1,14 +1,14 @@
 targets:
   random:
     input:
-      - cmd_stdout: "%RANDOM%"
+      - cmd_stdout: echo %RANDOM%
     output:
       - paths: [random_output.txt]
-    build: "%RANDOM% > random_output.txt"
+    build: echo %RANDOM% > random_output.txt
 
   stable:
     input:
-      - cmd_stdout: echo $SHELL
+      - cmd_stdout: echo %COMSPEC%
     output:
       - paths: [stable_output.txt]
-    build: echo $SHELL > stable_output.txt
+    build: echo %COMSPEC% > stable_output.txt
