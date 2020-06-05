@@ -184,7 +184,7 @@
 <span class="kw">mod</span> <span class="ident">watcher</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::{<span class="ident">Target</span>, <span class="ident">TargetId</span>};
-<span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">Context</span>, <span class="prelude-ty">Result</span>};
+<span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">anyhow</span>, <span class="ident">Context</span>, <span class="prelude-ty">Result</span>};
 <span class="kw">use</span> <span class="ident">build_state</span>::<span class="ident">TargetBuildStates</span>;
 <span class="kw">use</span> <span class="ident">builder</span>::<span class="ident">build_target</span>;
 <span class="kw">use</span> <span class="ident">crossbeam</span>::<span class="ident">channel</span>::{<span class="ident">unbounded</span>, <span class="ident">Receiver</span>, <span class="ident">Sender</span>};
@@ -255,7 +255,7 @@
                 }
             }
         })
-        .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">anyhow</span>::<span class="macro">anyhow</span><span class="macro">!</span>(<span class="string">&quot;Unknown crossbeam parallelism failure (thread panicked)&quot;</span>))<span class="question-mark">?</span>
+        .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">anyhow</span><span class="macro">!</span>(<span class="string">&quot;Unknown crossbeam parallelism failure (thread panicked)&quot;</span>))<span class="question-mark">?</span>
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">build</span>(
@@ -318,7 +318,7 @@
 
             <span class="prelude-val">Ok</span>(())
         })
-        .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">anyhow</span>::<span class="macro">anyhow</span><span class="macro">!</span>(<span class="string">&quot;Unknown crossbeam parallelism failure (thread panicked)&quot;</span>))<span class="question-mark">?</span>
+        .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">anyhow</span><span class="macro">!</span>(<span class="string">&quot;Unknown crossbeam parallelism failure (thread panicked)&quot;</span>))<span class="question-mark">?</span>
     }
 }
 

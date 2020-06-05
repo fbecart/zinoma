@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["get_cmd_stdout",""]],"struct":[["ResourcesState",""]]});
+initSidebarItems({"fn":[["get_cmd_stdout",""],["get_cmds",""]],"struct":[["ResourcesState",""]]});

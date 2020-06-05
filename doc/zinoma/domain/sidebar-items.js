@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Project",""],["Resources",""],["Target",""]],"type":[["TargetId",""]]});
+initSidebarItems({"struct":[["Project",""],["Target",""]],"type":[["TargetId",""]]});
