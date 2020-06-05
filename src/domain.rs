@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 pub type TargetId = usize;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Target {
     pub id: TargetId,
     pub name: String,
@@ -24,13 +24,13 @@ impl fmt::Display for Target {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Project {
     pub dir: PathBuf,
     pub name: Option<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Resources {
     pub paths: Vec<PathBuf>,
     pub cmds: Vec<String>,
