@@ -66,7 +66,7 @@ The full documentation of the expected schema can be found [on this page](https:
 
 ### Command line
 
-```
+```shell script
 USAGE:
     zinoma [FLAGS] [OPTIONS] [--] [TARGETS]...
 
@@ -95,12 +95,12 @@ while simplifying the execution of your most common build flows.
 The best way to speed up your build flow is simply to avoid running its commands.
 Žinoma helps you do this in a fully automated way.
 
-Targets operate on the file system, transforming some files (aka inputs) into other files (aka outputs).
-By looking at the files located in the `input_paths` and `output_paths` of your targets,
+Targets operate on resources (e.g. files), transforming some resources (aka `input`) into other resources (aka `output`).
+By looking at the resources declared in the `input` and `output` of your targets,
 Žinoma can tell if a target needs to run again, or can be skipped.
 
-Žinoma compares files by computing their checksum.
-These checksums are stored in the `.zinoma` directory, located next to `zinoma.yml`.
+Žinoma identifies file updates by looking at their checksum.
+The checksums are stored in the `.zinoma` directory, located next to `zinoma.yml`.
 This directory should be ignored in your version control.
 
 #### Watch mode (`--watch`)
@@ -108,12 +108,12 @@ This directory should be ignored in your version control.
 Žinoma offers a watch mode which can be enabled with the `--watch` option of the command line.
 
 If the watch mode is enabled, `zinoma` will not exit after the build flow completion.
-Instead, it will keep an eye open on the targets' `input_paths` and will re-execute the relevant targets in case filesystem changes are detected.
+Instead, it will keep an eye open on the targets' `input`'s paths and will re-execute the relevant targets in case filesystem changes are detected.
 
 #### Clean flag (`--clean`)
 
 This flag helps you clean up your build environment.
-It will delete files specified in your `targets.<target_name>.output_paths` and will reinitialize the targets incremental states.
+It will delete files specified in your `targets.<target_name>.outputs.paths` and will reinitialize the targets incremental states.
 
 If provided alone, the `--clean` flag will clean up all targets of your build flow.
 
@@ -127,36 +127,43 @@ When provided along with targets, the `--clean` flag will only run the cleanup o
 ```yaml
 targets:
   download_dependencies:
-    input_paths: [ package.json, package-lock.json ]
-    output_paths: [ node_modules ]
+    input:
+      - paths: [package.json, package-lock.json]
+    output:
+      - paths: [node_modules]
     build: npm install
 
   test:
-    dependencies: [ download_dependencies ]
-    input_paths: [ package.json, node_modules, src, test ]
+    dependencies: [download_dependencies]
+    input:
+      - paths: [package.json, node_modules, src, test]
     build: npm test
 
   lint:
-    dependencies: [ download_dependencies ]
-    input_paths: [ package.json, node_modules, src, test ]
+    dependencies: [download_dependencies]
+    input:
+      - paths: [package.json, node_modules, src, test]
     build: npm run lint
 
   check:
-    dependencies: [ test, lint ]
+    dependencies: [test, lint]
 
   start:
-    dependencies: [ download_dependencies ]
-    input_paths: [ package.json, src ]
+    dependencies: [download_dependencies]
+    input:
+      - paths: [package.json, src]
     service: exec npm run start
 
   build:
-    dependencies: [ check ]
-    input_paths:
-      - Dockerfile
-      - package.json
-      - package-lock.json
-      - src
-    output_paths: [ lambda.zip ]
+    dependencies: [check]
+    input:
+      - paths:
+        - Dockerfile
+        - package.json
+        - package-lock.json
+        - src
+    output:
+      - paths: [lambda.zip]
     build: |
       docker build -t build-my-project:latest .
       docker create -ti --name build-my-project build-my-project:latest bash
