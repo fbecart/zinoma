@@ -6,7 +6,7 @@ mod service;
 mod watcher;
 
 use crate::domain::{Target, TargetId};
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use build_state::TargetBuildStates;
 use builder::build_target;
 use crossbeam::channel::{unbounded, Receiver, Sender};
@@ -77,7 +77,7 @@ impl Engine {
                 }
             }
         })
-        .map_err(|_| anyhow::anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
+        .map_err(|_| anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
     }
 
     pub fn build(
@@ -140,7 +140,7 @@ impl Engine {
 
             Ok(())
         })
-        .map_err(|_| anyhow::anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
+        .map_err(|_| anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
     }
 }
 

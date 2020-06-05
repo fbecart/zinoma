@@ -1,7 +1,6 @@
 use super::yaml;
 use crate::domain;
-use anyhow::Context;
-use anyhow::Result;
+use anyhow::{anyhow, Context, Result};
 use std::collections::HashMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -159,7 +158,7 @@ impl Config {
         for target_canonical_name in root_targets {
             let target = self
                 .try_get_target(&target_canonical_name)
-                .with_context(|| anyhow::anyhow!("Target {} is invalid", &target_canonical_name))?;
+                .with_context(|| anyhow!("Target {} is invalid", &target_canonical_name))?;
             self.validate_target_graph(&target_canonical_name, &target, &[])
                 .with_context(|| format!("Target {} is invalid", target_canonical_name))?;
         }
@@ -174,7 +173,7 @@ impl Config {
         parent_targets: &[&TargetCanonicalName],
     ) -> Result<()> {
         if parent_targets.contains(&target_canonical_name) {
-            return Err(anyhow::anyhow!(
+            return Err(anyhow!(
                 "Circular dependency: {} -> {}",
                 parent_targets
                     .iter()
@@ -194,7 +193,7 @@ impl Config {
             let dependency = self
                 .try_get_target(&dependency_canonical_name)
                 .with_context(|| {
-                    anyhow::anyhow!(
+                    anyhow!(
                         "{} - Dependency {} is invalid",
                         &target_canonical_name,
                         &dependency_canonical_name,
@@ -222,7 +221,7 @@ impl Config {
     fn try_get_target(&self, target_canonical_name: &TargetCanonicalName) -> Result<&yaml::Target> {
         let project = match &self.projects.get(&target_canonical_name.project_name) {
             None => {
-                return Err(anyhow::anyhow!(
+                return Err(anyhow!(
                     "Project {} does not exist",
                     target_canonical_name.project_name.to_owned().unwrap(),
                 ))
@@ -231,10 +230,7 @@ impl Config {
         };
 
         match project.targets.get(&target_canonical_name.target_name) {
-            None => Err(anyhow::anyhow!(
-                "Target {} does not exist",
-                target_canonical_name
-            )),
+            None => Err(anyhow!("Target {} does not exist", target_canonical_name)),
             Some(target) => Ok(target),
         }
     }
@@ -258,7 +254,7 @@ impl TargetCanonicalName {
                 project_name: current_project.clone(),
                 target_name: target_name.to_owned(),
             }),
-            _ => Err(anyhow::anyhow!(
+            _ => Err(anyhow!(
                 "Invalid target canonical name: {} (expected a maximum of one '::' delimiter)",
                 target_name
             )),

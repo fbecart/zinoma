@@ -1,6 +1,6 @@
 mod schema;
 
-use anyhow::{Context, Error, Result};
+use anyhow::{anyhow, Context, Error, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
 pub use schema::{Project, Resource, Target};
@@ -44,13 +44,10 @@ impl Config {
             for (import_name, import_dir) in import_paths {
                 add_project(import_dir.clone(), projects)
                     .and_then(|_| match &projects[&import_dir].name {
-                        None => Err(anyhow::anyhow!(
-                            "Project cannot be imported as it has no name"
-                        )),
-                        Some(name) if name != &import_name => Err(anyhow::anyhow!(
-                            "The project should be imported with name {}",
-                            name
-                        )),
+                        None => Err(anyhow!("Project cannot be imported as it has no name")),
+                        Some(name) if name != &import_name => {
+                            Err(anyhow!("The project should be imported with name {}", name))
+                        }
                         _ => Ok(()),
                     })
                     .with_context(|| format!("Failed to import {}", &import_name))?;
@@ -77,10 +74,7 @@ impl Config {
 
         if let Some(project_name) = &project.name {
             if !is_valid_project_name(&project_name) {
-                return Err(anyhow::anyhow!(
-                    "{} is not a valid project name",
-                    project_name
-                ));
+                return Err(anyhow!("{} is not a valid project name", project_name));
             }
         }
 
@@ -89,7 +83,7 @@ impl Config {
             .keys()
             .find(|&target_name| !is_valid_target_name(target_name))
         {
-            return Err(anyhow::anyhow!(
+            return Err(anyhow!(
                 "{} is not a valid target name",
                 invalid_target_name
             ));

@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use super::process;
 use crate::run_script;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use crossbeam::channel::{tick, Receiver};
 use std::process::Stdio;
 use std::time::Duration;
@@ -27,7 +27,7 @@ pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result
                 recv(ticks) -> _ => {
                     if let Some(exit_status) = build_process.try_wait()? {
                         if !exit_status.success() {
-                            return Err(anyhow::anyhow!("Build failed for target {} ({})", target, exit_status));
+                            return Err(anyhow!("Build failed for target {} ({})", target, exit_status));
                         }
                         let target_build_duration = target_start.elapsed();
                         log::info!(
@@ -40,7 +40,7 @@ pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result
                 },
                 recv(termination_events) -> _ => {
                     process::kill_and_wait(&mut build_process).with_context(|| format!("Failed to kill build process for {}", target))?;
-                    return Err(anyhow::anyhow!("Build cancelled for target {}", target));
+                    return Err(anyhow!("Build cancelled for target {}", target));
                 },
             }
         }
