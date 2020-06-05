@@ -3,6 +3,7 @@ mod cli;
 mod config;
 mod domain;
 mod engine;
+mod run_script;
 mod work_dir;
 
 use anyhow::{Context, Result};

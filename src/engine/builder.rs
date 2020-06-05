@@ -1,9 +1,10 @@
 use std::time::Instant;
 
 use super::process;
+use crate::run_script;
 use anyhow::{Context, Result};
 use crossbeam::channel::{tick, Receiver};
-use run_script::{IoOptions, ScriptOptions};
+use std::process::Stdio;
 use std::time::Duration;
 
 use crate::domain::Target;
@@ -13,13 +14,11 @@ pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result
         let target_start = Instant::now();
         log::info!("{} - Building", target);
 
-        let mut options = ScriptOptions::new();
-        options.exit_on_error = true;
-        options.output_redirection = IoOptions::Inherit;
-        options.working_directory = Some(target.project.dir.to_owned());
-
-        let mut build_process = run_script::spawn(&script, &vec![], &options)
-            .with_context(|| "Build script execution error")?;
+        let mut build_process = run_script::build_command(script, &target.project.dir)
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()
+            .with_context(|| format!("Failed to spawn build command for {}", target))?;
 
         let ticks = tick(Duration::from_millis(10));
 

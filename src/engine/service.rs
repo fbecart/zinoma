@@ -1,8 +1,9 @@
 use super::process;
 use crate::domain::Target;
+use crate::run_script;
 use anyhow::{Context, Result};
-use run_script::{IoOptions, ScriptOptions};
 use std::process::Child;
+use std::process::Stdio;
 
 pub struct ServicesRunner {
     service_processes: Vec<Option<Child>>,
@@ -33,13 +34,11 @@ impl ServicesRunner {
         if let Some(script) = &target.service {
             log::info!("{} - Starting service", target);
 
-            let mut options = ScriptOptions::new();
-            options.exit_on_error = true;
-            options.output_redirection = IoOptions::Inherit;
-            options.working_directory = Some(target.project.dir.to_owned());
-
-            let service_process = run_script::spawn(&script, &vec![], &options)
-                .with_context(|| format!("Failed to start service {}", target))?;
+            let service_process = run_script::build_command(&script, &target.project.dir)
+                .stdout(Stdio::inherit())
+                .stderr(Stdio::inherit())
+                .spawn()
+                .with_context(|| format!("Failed to stargt service {}", target))?;
 
             self.service_processes[target.id] = Some(service_process);
         }

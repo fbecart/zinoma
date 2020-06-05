@@ -1,8 +1,9 @@
+use crate::run_script;
 use anyhow::{anyhow, Context, Result};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::{path::Path, process::Command};
+use std::path::Path;
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct ResourcesState(HashMap<String, String>);
@@ -29,17 +30,7 @@ impl ResourcesState {
 }
 
 fn get_cmd_stdout(cmd: &str, dir: &Path) -> Result<String> {
-    let (program, run_arg) = if cfg!(windows) {
-        let comspec = std::env::var_os("COMSPEC").unwrap_or_else(|| "cmd.exe".into());
-        (comspec, "/C")
-    } else {
-        ("/bin/sh".into(), "-ce")
-    };
-
-    let output = Command::new(program)
-        .arg(run_arg)
-        .arg(cmd)
-        .current_dir(dir)
+    let output = run_script::build_command(cmd, dir)
         .output()
         .with_context(|| format!("Failed to run command {}", cmd))?;
 
