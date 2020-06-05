@@ -80,20 +80,15 @@ impl Config {
             let project_dir = config
                 .get_project_dir(&target_canonical_name.project_name)
                 .to_owned();
-            let yaml::Target {
-                dependencies,
-                input,
-                output,
-                build,
-                service,
-            } = config
+            let yaml_target = config
                 .get_project_mut(&target_canonical_name.project_name)
                 .targets
                 .remove(&target_canonical_name.target_name)
                 .unwrap();
 
-            let dependency_ids = dependencies
-                .into_iter()
+            let dependency_ids = yaml_target
+                .dependencies
+                .iter()
                 .map(|dependency| {
                     TargetCanonicalName::try_parse(&dependency, &target_canonical_name.project_name)
                         .and_then(|dependency| {
@@ -114,19 +109,16 @@ impl Config {
                 project_name,
                 target_name,
             } = target_canonical_name;
-            domain_targets.push(domain::Target {
-                id: target_id,
-                name: target_name,
-                input: Config::yaml_to_domain_resources(input, &project_dir),
-                output: Config::yaml_to_domain_resources(output, &project_dir),
-                project: domain::Project {
+            domain_targets.push(domain::Target::new(
+                target_id,
+                target_name,
+                domain::Project {
                     dir: project_dir,
                     name: project_name,
                 },
-                dependencies: dependency_ids,
-                build,
-                service,
-            });
+                dependency_ids,
+                yaml_target,
+            ));
 
             Ok(target_id)
         }
@@ -141,27 +133,6 @@ impl Config {
         }
 
         Ok(domain_targets)
-    }
-
-    fn yaml_to_domain_resources(
-        yaml_resources: Vec<yaml::Resource>,
-        project_dir: &Path,
-    ) -> domain::Resources {
-        yaml_resources.into_iter().fold(
-            domain::Resources::new(),
-            |mut domain_resources, yaml_resource| {
-                match yaml_resource {
-                    yaml::Resource::Paths { paths } => {
-                        let paths = paths.iter().map(|path| project_dir.join(path));
-                        domain_resources.paths.extend(paths)
-                    }
-                    yaml::Resource::CmdStdout { cmd_stdout } => {
-                        domain_resources.cmds.push(cmd_stdout)
-                    }
-                };
-                domain_resources
-            },
-        )
     }
 
     fn list_all_targets(&self) -> Vec<TargetCanonicalName> {

@@ -31,7 +31,7 @@ impl ServicesRunner {
     }
 
     pub fn start_service(&mut self, target: &Target) -> Result<()> {
-        if let Some(script) = &target.service {
+        if let Some(script) = &target.service() {
             log::info!("{} - Starting service", target);
 
             let service_process = run_script::build_command(&script, &target.project.dir)

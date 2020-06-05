@@ -10,7 +10,7 @@ use std::time::Duration;
 use crate::domain::Target;
 
 pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result<()> {
-    if let Some(script) = &target.build {
+    if let Some(script) = &target.build() {
         let target_start = Instant::now();
         log::info!("{} - Building", target);
 
