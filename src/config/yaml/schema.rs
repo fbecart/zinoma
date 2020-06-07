@@ -68,7 +68,9 @@ use std::collections::HashMap;
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Project {
-    /// A build flow is made of [`targets`]. Each target is a unit of work to perform as part of this build flow.
+    /// # Build flow targets
+    ///
+    /// Each target is a unit of work to perform as part of the build flow.
     ///
     /// [`targets`]: struct.Target.html
     ///
@@ -98,7 +100,7 @@ pub struct Project {
     #[serde(default)]
     pub targets: HashMap<String, Target>,
 
-    /// Name of the project
+    /// # Name of the project
     ///
     /// A project name must be a string. It should start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.
     ///
@@ -112,8 +114,9 @@ pub struct Project {
     #[serde(default)]
     pub name: Option<String>,
 
-    /// Use the `imports` keyword to import targets from a different Žinoma project.
-    /// It should be an object, the keys being the project names and the values their respective paths.
+    /// # Import targets from a different Žinoma project
+    ///
+    /// `imports` should be an object, the keys being the project names and the values their respective paths.
     ///
     /// Before importing a project, you should make sure this project has its name defined.
     /// You should use the same name as key in the `imports` object.
@@ -162,7 +165,8 @@ pub struct Project {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Target {
-    /// Identifies any targets that must complete successfully before this target can run.
+    /// # Targets that must complete successfully before the target can run
+    ///
     /// It should be an array of strings.
     ///
     /// If a target fails, targets that depend on it will not be executed.
@@ -186,7 +190,8 @@ pub struct Target {
     #[serde(default)]
     pub dependencies: Vec<String>,
 
-    /// Use this keyword to specify the build script of this target.
+    /// # Build script of the target
+    ///
     /// It should be a string which can have one or multiple lines.
     ///
     /// __Example__
@@ -203,7 +208,8 @@ pub struct Target {
     #[serde(default)]
     pub build: Option<String>,
 
-    /// Lists resources the target depends on.
+    /// # Resources the target depends on
+    ///
     /// `input` should be an array of objects.
     ///
     /// Specifying a target's `input` enables the incremental build for this target.
@@ -226,7 +232,10 @@ pub struct Target {
     #[serde(default)]
     pub input: Vec<Resource>,
 
+    /// # Resources produced by the target
+    ///
     /// This keyword lists resources identifying the artifacts produced by this target.
+    ///
     /// Similarly to [`input`], it should be an array of objects.
     ///
     /// If the `--clean` flag is provided to `zinoma`, the files or directories specified in [`output.paths`] will be deleted before running the build flow.
@@ -256,7 +265,11 @@ pub struct Target {
     #[serde(default)]
     pub output: Vec<Resource>,
 
-    /// Specifies a command to run upon successful build of the target. It should be a string.
+    /// # Script starting a long-lasting process to execute upon build success
+    ///
+    /// Specifies a command to run upon successful build of the target.
+    ///
+    /// It should be a string.
     ///
     /// This keyword is meant to enable the execution of long-lasting commands, such as servers.
     ///
@@ -285,7 +298,8 @@ pub struct Target {
 #[serde(untagged)]
 pub enum Resource {
     Paths {
-        /// Lists paths to files or directories.
+        /// # Paths to files or directories
+        ///
         /// It should be an array of strings.
         ///
         /// __Example__
@@ -302,7 +316,8 @@ pub enum Resource {
         paths: Vec<String>,
     },
     CmdStdout {
-        /// A shell command whose stdout identifies the state of a resource.
+        /// # Shell script whose output identifies the state of a resource
+        ///
         /// It should be a string.
         ///
         /// __Example__
