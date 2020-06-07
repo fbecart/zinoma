@@ -92,6 +92,16 @@ impl TargetCanonicalName {
             )),
         }
     }
+
+    pub fn try_parse_many(
+        target_names: &[String],
+        current_project: &Option<String>,
+    ) -> Result<Vec<Self>> {
+        target_names
+            .iter()
+            .map(|target_name| Self::try_parse(target_name, current_project))
+            .collect()
+    }
 }
 
 impl fmt::Display for TargetCanonicalName {

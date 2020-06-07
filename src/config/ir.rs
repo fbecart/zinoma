@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 pub struct Config {
-    root_project_name: Option<String>,
+    pub root_project_name: Option<String>,
     projects: HashMap<Option<String>, (PathBuf, yaml::Project)>,
 }
 
@@ -48,18 +48,8 @@ impl Config {
 
     pub fn try_into_domain_targets(
         mut self,
-        requested_targets: Option<Vec<String>>,
+        root_targets: Vec<TargetCanonicalName>,
     ) -> Result<Vec<domain::Target>> {
-        let root_targets = match requested_targets {
-            Some(requested_targets) => requested_targets
-                .iter()
-                .map(|requested_target| {
-                    TargetCanonicalName::try_parse(requested_target, &self.root_project_name)
-                })
-                .collect::<Result<Vec<_>>>()?,
-            None => self.list_all_targets(),
-        };
-
         self.validate_dependency_graph(&root_targets)?;
 
         let mut domain_targets = Vec::with_capacity(root_targets.len());
@@ -126,7 +116,7 @@ impl Config {
         Ok(domain_targets)
     }
 
-    fn list_all_targets(&self) -> Vec<TargetCanonicalName> {
+    pub fn list_all_targets(&self) -> Vec<TargetCanonicalName> {
         self.projects
             .iter()
             .flat_map(|(project_name, (_project_dir, project))| {
@@ -244,7 +234,7 @@ mod tests {
         ]);
 
         let actual_targets = projects
-            .try_into_domain_targets(Some(vec!["target_2".to_string()]))
+            .try_into_domain_targets(build_target_canonical_names(vec!["target_2"]))
             .expect("Conversion of valid targets should be successful");
 
         assert_eq!(actual_targets.len(), 1);
@@ -256,7 +246,7 @@ mod tests {
         let projects = build_projects(vec![("target_1", build_target())]);
 
         projects
-            .try_into_domain_targets(Some(vec!["not_a_target".to_string()]))
+            .try_into_domain_targets(build_target_canonical_names(vec!["not_a_target"]))
             .expect_err("Should reject an invalid requested target");
     }
 
