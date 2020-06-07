@@ -1,8 +1,7 @@
 use super::yaml;
-use crate::domain;
+use crate::domain::{self, TargetCanonicalName};
 use anyhow::{anyhow, Context, Result};
 use std::collections::HashMap;
-use std::fmt;
 use std::path::{Path, PathBuf};
 
 pub struct Config {
@@ -104,17 +103,10 @@ impl Config {
             let target_id = domain_targets.len();
             target_id_mapping.insert(target_canonical_name.clone(), target_id);
 
-            let TargetCanonicalName {
-                project_name,
-                target_name,
-            } = target_canonical_name;
             domain_targets.push(domain::Target::new(
                 target_id,
-                target_name,
-                domain::Project {
-                    dir: project_dir,
-                    name: project_name,
-                },
+                target_canonical_name,
+                project_dir,
                 dependency_ids,
                 yaml_target,
             ));
@@ -236,45 +228,11 @@ impl Config {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
-struct TargetCanonicalName {
-    project_name: Option<String>,
-    target_name: String,
-}
-
-impl TargetCanonicalName {
-    fn try_parse(target_name: &str, current_project: &Option<String>) -> Result<Self> {
-        let parts = target_name.split("::").collect::<Vec<_>>();
-        match parts[..] {
-            [project_name, target_name] => Ok(Self {
-                project_name: Some(project_name.to_owned()),
-                target_name: target_name.to_owned(),
-            }),
-            [target_name] => Ok(Self {
-                project_name: current_project.clone(),
-                target_name: target_name.to_owned(),
-            }),
-            _ => Err(anyhow!(
-                "Invalid target canonical name: {} (expected a maximum of one '::' delimiter)",
-                target_name
-            )),
-        }
-    }
-}
-
-impl fmt::Display for TargetCanonicalName {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(project_name) = &self.project_name {
-            fmt.write_fmt(format_args!("{}::", project_name))?;
-        }
-        fmt.write_str(&self.target_name)
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{Config, TargetCanonicalName};
+    use super::Config;
     use crate::config::yaml;
+    use crate::domain::TargetCanonicalName;
     use std::collections::HashMap;
     use std::path::PathBuf;
 
@@ -290,7 +248,7 @@ mod tests {
             .expect("Conversion of valid targets should be successful");
 
         assert_eq!(actual_targets.len(), 1);
-        assert_eq!(actual_targets[0].name, "target_2");
+        assert_eq!(actual_targets[0].name.target_name, "target_2");
     }
 
     #[test]

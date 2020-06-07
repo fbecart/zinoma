@@ -14,7 +14,7 @@ pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result
         let target_start = Instant::now();
         log::info!("{} - Building", target);
 
-        let mut build_process = run_script::build_command(script, &target.project.dir)
+        let mut build_process = run_script::build_command(script, &target.project_dir)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .spawn()

@@ -60,7 +60,7 @@ impl TargetEnvState {
         if target.input().is_empty() {
             Ok(None)
         } else {
-            let project_dir = &target.project.dir;
+            let project_dir = &target.project_dir;
             Ok(Some(TargetEnvState {
                 input: ResourcesState::current(&target.input(), project_dir)?,
                 output: ResourcesState::current(&target.output(), project_dir)?,
@@ -69,7 +69,7 @@ impl TargetEnvState {
     }
 
     pub fn eq_current_state(&self, target: &Target) -> bool {
-        let project_dir = &target.project.dir;
+        let project_dir = &target.project_dir;
 
         [
             (&self.input, target.input()),

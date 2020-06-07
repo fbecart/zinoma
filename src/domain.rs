@@ -1,4 +1,5 @@
 use crate::config::yaml;
+use anyhow::{anyhow, Result};
 use std::fmt;
 use std::path::PathBuf;
 
@@ -7,33 +8,30 @@ pub type TargetId = usize;
 #[derive(Debug)]
 pub struct Target {
     pub id: TargetId,
-    pub name: String,
-    pub project: Project,
+    pub name: TargetCanonicalName,
+    pub project_dir: PathBuf,
     pub dependencies: Vec<TargetId>,
     raw: yaml::Target,
 }
 
 impl fmt::Display for Target {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(project_name) = &self.project.name {
-            fmt.write_fmt(format_args!("{}::", project_name))?;
-        }
-        fmt.write_str(&self.name)
+        self.name.fmt(fmt)
     }
 }
 
 impl Target {
     pub fn new(
         id: TargetId,
-        name: String,
-        project: Project,
+        name: TargetCanonicalName,
+        project_dir: PathBuf,
         dependencies: Vec<TargetId>,
         raw: yaml::Target,
     ) -> Self {
         Self {
             id,
             name,
-            project,
+            project_dir,
             dependencies,
             raw,
         }
@@ -71,7 +69,7 @@ impl Target {
                     Some(
                         paths
                             .iter()
-                            .map(|path| self.project.dir.join(path))
+                            .map(|path| self.project_dir.join(path))
                             .collect::<Vec<_>>(),
                     )
                 } else {
@@ -87,4 +85,39 @@ impl Target {
 pub struct Project {
     pub dir: PathBuf,
     pub name: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TargetCanonicalName {
+    pub project_name: Option<String>,
+    pub target_name: String,
+}
+
+impl TargetCanonicalName {
+    pub fn try_parse(target_name: &str, current_project: &Option<String>) -> Result<Self> {
+        let parts = target_name.split("::").collect::<Vec<_>>();
+        match parts[..] {
+            [project_name, target_name] => Ok(Self {
+                project_name: Some(project_name.to_owned()),
+                target_name: target_name.to_owned(),
+            }),
+            [target_name] => Ok(Self {
+                project_name: current_project.clone(),
+                target_name: target_name.to_owned(),
+            }),
+            _ => Err(anyhow!(
+                "Invalid target canonical name: {} (expected a maximum of one '::' delimiter)",
+                target_name
+            )),
+        }
+    }
+}
+
+impl fmt::Display for TargetCanonicalName {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(project_name) = &self.project_name {
+            fmt.write_fmt(format_args!("{}::", project_name))?;
+        }
+        fmt.write_str(&self.target_name)
+    }
 }

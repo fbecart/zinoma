@@ -34,7 +34,7 @@ impl ServicesRunner {
         if let Some(script) = &target.service() {
             log::info!("{} - Starting service", target);
 
-            let service_process = run_script::build_command(&script, &target.project.dir)
+            let service_process = run_script::build_command(&script, &target.project_dir)
                 .stdout(Stdio::inherit())
                 .stderr(Stdio::inherit())
                 .spawn()
