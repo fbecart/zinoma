@@ -1,7 +1,7 @@
 use crate::config::yaml;
 use anyhow::{anyhow, Result};
 use std::fmt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub type TargetId = usize;
 
@@ -38,7 +38,7 @@ impl Target {
     }
 
     pub fn input_paths(&self) -> Vec<PathBuf> {
-        self.resources_paths(&self.raw.input)
+        self.raw.input.as_slice().get_paths(&self.project_dir)
     }
 
     pub fn input(&self) -> &Vec<yaml::Resource> {
@@ -46,7 +46,7 @@ impl Target {
     }
 
     pub fn output_paths(&self) -> Vec<PathBuf> {
-        self.resources_paths(&self.raw.output)
+        self.raw.output.as_slice().get_paths(&self.project_dir)
     }
 
     pub fn output(&self) -> &Vec<yaml::Resource> {
@@ -59,25 +59,6 @@ impl Target {
 
     pub fn service(&self) -> &Option<String> {
         &self.raw.service
-    }
-
-    fn resources_paths(&self, resources: &[yaml::Resource]) -> Vec<PathBuf> {
-        resources
-            .iter()
-            .filter_map(|resource| {
-                if let yaml::Resource::Paths { paths } = resource {
-                    Some(
-                        paths
-                            .iter()
-                            .map(|path| self.project_dir.join(path))
-                            .collect::<Vec<_>>(),
-                    )
-                } else {
-                    None
-                }
-            })
-            .flatten()
-            .collect()
     }
 }
 
@@ -119,5 +100,29 @@ impl fmt::Display for TargetCanonicalName {
             fmt.write_fmt(format_args!("{}::", project_name))?;
         }
         fmt.write_str(&self.target_name)
+    }
+}
+
+pub trait ResourcesPaths {
+    fn get_paths(&self, base_dir: &Path) -> Vec<PathBuf>;
+}
+
+impl ResourcesPaths for &[yaml::Resource] {
+    fn get_paths(&self, base_dir: &Path) -> Vec<PathBuf> {
+        self.iter()
+            .filter_map(|resource| {
+                if let yaml::Resource::Paths { paths } = resource {
+                    Some(
+                        paths
+                            .iter()
+                            .map(|path| base_dir.join(path))
+                            .collect::<Vec<_>>(),
+                    )
+                } else {
+                    None
+                }
+            })
+            .flatten()
+            .collect()
     }
 }

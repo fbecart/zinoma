@@ -1,4 +1,5 @@
 use crate::config::yaml;
+use crate::domain::ResourcesPaths;
 use crate::work_dir;
 use anyhow::{Context, Result};
 use rayon::prelude::*;
@@ -50,20 +51,18 @@ impl ResourcesState {
 }
 
 fn list_files(resources: &[yaml::Resource], base_dir: &Path) -> HashSet<PathBuf> {
+    let paths = resources.get_paths(base_dir);
+
     let mut files = HashSet::new();
 
-    for resource in resources {
-        if let yaml::Resource::Paths { paths } = resource {
-            for path in paths {
-                for entry in WalkDir::new(base_dir.join(path)) {
-                    match entry {
-                        Err(e) => log::debug!("Failed to walk dir {}: {}", path, e),
-                        Ok(entry) => {
-                            let path = entry.path().to_path_buf();
-                            if path.is_file() && !work_dir::is_in_work_dir(&path) {
-                                files.insert(path);
-                            }
-                        }
+    for path in paths {
+        for entry in WalkDir::new(base_dir.join(&path)) {
+            match entry {
+                Err(e) => log::debug!("Failed to walk dir {}: {}", path.display(), e),
+                Ok(entry) => {
+                    let path = entry.path().to_path_buf();
+                    if path.is_file() && !work_dir::is_in_work_dir(&path) {
+                        files.insert(path);
                     }
                 }
             }
