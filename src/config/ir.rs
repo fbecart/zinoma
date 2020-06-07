@@ -11,13 +11,10 @@ pub struct Config {
 
 impl From<yaml::Config> for Config {
     fn from(config: yaml::Config) -> Self {
-        let yaml::Config {
-            root_project_dir,
-            projects,
-        } = config;
         Self {
-            root_project_name: projects[&root_project_dir].name.to_owned(),
-            projects: projects
+            root_project_name: (&config.projects)[&config.root_project_dir].name.to_owned(),
+            projects: config
+                .projects
                 .into_iter()
                 .map(|(project_dir, project)| (project.name.clone(), (project_dir, project)))
                 .collect(),
