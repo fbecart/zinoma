@@ -2,6 +2,16 @@
 
 ## TBD
 
+## 0.14.1 (2020-06-07)
+
+Bug fixes:
+
+- Add titles to schema documentation.
+
+Performance improvements:
+
+- Use `std::process::Command` directly in place of [`run_script`](https://github.com/sagiegurari/run_script).
+
 ## 0.14.0 (2020-06-04)
 
 ### BREAKING CHANGES
