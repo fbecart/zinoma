@@ -70,9 +70,9 @@ use std::collections::HashMap;
 pub struct Project {
     /// Targets (aka tasks) of this project.
     ///
-    /// Each target is a unit of work to perform as part of the build flow.
+    /// Each [`target`] is a unit of work to perform as part of the build flow.
     ///
-    /// [`targets`]: struct.Target.html
+    /// [`target`]: struct.Target.html
     ///
     /// Targets run in parallel by default.
     /// To run targets sequentially, you can define dependencies on other targets using the [`dependencies`] keyword.
@@ -114,7 +114,7 @@ pub struct Project {
     #[serde(default)]
     pub name: Option<String>,
 
-    /// Import definitions of other Žinoma projects.
+    /// Import definitions from other Žinoma projects.
     ///
     /// `imports` should be an object, the keys being the project names and the values their respective paths.
     ///
@@ -175,7 +175,7 @@ pub struct Target {
     ///
     /// ```yaml
     /// targets:
-    ///   target1:
+    ///   target1: {}
     ///   target2:
     ///     dependencies: [target1]
     ///   target3:
@@ -210,7 +210,9 @@ pub struct Target {
 
     /// Lists resources identifying the artifacts this target depends on.
     ///
-    /// `input` should be an array of objects.
+    /// `input` should be an array of [`resources`].
+    ///
+    /// [`resources`]: enum.Resource.html#variants
     ///
     /// Specifying a target's `input` enables the incremental build for this target.
     /// This means that, at the time of executing the target, Žinoma will skip its build if its input resources (and [`output`] resources, if any) have not changed since its last successful completion.
@@ -234,7 +236,9 @@ pub struct Target {
 
     /// Lists resources identifying the artifacts produced by this target.
     ///
-    /// Similarly to [`input`], it should be an array of objects.
+    /// Similarly to [`input`], it should be an array of [`resources`].
+    ///
+    /// [`resources`]: enum.Resource.html#variants
     ///
     /// If the `--clean` flag is provided to `zinoma`, the files or directories specified in [`output.paths`] will be deleted before running the build flow.
     ///
