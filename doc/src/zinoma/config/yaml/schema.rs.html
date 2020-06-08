@@ -333,6 +333,10 @@
 <span id="333">333</span>
 <span id="334">334</span>
 <span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">schemars</span>::<span class="ident">JsonSchema</span>;
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
@@ -406,9 +410,9 @@
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Project</span> {
     <span class="doccomment">/// Targets (aka tasks) of this project.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Each target is a unit of work to perform as part of the build flow.</span>
+    <span class="doccomment">/// Each [`target`] is a unit of work to perform as part of the build flow.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// [`targets`]: struct.Target.html</span>
+    <span class="doccomment">/// [`target`]: struct.Target.html</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Targets run in parallel by default.</span>
     <span class="doccomment">/// To run targets sequentially, you can define dependencies on other targets using the [`dependencies`] keyword.</span>
@@ -450,7 +454,7 @@
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="kw">pub</span> <span class="ident">name</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// Import definitions of other Žinoma projects.</span>
+    <span class="doccomment">/// Import definitions from other Žinoma projects.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// `imports` should be an object, the keys being the project names and the values their respective paths.</span>
     <span class="doccomment">///</span>
@@ -511,7 +515,7 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// ```yaml</span>
     <span class="doccomment">/// targets:</span>
-    <span class="doccomment">///   target1:</span>
+    <span class="doccomment">///   target1: {}</span>
     <span class="doccomment">///   target2:</span>
     <span class="doccomment">///     dependencies: [target1]</span>
     <span class="doccomment">///   target3:</span>
@@ -546,7 +550,9 @@
 
     <span class="doccomment">/// Lists resources identifying the artifacts this target depends on.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// `input` should be an array of objects.</span>
+    <span class="doccomment">/// `input` should be an array of [`resources`].</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// [`resources`]: enum.Resource.html#variants</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Specifying a target&#39;s `input` enables the incremental build for this target.</span>
     <span class="doccomment">/// This means that, at the time of executing the target, Žinoma will skip its build if its input resources (and [`output`] resources, if any) have not changed since its last successful completion.</span>
@@ -570,7 +576,9 @@
 
     <span class="doccomment">/// Lists resources identifying the artifacts produced by this target.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Similarly to [`input`], it should be an array of objects.</span>
+    <span class="doccomment">/// Similarly to [`input`], it should be an array of [`resources`].</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// [`resources`]: enum.Resource.html#variants</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// If the `--clean` flag is provided to `zinoma`, the files or directories specified in [`output.paths`] will be deleted before running the build flow.</span>
     <span class="doccomment">///</span>

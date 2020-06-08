@@ -61,7 +61,7 @@ We recommend putting this file in the root directory of your project.</p>
 <p>A fully functional and more advanced example project is available in <a href="https://github.com/fbecart/zinoma-node-example">fbecart/zinoma-node-example</a>.</p>
 </div><h2 id='fields' class='fields small-section-header'>
                        Fields<a href='#fields' class='anchor'></a></h2><span id="structfield.targets" class="structfield small-section-header"><a href="#structfield.targets" class="anchor field"></a><code id="targets.v">targets: <a class="struct" href="https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html" title="struct std::collections::hash::map::HashMap">HashMap</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, <a class="struct" href="../../../../zinoma/config/yaml/schema/struct.Target.html" title="struct zinoma::config::yaml::schema::Target">Target</a>&gt;</code></span><div class='docblock'><p>Targets (aka tasks) of this project.</p>
-<p>Each target is a unit of work to perform as part of the build flow.</p>
+<p>Each <a href="struct.Target.html"><code>target</code></a> is a unit of work to perform as part of the build flow.</p>
 <p>Targets run in parallel by default.
 To run targets sequentially, you can define dependencies on other targets using the <a href="struct.Target.html#structfield.dependencies"><code>dependencies</code></a> keyword.</p>
 <p>Each target must have a unique name.
@@ -85,7 +85,7 @@ The target name must be a string. It should start with an alphanumeric character
 <p><strong>Example</strong></p>
 <pre><code class="language-yaml">name: my_project
 </code></pre>
-</div><span id="structfield.imports" class="structfield small-section-header"><a href="#structfield.imports" class="anchor field"></a><code id="imports.v">imports: <a class="struct" href="https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html" title="struct std::collections::hash::map::HashMap">HashMap</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</code></span><div class='docblock'><p>Import definitions of other Žinoma projects.</p>
+</div><span id="structfield.imports" class="structfield small-section-header"><a href="#structfield.imports" class="anchor field"></a><code id="imports.v">imports: <a class="struct" href="https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html" title="struct std::collections::hash::map::HashMap">HashMap</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</code></span><div class='docblock'><p>Import definitions from other Žinoma projects.</p>
 <p><code>imports</code> should be an object, the keys being the project names and the values their respective paths.</p>
 <p>Before importing a project, you should make sure this project has its name defined.
 You should use the same name as key in the <code>imports</code> object.</p>
