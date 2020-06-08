@@ -68,7 +68,7 @@ use std::collections::HashMap;
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Project {
-    /// # Build flow targets
+    /// Targets (aka tasks) of this project.
     ///
     /// Each target is a unit of work to perform as part of the build flow.
     ///
@@ -100,7 +100,7 @@ pub struct Project {
     #[serde(default)]
     pub targets: HashMap<String, Target>,
 
-    /// # Name of the project
+    /// Name of the project.
     ///
     /// A project name must be a string. It should start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.
     ///
@@ -114,7 +114,7 @@ pub struct Project {
     #[serde(default)]
     pub name: Option<String>,
 
-    /// # Import targets from a different Žinoma project
+    /// Import definitions of other Žinoma projects.
     ///
     /// `imports` should be an object, the keys being the project names and the values their respective paths.
     ///
@@ -165,7 +165,7 @@ pub struct Project {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Target {
-    /// # Targets that must complete successfully before the target can run
+    /// Lists the targets that must complete successfully before this target can be built.
     ///
     /// It should be an array of strings.
     ///
@@ -190,7 +190,7 @@ pub struct Target {
     #[serde(default)]
     pub dependencies: Vec<String>,
 
-    /// # Build script of the target
+    /// The shell script to run in order to build this target.
     ///
     /// It should be a string which can have one or multiple lines.
     ///
@@ -208,7 +208,7 @@ pub struct Target {
     #[serde(default)]
     pub build: Option<String>,
 
-    /// # Resources the target depends on
+    /// Lists resources identifying the artifacts this target depends on.
     ///
     /// `input` should be an array of objects.
     ///
@@ -232,9 +232,7 @@ pub struct Target {
     #[serde(default)]
     pub input: Vec<Resource>,
 
-    /// # Resources produced by the target
-    ///
-    /// This keyword lists resources identifying the artifacts produced by this target.
+    /// Lists resources identifying the artifacts produced by this target.
     ///
     /// Similarly to [`input`], it should be an array of objects.
     ///
@@ -265,9 +263,7 @@ pub struct Target {
     #[serde(default)]
     pub output: Vec<Resource>,
 
-    /// # Script starting a long-lasting process to execute upon build success
-    ///
-    /// Specifies a command to run upon successful build of the target.
+    /// Shell script starting a long-lasting service to run upon successful build of the target.
     ///
     /// It should be a string.
     ///
@@ -298,9 +294,11 @@ pub struct Target {
 #[serde(untagged)]
 pub enum Resource {
     Paths {
-        /// # Paths to files or directories
+        /// Paths to files or directories.
         ///
         /// It should be an array of strings.
+        ///
+        /// Each element of the array should be a path to a file or directory.
         ///
         /// __Example__
         ///
@@ -316,7 +314,7 @@ pub enum Resource {
         paths: Vec<String>,
     },
     CmdStdout {
-        /// # Shell script whose output identifies the state of a resource
+        /// Shell script whose output identifies the state of a resource.
         ///
         /// It should be a string.
         ///
