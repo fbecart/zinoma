@@ -333,8 +333,6 @@
 <span id="333">333</span>
 <span id="334">334</span>
 <span id="335">335</span>
-<span id="336">336</span>
-<span id="337">337</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">schemars</span>::<span class="ident">JsonSchema</span>;
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
@@ -406,7 +404,7 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
 <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Project</span> {
-    <span class="doccomment">/// # Build flow targets</span>
+    <span class="doccomment">/// Targets (aka tasks) of this project.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Each target is a unit of work to perform as part of the build flow.</span>
     <span class="doccomment">///</span>
@@ -438,7 +436,7 @@
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="kw">pub</span> <span class="ident">targets</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Target</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// # Name of the project</span>
+    <span class="doccomment">/// Name of the project.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// A project name must be a string. It should start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.</span>
     <span class="doccomment">///</span>
@@ -452,7 +450,7 @@
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="kw">pub</span> <span class="ident">name</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// # Import targets from a different Žinoma project</span>
+    <span class="doccomment">/// Import definitions of other Žinoma projects.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// `imports` should be an object, the keys being the project names and the values their respective paths.</span>
     <span class="doccomment">///</span>
@@ -503,7 +501,7 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
 <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Target</span> {
-    <span class="doccomment">/// # Targets that must complete successfully before the target can run</span>
+    <span class="doccomment">/// Lists the targets that must complete successfully before this target can be built.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// It should be an array of strings.</span>
     <span class="doccomment">///</span>
@@ -528,7 +526,7 @@
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="kw">pub</span> <span class="ident">dependencies</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// # Build script of the target</span>
+    <span class="doccomment">/// The shell script to run in order to build this target.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// It should be a string which can have one or multiple lines.</span>
     <span class="doccomment">///</span>
@@ -546,7 +544,7 @@
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="kw">pub</span> <span class="ident">build</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// # Resources the target depends on</span>
+    <span class="doccomment">/// Lists resources identifying the artifacts this target depends on.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// `input` should be an array of objects.</span>
     <span class="doccomment">///</span>
@@ -570,9 +568,7 @@
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="kw">pub</span> <span class="ident">input</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Resource</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// # Resources produced by the target</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This keyword lists resources identifying the artifacts produced by this target.</span>
+    <span class="doccomment">/// Lists resources identifying the artifacts produced by this target.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Similarly to [`input`], it should be an array of objects.</span>
     <span class="doccomment">///</span>
@@ -603,9 +599,7 @@
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="kw">pub</span> <span class="ident">output</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Resource</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// # Script starting a long-lasting process to execute upon build success</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Specifies a command to run upon successful build of the target.</span>
+    <span class="doccomment">/// Shell script starting a long-lasting service to run upon successful build of the target.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// It should be a string.</span>
     <span class="doccomment">///</span>
@@ -636,9 +630,11 @@
 <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">untagged</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Resource</span> {
     <span class="ident">Paths</span> {
-        <span class="doccomment">/// # Paths to files or directories</span>
+        <span class="doccomment">/// Paths to files or directories.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// It should be an array of strings.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// Each element of the array should be a path to a file or directory.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// __Example__</span>
         <span class="doccomment">///</span>
@@ -654,7 +650,7 @@
         <span class="ident">paths</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
     },
     <span class="ident">CmdStdout</span> {
-        <span class="doccomment">/// # Shell script whose output identifies the state of a resource</span>
+        <span class="doccomment">/// Shell script whose output identifies the state of a resource.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// It should be a string.</span>
         <span class="doccomment">///</span>
