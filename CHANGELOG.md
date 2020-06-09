@@ -2,6 +2,10 @@
 
 ## TBD
 
+Feature enhancements:
+
+- [FEATURE #40](https://github.com/fbecart/zinoma/issues/40) Infer target inputs from dependencies.
+
 ## 0.14.1 (2020-06-07)
 
 Bug fixes:
