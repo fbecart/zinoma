@@ -28,7 +28,7 @@ impl TargetWatcher {
             })
             .with_context(|| "Error creating watcher")?;
 
-        for path in &target.input_paths() {
+        for path in &target.input.paths {
             match watcher.watch(path, RecursiveMode::Recursive) {
                 Ok(_) => {}
                 Err(notify::Error {

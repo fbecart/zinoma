@@ -1,7 +1,7 @@
 use crate::config::yaml;
 use anyhow::{anyhow, Result};
 use std::fmt;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub type TargetId = usize;
 
@@ -11,6 +11,8 @@ pub struct Target {
     pub name: TargetCanonicalName,
     pub project_dir: PathBuf,
     pub dependencies: Vec<TargetId>,
+    pub input: Resources,
+    pub output: Resources,
     raw: yaml::Target,
 }
 
@@ -26,6 +28,8 @@ impl Target {
         name: TargetCanonicalName,
         project_dir: PathBuf,
         dependencies: Vec<TargetId>,
+        input: Resources,
+        output: Resources,
         raw: yaml::Target,
     ) -> Self {
         Self {
@@ -33,24 +37,10 @@ impl Target {
             name,
             project_dir,
             dependencies,
+            input,
+            output,
             raw,
         }
-    }
-
-    pub fn input_paths(&self) -> Vec<PathBuf> {
-        self.raw.input.as_slice().get_paths(&self.project_dir)
-    }
-
-    pub fn input(&self) -> &Vec<yaml::Resource> {
-        &self.raw.input
-    }
-
-    pub fn output_paths(&self) -> Vec<PathBuf> {
-        self.raw.output.as_slice().get_paths(&self.project_dir)
-    }
-
-    pub fn output(&self) -> &Vec<yaml::Resource> {
-        &self.raw.output
     }
 
     pub fn build(&self) -> &Option<String> {
@@ -113,26 +103,26 @@ impl fmt::Display for TargetCanonicalName {
     }
 }
 
-pub trait ResourcesPaths {
-    fn get_paths(&self, base_dir: &Path) -> Vec<PathBuf>;
+#[derive(Debug, PartialEq)]
+pub struct Resources {
+    pub paths: Vec<PathBuf>,
+    pub cmds: Vec<String>,
 }
 
-impl ResourcesPaths for &[yaml::Resource] {
-    fn get_paths(&self, base_dir: &Path) -> Vec<PathBuf> {
-        self.iter()
-            .filter_map(|resource| {
-                if let yaml::Resource::Paths { paths } = resource {
-                    Some(
-                        paths
-                            .iter()
-                            .map(|path| base_dir.join(path))
-                            .collect::<Vec<_>>(),
-                    )
-                } else {
-                    None
-                }
-            })
-            .flatten()
-            .collect()
+impl Resources {
+    pub fn new() -> Self {
+        Self {
+            paths: vec![],
+            cmds: vec![],
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.paths.is_empty() && self.cmds.is_empty()
+    }
+
+    pub fn extend(&mut self, other: &Resources) {
+        self.paths.extend_from_slice(&other.paths);
+        self.cmds.extend_from_slice(&other.cmds);
     }
 }

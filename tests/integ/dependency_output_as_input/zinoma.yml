@@ -1,0 +1,9 @@
+targets:
+  write:
+    output:
+      - paths: [resource.txt]
+    build: echo "Intermediate build result" > resource.txt
+
+  print:
+    input: [write.output]
+    build: cat resource.txt

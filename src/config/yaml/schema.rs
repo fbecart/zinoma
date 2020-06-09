@@ -212,7 +212,7 @@ pub struct Target {
     ///
     /// `input` should be an array of [`resources`].
     ///
-    /// [`resources`]: enum.Resource.html#variants
+    /// [`resources`]: enum.InputResource.html#variants
     ///
     /// Specifying a target's `input` enables the incremental build for this target.
     /// This means that, at the time of executing the target, Žinoma will skip its build if its input resources (and [`output`] resources, if any) have not changed since its last successful completion.
@@ -232,13 +232,13 @@ pub struct Target {
     /// In this example, running `zinoma npm_install` once will execute `npm install`.
     /// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
     #[serde(default)]
-    pub input: Vec<Resource>,
+    pub input: Vec<InputResource>,
 
     /// Lists resources identifying the artifacts produced by this target.
     ///
-    /// Similarly to [`input`], it should be an array of [`resources`].
+    /// It should be an array of [`resources`].
     ///
-    /// [`resources`]: enum.Resource.html#variants
+    /// [`resources`]: enum.OutputResource.html#variants
     ///
     /// If the `--clean` flag is provided to `zinoma`, the files or directories specified in [`output.paths`] will be deleted before running the build flow.
     ///
@@ -265,7 +265,7 @@ pub struct Target {
     ///
     /// Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
     #[serde(default)]
-    pub output: Vec<Resource>,
+    pub output: Vec<OutputResource>,
 
     /// Shell script starting a long-lasting service to run upon successful build of the target.
     ///
@@ -294,9 +294,68 @@ pub struct Target {
     pub service: Option<String>,
 }
 
+impl Target {
+    #[cfg(test)]
+    pub fn new() -> Self {
+        Self {
+            dependencies: vec![],
+            build: None,
+            input: vec![],
+            output: vec![],
+            service: None,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
-pub enum Resource {
+pub enum InputResource {
+    // TODO Document
+    DependencyOutput(String),
+    Paths {
+        /// Paths to files or directories.
+        ///
+        /// It should be an array of strings.
+        ///
+        /// Each element of the array should be a path to a file or directory.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   npm_install:
+        ///     input:
+        ///       - paths: [package.json, package-lock.json]
+        ///     output:
+        ///       - paths: [node_modules]
+        ///     build: npm install
+        /// ```
+        paths: Vec<String>,
+    },
+    CmdStdout {
+        /// Shell script whose output identifies the state of a resource.
+        ///
+        /// It should be a string.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   build_docker_image:
+        ///     input:
+        ///       - paths: [Dockerfile, src]
+        ///       - cmd_stdout: 'docker image ls base:latest --format "{{.ID}}"'
+        ///     output:
+        ///       - cmd_stdout: 'docker image ls webapp:latest --format "{{.ID}}"'
+        ///     build: docker build -t webapp .
+        /// ```
+        cmd_stdout: String,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum OutputResource {
     Paths {
         /// Paths to files or directories.
         ///

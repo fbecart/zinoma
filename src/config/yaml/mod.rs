@@ -3,7 +3,7 @@ mod schema;
 use anyhow::{anyhow, Context, Error, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
-pub use schema::{Project, Resource, Target};
+pub use schema::{InputResource, OutputResource, Project, Target};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::ErrorKind;
