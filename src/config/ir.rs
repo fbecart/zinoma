@@ -1,10 +1,10 @@
 use super::yaml;
 use crate::domain::{self, TargetCanonicalName};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub struct Config {
     pub root_project_name: Option<String>,
@@ -49,34 +49,51 @@ impl Config {
         mut self,
         root_targets: Vec<TargetCanonicalName>,
     ) -> Result<Vec<domain::Target>> {
-        // TODO Validate dependencies found in inputs!
-        self.validate_dependency_graph(&root_targets)?;
-
-        let mut domain_targets = Vec::with_capacity(root_targets.len());
-        let mut target_id_mapping = HashMap::with_capacity(root_targets.len());
-
         fn add_target(
             mut domain_targets: &mut Vec<domain::Target>,
             mut target_id_mapping: &mut HashMap<TargetCanonicalName, domain::TargetId>,
             config: &mut Config,
             target_canonical_name: TargetCanonicalName,
+            parent_targets: &[&TargetCanonicalName],
         ) -> Result<domain::TargetId> {
             if let Some(&target_id) = target_id_mapping.get(&target_canonical_name) {
                 return Ok(target_id);
             }
 
-            let project_dir = config
-                .get_project_dir(&target_canonical_name.project_name)
-                .to_owned();
-            let yaml_target = config
-                .get_project_mut(&target_canonical_name.project_name)
-                .targets
-                .remove(&target_canonical_name.target_name)
-                .unwrap();
+            if parent_targets.contains(&&target_canonical_name) {
+                return Err(anyhow!(
+                    "Circular dependency: {} -> {}",
+                    parent_targets
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(" -> "),
+                    &target_canonical_name,
+                ));
+            }
+
+            let (project_dir, yaml_target) = {
+                let (project_dir, project) = config
+                    .projects
+                    .get_mut(&target_canonical_name.project_name)
+                    .ok_or_else(|| {
+                        anyhow!(
+                            "Project {} does not exist",
+                            (&target_canonical_name).project_name.clone().unwrap()
+                        )
+                    })?;
+
+                let yaml_target = project
+                    .targets
+                    .remove(&target_canonical_name.target_name)
+                    .ok_or_else(|| anyhow!("Target {} does not exist", target_canonical_name))?;
+
+                (project_dir.clone(), yaml_target)
+            };
 
             let (mut input, dependencies_from_input) = yaml_target.input.iter().fold(
                 Ok((domain::Resources::new(), Vec::new())),
-                |acc: Result<(domain::Resources, Vec<String>)>, resource| {
+                |acc: Result<(domain::Resources, Vec<TargetCanonicalName>)>, resource| {
                     let (mut input, mut dependencies_from_input) = acc?;
 
                     use yaml::InputResource::*;
@@ -91,7 +108,12 @@ impl Config {
                                     Regex::new(r"^((\w[-\w]*::)?\w[-\w]*)\.output$").unwrap();
                             }
                             if let Some(captures) = RE.captures(id) {
-                                dependencies_from_input.push(captures[1].to_string());
+                                let dependency_canonical_name = TargetCanonicalName::try_parse(
+                                    &captures[1].to_string(),
+                                    &target_canonical_name.project_name,
+                                )
+                                .unwrap();
+                                dependencies_from_input.push(dependency_canonical_name);
                             } else {
                                 return Err(anyhow!("Invalid input: {}", id));
                             }
@@ -121,13 +143,9 @@ impl Config {
                 &target_canonical_name.project_name,
             )?;
 
-            let dependencies_from_input = TargetCanonicalName::try_parse_many(
-                &dependencies_from_input,
-                &target_canonical_name.project_name,
-            )?;
-
             dependencies.extend_from_slice(&dependencies_from_input);
 
+            let targets_chain = [parent_targets, &[&target_canonical_name]].concat();
             let dependency_ids = dependencies
                 .into_iter()
                 .map(|dependency| {
@@ -136,6 +154,7 @@ impl Config {
                         &mut target_id_mapping,
                         config,
                         dependency,
+                        &targets_chain,
                     )
                 })
                 .collect::<Result<Vec<_>>>()?;
@@ -160,12 +179,16 @@ impl Config {
             Ok(target_id)
         }
 
-        for target in root_targets.into_iter() {
+        let mut domain_targets = Vec::with_capacity(root_targets.len());
+        let mut target_id_mapping = HashMap::with_capacity(root_targets.len());
+
+        for target_canonical_name in root_targets.into_iter() {
             add_target(
                 &mut domain_targets,
                 &mut target_id_mapping,
                 &mut self,
-                target,
+                target_canonical_name,
+                &[],
             )?;
         }
 
@@ -188,89 +211,8 @@ impl Config {
             .collect()
     }
 
-    /// Checks the validity of the provided targets.
-    ///
-    /// Ensures that all target dependencies (both direct and transitive) exist,
-    /// and that the dependency graph has no circular dependency.
-    fn validate_dependency_graph(&self, root_targets: &[TargetCanonicalName]) -> Result<()> {
-        for target_canonical_name in root_targets {
-            let target = self
-                .try_get_target(&target_canonical_name)
-                .with_context(|| anyhow!("Target {} is invalid", &target_canonical_name))?;
-            self.validate_target_graph(&target_canonical_name, &target, &[])
-                .with_context(|| format!("Target {} is invalid", target_canonical_name))?;
-        }
-
-        Ok(())
-    }
-
-    fn validate_target_graph(
-        &self,
-        target_canonical_name: &TargetCanonicalName,
-        target: &yaml::Target,
-        parent_targets: &[&TargetCanonicalName],
-    ) -> Result<()> {
-        if parent_targets.contains(&target_canonical_name) {
-            return Err(anyhow!(
-                "Circular dependency: {} -> {}",
-                parent_targets
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect::<Vec<_>>()
-                    .join(" -> "),
-                &target_canonical_name,
-            ));
-        }
-
-        let targets_chain = [parent_targets, &[target_canonical_name]].concat();
-        for dependency_name in &target.dependencies {
-            let dependency_canonical_name = TargetCanonicalName::try_parse(
-                dependency_name,
-                &target_canonical_name.project_name,
-            )?;
-            let dependency = self
-                .try_get_target(&dependency_canonical_name)
-                .with_context(|| {
-                    anyhow!(
-                        "{} - Dependency {} is invalid",
-                        &target_canonical_name,
-                        &dependency_canonical_name,
-                    )
-                })?;
-
-            self.validate_target_graph(&dependency_canonical_name, dependency, &targets_chain)?;
-        }
-
-        Ok(())
-    }
-
-    fn get_project_dir<'a>(&'a self, project_name: &Option<String>) -> &'a Path {
-        &self.projects[&project_name].0.as_ref()
-    }
-
     fn get_project(&self, project_name: &Option<String>) -> &yaml::Project {
         &self.projects[&project_name].1
-    }
-
-    fn get_project_mut<'a>(&'a mut self, project_name: &Option<String>) -> &'a mut yaml::Project {
-        &mut self.projects.get_mut(&project_name).unwrap().1
-    }
-
-    fn try_get_target(&self, target_canonical_name: &TargetCanonicalName) -> Result<&yaml::Target> {
-        let project = match &self.projects.get(&target_canonical_name.project_name) {
-            None => {
-                return Err(anyhow!(
-                    "Project {} does not exist",
-                    target_canonical_name.project_name.to_owned().unwrap(),
-                ))
-            }
-            Some((_project_dir, project)) => project,
-        };
-
-        match project.targets.get(&target_canonical_name.target_name) {
-            None => Err(anyhow!("Target {} does not exist", target_canonical_name)),
-            Some(target) => Ok(target),
-        }
     }
 }
 
@@ -283,7 +225,7 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
-    fn test_into_targets_should_return_the_requested_targets() {
+    fn test_try_into_domain_targets_should_return_the_requested_targets() {
         let projects = build_config(vec![
             ("target_1", yaml::Target::new()),
             ("target_2", yaml::Target::new()),
@@ -298,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    fn test_into_targets_should_reject_requested_target_not_found() {
+    fn test_try_into_domain_targets_should_reject_requested_target_not_found() {
         let projects = build_config(vec![("target_1", yaml::Target::new())]);
 
         projects
@@ -307,7 +249,7 @@ mod tests {
     }
 
     #[test]
-    fn test_into_targets_with_dependency_input() {
+    fn test_try_into_domain_targets_with_dependency_input() {
         let config = build_config(vec![
             (
                 "target_1",
@@ -335,31 +277,31 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_targets_on_valid_targets() {
+    fn test_try_into_domain_targets_on_valid_targets() {
         let projects = build_config(vec![
             ("target_1", build_target_with_dependencies(vec!["target_2"])),
-            ("target_2", build_target_with_dependencies(vec![])),
+            ("target_2", yaml::Target::new()),
         ]);
 
         projects
-            .validate_dependency_graph(&build_target_canonical_names(vec!["target_1", "target_2"]))
+            .try_into_domain_targets(build_target_canonical_names(vec!["target_1", "target_2"]))
             .expect("Valid targets should be accepted");
     }
 
     #[test]
-    fn test_validate_targets_with_unknown_dependency() {
+    fn test_try_into_domain_targets_with_unknown_dependency() {
         let projects = build_config(vec![(
             "target_1",
             build_target_with_dependencies(vec!["target_2"]),
         )]);
 
         projects
-            .validate_dependency_graph(&build_target_canonical_names(vec!["target_1"]))
+            .try_into_domain_targets(build_target_canonical_names(vec!["target_1"]))
             .expect_err("Unknown dependencies should be rejected");
     }
 
     #[test]
-    fn test_validate_targets_with_circular_dependency() {
+    fn test_try_into_domain_targets_with_circular_dependency() {
         let projects = build_config(vec![
             ("target_1", build_target_with_dependencies(vec!["target_2"])),
             ("target_2", build_target_with_dependencies(vec!["target_3"])),
@@ -367,7 +309,7 @@ mod tests {
         ]);
 
         projects
-            .validate_dependency_graph(&build_target_canonical_names(vec![
+            .try_into_domain_targets(build_target_canonical_names(vec![
                 "target_1", "target_2", "target_3",
             ]))
             .expect_err("Circular dependencies should be rejected");
