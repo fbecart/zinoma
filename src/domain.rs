@@ -1,4 +1,3 @@
-use crate::config::yaml;
 use anyhow::{anyhow, Result};
 use std::fmt;
 use std::path::PathBuf;
@@ -11,44 +10,15 @@ pub struct Target {
     pub name: TargetCanonicalName,
     pub project_dir: PathBuf,
     pub dependencies: Vec<TargetId>,
+    pub build: Option<String>,
     pub input: Resources,
     pub output: Resources,
-    raw: yaml::Target,
+    pub service: Option<String>,
 }
 
 impl fmt::Display for Target {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.name.fmt(fmt)
-    }
-}
-
-impl Target {
-    pub fn new(
-        id: TargetId,
-        name: TargetCanonicalName,
-        project_dir: PathBuf,
-        dependencies: Vec<TargetId>,
-        input: Resources,
-        output: Resources,
-        raw: yaml::Target,
-    ) -> Self {
-        Self {
-            id,
-            name,
-            project_dir,
-            dependencies,
-            input,
-            output,
-            raw,
-        }
-    }
-
-    pub fn build(&self) -> &Option<String> {
-        &self.raw.build
-    }
-
-    pub fn service(&self) -> &Option<String> {
-        &self.raw.service
     }
 }
 
