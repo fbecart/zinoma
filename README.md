@@ -126,7 +126,7 @@ When provided along with targets, the `--clean` flag will only run the cleanup o
 
 ```yaml
 targets:
-  download_dependencies:
+  node_dependencies:
     input:
       - paths: [package.json, package-lock.json]
     output:
@@ -134,23 +134,23 @@ targets:
     build: npm install
 
   test:
-    dependencies: [download_dependencies]
     input:
-      - paths: [package.json, node_modules, src, test]
+      - node_dependencies.output
+      - paths: [package.json, src, test]
     build: npm test
 
   lint:
-    dependencies: [download_dependencies]
     input:
-      - paths: [package.json, node_modules, src, test]
+      - node_dependencies.output
+      - paths: [package.json, src, test]
     build: npm run lint
 
   check:
     dependencies: [test, lint]
 
   start:
-    dependencies: [download_dependencies]
     input:
+      - node_dependencies.output
       - paths: [package.json, src]
     service: exec npm run start
 
@@ -190,7 +190,7 @@ $ git clone git@github.com:fbecart/zinoma.git
 $ cd zinoma
 $ cargo build --release
 $ ./target/release/zinoma --version
-Žinoma 0.5.1
+Žinoma 0.14.1
 ```
 
 To run the test suite, use:
