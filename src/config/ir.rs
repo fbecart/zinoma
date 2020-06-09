@@ -150,7 +150,7 @@ impl Config {
             dependencies.extend_from_slice(&dependencies_from_input);
 
             let targets_chain = [parent_targets, &[&target_canonical_name]].concat();
-            let dependency_ids = dependencies
+            let dependencies = dependencies
                 .into_iter()
                 .map(|dependency| {
                     add_target(
@@ -174,7 +174,7 @@ impl Config {
                 id: target_id,
                 name: target_canonical_name,
                 project_dir,
-                dependencies: dependency_ids,
+                dependencies,
                 build,
                 input,
                 output,
