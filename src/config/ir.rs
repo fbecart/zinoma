@@ -187,12 +187,12 @@ impl Config {
         let mut domain_targets = Vec::with_capacity(root_targets.len());
         let mut target_id_mapping = HashMap::with_capacity(root_targets.len());
 
-        for target_canonical_name in root_targets.into_iter() {
+        for target in root_targets.into_iter() {
             add_target(
                 &mut domain_targets,
                 &mut target_id_mapping,
                 &mut self,
-                target_canonical_name,
+                target,
                 &[],
             )?;
         }
