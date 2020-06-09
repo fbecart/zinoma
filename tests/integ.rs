@@ -105,7 +105,6 @@ fn dependency_output_as_input() {
 }
 
 #[test]
-#[ignore] // It doesn't pass yet
 fn circular_dependency_in_resources() {
     zinoma_command(
         "circular_dependency_in_resources",
