@@ -21,23 +21,23 @@ use std::collections::HashMap;
 ///     build: npm install
 ///
 ///   test:
-///     dependencies: [download_dependencies]
 ///     input:
-///       - paths: [package.json, node_modules, src, test]
+///       - download_dependencies.output
+///       - paths: [package.json, src, test]
 ///     build: npm test
 ///
 ///   lint:
-///     dependencies: [download_dependencies]
 ///     input:
-///       - paths: [package.json, node_modules, src, test]
+///       - download_dependencies.output
+///       - paths: [package.json, src, test]
 ///     build: npm run lint
 ///
 ///   check:
 ///     dependencies: [test, lint]
 ///
 ///   start:
-///     dependencies: [download_dependencies]
 ///     input:
+///       - download_dependencies.output
 ///       - paths: [package.json, src]
 ///     service: exec npm run start
 ///
