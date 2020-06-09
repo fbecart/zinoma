@@ -76,7 +76,7 @@ impl fmt::Display for TargetCanonicalName {
 #[derive(Debug, PartialEq)]
 pub struct Resources {
     pub paths: Vec<PathBuf>,
-    pub cmds: Vec<String>,
+    pub cmds: Vec<(String, PathBuf)>,
 }
 
 impl Resources {

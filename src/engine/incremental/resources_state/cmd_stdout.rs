@@ -1,30 +1,26 @@
-use crate::domain::Resources;
 use crate::run_script;
 use anyhow::{anyhow, Context, Result};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct ResourcesState(HashMap<String, String>);
 
 impl ResourcesState {
-    pub fn current(resources: &Resources, dir: &Path) -> Result<Self> {
-        let state = resources
-            .cmds
+    pub fn current(cmds: &[(String, PathBuf)]) -> Result<Self> {
+        let state = cmds
             .par_iter()
-            .map(|cmd| get_cmd_stdout(cmd, dir).map(|stdout| (cmd.to_string(), stdout)))
+            .map(|(cmd, dir)| get_cmd_stdout(cmd, dir).map(|stdout| (cmd.to_string(), stdout)))
             .collect::<Result<_>>()?;
 
         Ok(Self(state))
     }
 
-    pub fn eq_current_state(&self, resources: &Resources, dir: &Path) -> bool {
-        resources
-            .cmds
-            .par_iter()
-            .all(|cmd| match get_cmd_stdout(cmd, dir) {
+    pub fn eq_current_state(&self, cmds: &[(String, PathBuf)]) -> bool {
+        cmds.par_iter()
+            .all(|(cmd, dir)| match get_cmd_stdout(cmd, dir) {
                 Ok(stdout) => self.0.get(&cmd.to_string()) == Some(&stdout),
                 Err(e) => {
                     log::error!("Command {} failed to execute: {}", cmd, e);

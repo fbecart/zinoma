@@ -60,27 +60,24 @@ impl TargetEnvState {
         if target.input.is_empty() {
             Ok(None)
         } else {
-            let project_dir = &target.project_dir;
             Ok(Some(TargetEnvState {
-                input: ResourcesState::current(&target.input, project_dir)?,
-                output: ResourcesState::current(&target.output, project_dir)?,
+                input: ResourcesState::current(&target.input)?,
+                output: ResourcesState::current(&target.output)?,
             }))
         }
     }
 
     pub fn eq_current_state(&self, target: &Target) -> bool {
-        let project_dir = &target.project_dir;
-
         [(&self.input, &target.input), (&self.output, &target.output)]
             .par_iter()
-            .all(|(env_state, resources)| {
-                match env_state.eq_current_state(resources, project_dir) {
+            .all(
+                |(env_state, resources)| match env_state.eq_current_state(resources) {
                     Ok(res) => res,
                     Err(e) => {
                         log::error!("Failed to run {} incrementally: {}", target, e);
                         false
                     }
-                }
-            })
+                },
+            )
     }
 }
