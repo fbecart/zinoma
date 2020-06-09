@@ -1,6 +1,8 @@
 use super::yaml;
 use crate::domain::{self, TargetCanonicalName};
 use anyhow::{anyhow, Context, Result};
+use lazy_static::lazy_static;
+use regex::Regex;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -47,6 +49,7 @@ impl Config {
         mut self,
         root_targets: Vec<TargetCanonicalName>,
     ) -> Result<Vec<domain::Target>> {
+        // TODO Validate dependencies found in inputs!
         self.validate_dependency_graph(&root_targets)?;
 
         let mut domain_targets = Vec::with_capacity(root_targets.len());
@@ -71,21 +74,75 @@ impl Config {
                 .remove(&target_canonical_name.target_name)
                 .unwrap();
 
-            let dependency_ids = yaml_target
-                .dependencies
-                .iter()
+            let (mut input, dependencies_from_input) = yaml_target.input.iter().fold(
+                Ok((domain::Resources::new(), Vec::new())),
+                |acc: Result<(domain::Resources, Vec<String>)>, resource| {
+                    let (mut input, mut dependencies_from_input) = acc?;
+
+                    use yaml::InputResource::*;
+                    match resource {
+                        Paths { paths } => input
+                            .paths
+                            .extend(paths.iter().map(|path| project_dir.join(path))),
+                        CmdStdout { cmd_stdout } => input.cmds.push(cmd_stdout.to_string()),
+                        DependencyOutput(id) => {
+                            lazy_static! {
+                                static ref RE: Regex =
+                                    Regex::new(r"^((\w[-\w]*::)?\w[-\w]*)\.output$").unwrap();
+                            }
+                            if let Some(captures) = RE.captures(id) {
+                                dependencies_from_input.push(captures[1].to_string());
+                            } else {
+                                return Err(anyhow!("Invalid input: {}", id));
+                            }
+                        }
+                    }
+                    Ok((input, dependencies_from_input))
+                },
+            )?;
+
+            let output =
+                yaml_target
+                    .output
+                    .iter()
+                    .fold(domain::Resources::new(), |mut acc, resource| {
+                        use yaml::OutputResource::*;
+                        match resource {
+                            Paths { paths } => acc
+                                .paths
+                                .extend(paths.iter().map(|path| project_dir.join(path))),
+                            CmdStdout { cmd_stdout } => acc.cmds.push(cmd_stdout.to_string()),
+                        }
+                        acc
+                    });
+
+            let mut dependencies = TargetCanonicalName::try_parse_many(
+                &yaml_target.dependencies,
+                &target_canonical_name.project_name,
+            )?;
+
+            let dependencies_from_input = TargetCanonicalName::try_parse_many(
+                &dependencies_from_input,
+                &target_canonical_name.project_name,
+            )?;
+
+            dependencies.extend_from_slice(&dependencies_from_input);
+
+            let dependency_ids = dependencies
+                .into_iter()
                 .map(|dependency| {
-                    TargetCanonicalName::try_parse(&dependency, &target_canonical_name.project_name)
-                        .and_then(|dependency| {
-                            add_target(
-                                &mut domain_targets,
-                                &mut target_id_mapping,
-                                config,
-                                dependency,
-                            )
-                        })
+                    add_target(
+                        &mut domain_targets,
+                        &mut target_id_mapping,
+                        config,
+                        dependency,
+                    )
                 })
                 .collect::<Result<Vec<_>>>()?;
+
+            for dependency in dependencies_from_input {
+                input.extend(&domain_targets[target_id_mapping[&dependency]].output);
+            }
 
             let target_id = domain_targets.len();
             target_id_mapping.insert(target_canonical_name.clone(), target_id);
@@ -95,6 +152,8 @@ impl Config {
                 target_canonical_name,
                 project_dir,
                 dependency_ids,
+                input,
+                output,
                 yaml_target,
             ));
 
@@ -219,15 +278,15 @@ impl Config {
 mod tests {
     use super::Config;
     use crate::config::yaml;
-    use crate::domain::TargetCanonicalName;
+    use crate::domain::{self, TargetCanonicalName};
     use std::collections::HashMap;
     use std::path::PathBuf;
 
     #[test]
     fn test_into_targets_should_return_the_requested_targets() {
-        let projects = build_projects(vec![
-            ("target_1", build_target()),
-            ("target_2", build_target()),
+        let projects = build_config(vec![
+            ("target_1", yaml::Target::new()),
+            ("target_2", yaml::Target::new()),
         ]);
 
         let actual_targets = projects
@@ -240,7 +299,7 @@ mod tests {
 
     #[test]
     fn test_into_targets_should_reject_requested_target_not_found() {
-        let projects = build_projects(vec![("target_1", build_target())]);
+        let projects = build_config(vec![("target_1", yaml::Target::new())]);
 
         projects
             .try_into_domain_targets(build_target_canonical_names(vec!["not_a_target"]))
@@ -248,8 +307,36 @@ mod tests {
     }
 
     #[test]
+    fn test_into_targets_with_dependency_input() {
+        let config = build_config(vec![
+            (
+                "target_1",
+                build_target_with_output(vec![yaml::OutputResource::Paths {
+                    paths: vec!["output.txt".to_string()],
+                }]),
+            ),
+            (
+                "target_2",
+                build_target_with_input(vec![yaml::InputResource::DependencyOutput(
+                    "target_1.output".to_string(),
+                )]),
+            ),
+        ]);
+
+        let actual_targets = config
+            .try_into_domain_targets(build_target_canonical_names(vec!["target_2"]))
+            .unwrap();
+
+        assert_eq!(actual_targets.len(), 2);
+        let target1 = find_target(&actual_targets, "target_1");
+        let target2 = find_target(&actual_targets, "target_2");
+        assert_eq!(target2.dependencies, vec![target1.id]);
+        assert_eq!(target2.input, target1.output);
+    }
+
+    #[test]
     fn test_validate_targets_on_valid_targets() {
-        let projects = build_projects(vec![
+        let projects = build_config(vec![
             ("target_1", build_target_with_dependencies(vec!["target_2"])),
             ("target_2", build_target_with_dependencies(vec![])),
         ]);
@@ -261,7 +348,7 @@ mod tests {
 
     #[test]
     fn test_validate_targets_with_unknown_dependency() {
-        let projects = build_projects(vec![(
+        let projects = build_config(vec![(
             "target_1",
             build_target_with_dependencies(vec!["target_2"]),
         )]);
@@ -273,7 +360,7 @@ mod tests {
 
     #[test]
     fn test_validate_targets_with_circular_dependency() {
-        let projects = build_projects(vec![
+        let projects = build_config(vec![
             ("target_1", build_target_with_dependencies(vec!["target_2"])),
             ("target_2", build_target_with_dependencies(vec!["target_3"])),
             ("target_3", build_target_with_dependencies(vec!["target_1"])),
@@ -297,20 +384,24 @@ mod tests {
     }
 
     fn build_target_with_dependencies(dependencies: Vec<&str>) -> yaml::Target {
-        yaml::Target {
-            dependencies: dependencies.into_iter().map(str::to_string).collect(),
-            input: vec![],
-            output: vec![],
-            build: None,
-            service: None,
-        }
+        let mut target = yaml::Target::new();
+        target.dependencies = dependencies.into_iter().map(str::to_string).collect();
+        target
     }
 
-    fn build_target() -> yaml::Target {
-        build_target_with_dependencies(vec![])
+    fn build_target_with_input(input: Vec<yaml::InputResource>) -> yaml::Target {
+        let mut target = yaml::Target::new();
+        target.input = input;
+        target
     }
 
-    pub fn build_projects(targets: Vec<(&str, yaml::Target)>) -> Config {
+    fn build_target_with_output(output: Vec<yaml::OutputResource>) -> yaml::Target {
+        let mut target = yaml::Target::new();
+        target.output = output;
+        target
+    }
+
+    pub fn build_config(targets: Vec<(&str, yaml::Target)>) -> Config {
         let mut projects = HashMap::new();
         projects.insert(
             None,
@@ -331,5 +422,12 @@ mod tests {
             root_project_name: None,
             projects,
         }
+    }
+
+    fn find_target<'a>(targets: &'a [domain::Target], target_name: &str) -> &'a domain::Target {
+        targets
+            .iter()
+            .find(|&t| &t.name.target_name == target_name)
+            .unwrap()
     }
 }

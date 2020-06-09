@@ -1,4 +1,4 @@
-use crate::config::yaml;
+use crate::domain::Resources;
 use crate::run_script;
 use anyhow::{anyhow, Context, Result};
 use rayon::prelude::*;
@@ -10,8 +10,9 @@ use std::path::Path;
 pub struct ResourcesState(HashMap<String, String>);
 
 impl ResourcesState {
-    pub fn current(resources: &[yaml::Resource], dir: &Path) -> Result<Self> {
-        let state = get_cmds(resources)
+    pub fn current(resources: &Resources, dir: &Path) -> Result<Self> {
+        let state = resources
+            .cmds
             .par_iter()
             .map(|cmd| get_cmd_stdout(cmd, dir).map(|stdout| (cmd.to_string(), stdout)))
             .collect::<Result<_>>()?;
@@ -19,8 +20,9 @@ impl ResourcesState {
         Ok(Self(state))
     }
 
-    pub fn eq_current_state(&self, resources: &[yaml::Resource], dir: &Path) -> bool {
-        get_cmds(resources)
+    pub fn eq_current_state(&self, resources: &Resources, dir: &Path) -> bool {
+        resources
+            .cmds
             .par_iter()
             .all(|cmd| match get_cmd_stdout(cmd, dir) {
                 Ok(stdout) => self.0.get(&cmd.to_string()) == Some(&stdout),
@@ -30,19 +32,6 @@ impl ResourcesState {
                 }
             })
     }
-}
-
-fn get_cmds(resources: &[yaml::Resource]) -> Vec<&str> {
-    resources
-        .iter()
-        .filter_map(|resource| {
-            if let yaml::Resource::CmdStdout { cmd_stdout } = resource {
-                Some(cmd_stdout.as_ref())
-            } else {
-                None
-            }
-        })
-        .collect()
 }
 
 fn get_cmd_stdout(cmd: &str, dir: &Path) -> Result<String> {

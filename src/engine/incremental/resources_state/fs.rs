@@ -1,5 +1,4 @@
-use crate::config::yaml;
-use crate::domain::ResourcesPaths;
+use crate::domain::Resources;
 use crate::work_dir;
 use anyhow::{Context, Result};
 use rayon::prelude::*;
@@ -16,7 +15,7 @@ use walkdir::WalkDir;
 pub struct ResourcesState(HashMap<PathBuf, u64>);
 
 impl ResourcesState {
-    pub fn current(resources: &[yaml::Resource], base_dir: &Path) -> Result<Self> {
+    pub fn current(resources: &Resources, base_dir: &Path) -> Result<Self> {
         Ok(Self(
             list_files(resources, base_dir)
                 .into_par_iter()
@@ -29,7 +28,7 @@ impl ResourcesState {
         ))
     }
 
-    pub fn eq_current_state(&self, resources: &[yaml::Resource], base_dir: &Path) -> Result<bool> {
+    pub fn eq_current_state(&self, resources: &Resources, base_dir: &Path) -> Result<bool> {
         let files = list_files(resources, base_dir);
 
         if files.len() != self.0.len() {
@@ -50,12 +49,10 @@ impl ResourcesState {
     }
 }
 
-fn list_files(resources: &[yaml::Resource], base_dir: &Path) -> HashSet<PathBuf> {
-    let paths = resources.get_paths(base_dir);
-
+fn list_files(resources: &Resources, base_dir: &Path) -> HashSet<PathBuf> {
     let mut files = HashSet::new();
 
-    for path in paths {
+    for path in &resources.paths {
         for entry in WalkDir::new(base_dir.join(&path)) {
             match entry {
                 Err(e) => log::debug!("Failed to walk dir {}: {}", path.display(), e),

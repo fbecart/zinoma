@@ -96,6 +96,26 @@ fn cmd_stdout_input() {
         .stderr(predicate::str::contains("stable - Build skipped"));
 }
 
+#[test]
+fn dependency_output_as_input() {
+    zinoma_command("dependency_output_as_input", &["--clean", "print"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Intermediate build result"));
+}
+
+#[test]
+#[ignore] // It doesn't pass yet
+fn circular_dependency_in_resources() {
+    zinoma_command(
+        "circular_dependency_in_resources",
+        &["target_1", "target_2"],
+    )
+    .assert()
+    .failure()
+    .stderr(predicate::str::contains("Circular dependency"));
+}
+
 fn zinoma_command<I, S>(integ_test_dir_name: &str, args: I) -> Command
 where
     I: IntoIterator<Item = S>,
