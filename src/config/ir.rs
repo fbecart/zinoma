@@ -63,12 +63,8 @@ impl Config {
             if parent_targets.contains(&&target_canonical_name) {
                 return Err(anyhow!(
                     "Circular dependency: {} -> {}",
-                    parent_targets
-                        .iter()
-                        .map(ToString::to_string)
-                        .collect::<Vec<_>>()
-                        .join(" -> "),
-                    &target_canonical_name,
+                    itertools::join(parent_targets, " -> "),
+                    target_canonical_name
                 ));
             }
 
@@ -79,7 +75,7 @@ impl Config {
                     .ok_or_else(|| {
                         anyhow!(
                             "Project {} does not exist",
-                            (&target_canonical_name).project_name.clone().unwrap()
+                            target_canonical_name.project_name.as_ref().unwrap()
                         )
                     })?;
 
@@ -91,25 +87,34 @@ impl Config {
                 (project_dir.clone(), yaml_target)
             };
 
-            let (mut input, dependencies_from_input) = yaml_target.input.iter().fold(
+            let yaml::Target {
+                dependencies,
+                build,
+                input,
+                output,
+                service,
+            } = yaml_target;
+
+            let (mut input, dependencies_from_input) = input.into_iter().fold(
                 Ok((domain::Resources::new(), Vec::new())),
-                |acc: Result<(domain::Resources, Vec<TargetCanonicalName>)>, resource| {
+                |acc, resource| {
                     let (mut input, mut dependencies_from_input) = acc?;
 
                     use yaml::InputResource::*;
                     match resource {
-                        Paths { paths } => input
-                            .paths
-                            .extend(paths.iter().map(|path| project_dir.join(path))),
-                        CmdStdout { cmd_stdout } => input.cmds.push(cmd_stdout.to_string()),
+                        Paths { paths } => {
+                            let paths = paths.iter().map(|path| project_dir.join(path));
+                            input.paths.extend(paths)
+                        }
+                        CmdStdout { cmd_stdout } => input.cmds.push(cmd_stdout),
                         DependencyOutput(id) => {
                             lazy_static! {
                                 static ref RE: Regex =
                                     Regex::new(r"^((\w[-\w]*::)?\w[-\w]*)\.output$").unwrap();
                             }
-                            if let Some(captures) = RE.captures(id) {
+                            if let Some(captures) = RE.captures(&id) {
                                 let dependency_canonical_name = TargetCanonicalName::try_parse(
-                                    &captures[1].to_string(),
+                                    captures.get(1).unwrap().as_str(),
                                     &target_canonical_name.project_name,
                                 )
                                 .unwrap();
@@ -123,23 +128,22 @@ impl Config {
                 },
             )?;
 
-            let output =
-                yaml_target
-                    .output
-                    .iter()
-                    .fold(domain::Resources::new(), |mut acc, resource| {
-                        use yaml::OutputResource::*;
-                        match resource {
-                            Paths { paths } => acc
-                                .paths
-                                .extend(paths.iter().map(|path| project_dir.join(path))),
-                            CmdStdout { cmd_stdout } => acc.cmds.push(cmd_stdout.to_string()),
+            let output = output
+                .into_iter()
+                .fold(domain::Resources::new(), |mut acc, resource| {
+                    use yaml::OutputResource::*;
+                    match resource {
+                        Paths { paths } => {
+                            let paths = paths.iter().map(|path| project_dir.join(path));
+                            acc.paths.extend(paths)
                         }
-                        acc
-                    });
+                        CmdStdout { cmd_stdout } => acc.cmds.push(cmd_stdout),
+                    }
+                    acc
+                });
 
             let mut dependencies = TargetCanonicalName::try_parse_many(
-                &yaml_target.dependencies,
+                &dependencies,
                 &target_canonical_name.project_name,
             )?;
 
@@ -166,15 +170,16 @@ impl Config {
             let target_id = domain_targets.len();
             target_id_mapping.insert(target_canonical_name.clone(), target_id);
 
-            domain_targets.push(domain::Target::new(
-                target_id,
-                target_canonical_name,
+            domain_targets.push(domain::Target {
+                id: target_id,
+                name: target_canonical_name,
                 project_dir,
-                dependency_ids,
+                dependencies: dependency_ids,
+                build,
                 input,
                 output,
-                yaml_target,
-            ));
+                service,
+            });
 
             Ok(target_id)
         }
