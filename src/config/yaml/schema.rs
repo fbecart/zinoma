@@ -310,7 +310,43 @@ impl Target {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 pub enum InputResource {
-    // TODO Document
+    /// Output resources of another target.
+    ///
+    /// It should be a string with the format `<project_name>::<target_name>.output`.
+    /// If the other target is located in the same project, the project name can be skipped.
+    /// The `input` would then have this format: `<target_name>.output`.
+    ///
+    /// When such an input is used:
+    ///
+    /// - all the output resources of the other target become input resources for this target;
+    /// - the other target implicitly becomes a dependency to this target.
+    ///
+    /// __Example__
+    ///
+    /// ```yaml
+    /// targets:
+    ///   node_dependencies:
+    ///     input:
+    ///       - paths: [package.json, package-lock.json]
+    ///     output:
+    ///       - paths: [node_modules]
+    ///     build: npm install
+    ///
+    ///   compile:
+    ///     input:
+    ///       - node_dependencies.output
+    ///       - paths: [package.json, tsconfig.json, src]
+    ///     output:
+    ///       - paths: [dist]
+    ///     build: tsc
+    ///      
+    ///   run:
+    ///     input:
+    ///       - node_dependencies.output
+    ///       - paths: [package.json]
+    ///       - compile.output
+    ///     service: node dist/index.js
+    /// ```
     DependencyOutput(String),
     Paths {
         /// Paths to files or directories.
