@@ -1,0 +1,11 @@
+name: cmd_output
+
+targets:
+  # This target is purposefully pretending its input is not changing
+  # Even though its output will be modified at each build
+  build:
+    input:
+      - cmd_stdout: echo ""
+    output:
+      - cmd_stdout: cat output.txt
+    build: echo $RANDOM > output.txt

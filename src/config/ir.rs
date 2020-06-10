@@ -106,7 +106,9 @@ impl Config {
                             let paths = paths.iter().map(|path| project_dir.join(path));
                             input.paths.extend(paths)
                         }
-                        CmdStdout { cmd_stdout } => input.cmds.push(cmd_stdout),
+                        CmdStdout { cmd_stdout } => {
+                            input.cmds.push((cmd_stdout, project_dir.clone()))
+                        }
                         DependencyOutput(id) => {
                             lazy_static! {
                                 static ref RE: Regex =
@@ -137,7 +139,9 @@ impl Config {
                             let paths = paths.iter().map(|path| project_dir.join(path));
                             acc.paths.extend(paths)
                         }
-                        CmdStdout { cmd_stdout } => acc.cmds.push(cmd_stdout),
+                        CmdStdout { cmd_stdout } => {
+                            acc.cmds.push((cmd_stdout, project_dir.clone()))
+                        }
                     }
                     acc
                 });

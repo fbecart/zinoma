@@ -1,0 +1,11 @@
+name: fs_output
+
+targets:
+  # This target is purposefully pretending its input is not changing
+  # Even though its output will be modified at each build
+  build:
+    input:
+      - cmd_stdout: echo ""
+    output:
+      - paths: [output.txt]
+    build: echo $RANDOM > output.txt

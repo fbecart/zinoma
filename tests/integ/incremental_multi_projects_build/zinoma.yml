@@ -1,0 +1,10 @@
+imports:
+  cmd_output: cmd_output
+  fs_output: fs_output
+
+targets:
+  print_outputs:
+    input:
+      - cmd_output::build.output
+      - fs_output::build.output
+    build: cat cmd_output/output.txt fs_output/output.txt
