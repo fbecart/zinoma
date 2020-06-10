@@ -2,6 +2,8 @@
 
 ## TBD
 
+## 0.15.1 (2020-06-10)
+
 Bug fixes:
 
 - Fix multiple issues related to resources paths.
