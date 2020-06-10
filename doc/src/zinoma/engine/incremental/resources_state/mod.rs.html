@@ -25,7 +25,6 @@
 <span id="25">25</span>
 <span id="26">26</span>
 <span id="27">27</span>
-<span id="28">28</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">mod</span> <span class="ident">cmd_stdout</span>;
 <span class="kw">mod</span> <span class="ident">fs</span>;
@@ -33,7 +32,6 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::<span class="ident">Resources</span>;
 <span class="kw">use</span> <span class="ident">anyhow</span>::<span class="prelude-ty">Result</span>;
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">path</span>::<span class="ident">Path</span>;
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">PartialEq</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourcesState</span> {
@@ -42,17 +40,17 @@
 }
 
 <span class="kw">impl</span> <span class="ident">ResourcesState</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">current</span>(<span class="ident">resources</span>: <span class="kw-2">&amp;</span><span class="ident">Resources</span>, <span class="ident">project_dir</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">current</span>(<span class="ident">resources</span>: <span class="kw-2">&amp;</span><span class="ident">Resources</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
         <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
-            <span class="ident">fs</span>: <span class="ident">fs</span>::<span class="ident">ResourcesState</span>::<span class="ident">current</span>(<span class="ident">resources</span>, <span class="ident">project_dir</span>)<span class="question-mark">?</span>,
-            <span class="ident">cmd_stdout</span>: <span class="ident">cmd_stdout</span>::<span class="ident">ResourcesState</span>::<span class="ident">current</span>(<span class="ident">resources</span>, <span class="ident">project_dir</span>)<span class="question-mark">?</span>,
+            <span class="ident">fs</span>: <span class="ident">fs</span>::<span class="ident">ResourcesState</span>::<span class="ident">current</span>(<span class="kw-2">&amp;</span><span class="ident">resources</span>.<span class="ident">paths</span>)<span class="question-mark">?</span>,
+            <span class="ident">cmd_stdout</span>: <span class="ident">cmd_stdout</span>::<span class="ident">ResourcesState</span>::<span class="ident">current</span>(<span class="kw-2">&amp;</span><span class="ident">resources</span>.<span class="ident">cmds</span>)<span class="question-mark">?</span>,
         })
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">eq_current_state</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">resources</span>: <span class="kw-2">&amp;</span><span class="ident">Resources</span>, <span class="ident">project_dir</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">eq_current_state</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">resources</span>: <span class="kw-2">&amp;</span><span class="ident">Resources</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> {
         <span class="comment">// TODO Parallelize this computation</span>
-        <span class="prelude-val">Ok</span>((<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">fs</span>).<span class="ident">eq_current_state</span>(<span class="ident">resources</span>, <span class="ident">project_dir</span>)<span class="question-mark">?</span>
-            <span class="kw-2">&amp;</span><span class="op">&amp;</span> (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cmd_stdout</span>).<span class="ident">eq_current_state</span>(<span class="ident">resources</span>, <span class="ident">project_dir</span>))
+        <span class="prelude-val">Ok</span>((<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">fs</span>).<span class="ident">eq_current_state</span>(<span class="kw-2">&amp;</span><span class="ident">resources</span>.<span class="ident">paths</span>)<span class="question-mark">?</span>
+            <span class="kw-2">&amp;</span><span class="op">&amp;</span> (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">cmd_stdout</span>).<span class="ident">eq_current_state</span>(<span class="kw-2">&amp;</span><span class="ident">resources</span>.<span class="ident">cmds</span>))
     }
 }
 </pre></div>
