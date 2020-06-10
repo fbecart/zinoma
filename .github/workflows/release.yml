@@ -302,3 +302,11 @@ jobs:
           token: ${{ secrets.HOMEBREW_TAP_REPO_ACCESS_TOKEN }}
           event-type: zinoma-release
           client-payload: '{"version": "${{ env.RELEASE_VERSION }}"}'
+
+      - name: Trigger publication to PPA
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          repository: fbecart/ppa
+          token: ${{ secrets.PPA_REPO_ACCESS_TOKEN }}
+          event-type: zinoma-release
+          client-payload: '{"version": "${{ env.RELEASE_VERSION }}"}'
