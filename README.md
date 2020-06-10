@@ -38,12 +38,13 @@ Prerequisites:
 brew install fbecart/tap/zinoma
 ```
 
-### Via .deb file (for Debian-based Linux distros)
-
-Download the relevant .deb file from the [releases page](https://github.com/fbecart/zinoma/releases). Then, run:
+### Via APT (for Debian-based Linux distros)
 
 ```shell script
-dpkg -i zinoma_*.deb
+curl -SsL https://fbecart.github.io/ppa/debian/KEY.gpg | sudo apt-key add -
+sudo curl -SsL -o /etc/apt/sources.list.d/fbecart.list https://fbecart.github.io/ppa/debian/fbecart.list
+sudo apt update
+sudo apt install zinoma
 ```
 
 ### Via Cargo (for Linux, Windows or macOS)

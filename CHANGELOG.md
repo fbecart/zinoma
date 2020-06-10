@@ -2,6 +2,12 @@
 
 ## TBD
 
+## 0.15.2 (2020-06-10)
+
+Feature enhancements:
+
+- [FEATURE #41](https://github.com/fbecart/zinoma/issues/41) Distribute Debian packages with a PPA.
+
 ## 0.15.1 (2020-06-10)
 
 Bug fixes:
