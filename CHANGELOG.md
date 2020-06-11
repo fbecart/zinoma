@@ -2,6 +2,8 @@
 
 ## TBD
 
+## 0.15.3 (2020-06-11)
+
 Žinoma 0.15.3 is a patch release containing small performance improvements.
 
 Feature enhancements:
