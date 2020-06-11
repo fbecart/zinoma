@@ -2,6 +2,12 @@
 
 ## TBD
 
+Žinoma 0.15.3 is a patch release containing small performance improvements.
+
+Feature enhancements:
+
+- [FEATURE #46](https://github.com/fbecart/zinoma/issues/46) Skip file hash computation if timestamps haven't changed.
+
 ## 0.15.2 (2020-06-10)
 
 Feature enhancements:
