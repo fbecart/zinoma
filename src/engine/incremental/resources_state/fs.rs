@@ -8,10 +8,11 @@ use std::fs;
 use std::hash::Hasher;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
+use std::time::{Duration, SystemTime};
 use walkdir::WalkDir;
 
 #[derive(Serialize, Deserialize, PartialEq)]
-pub struct ResourcesState(HashMap<PathBuf, u64>);
+pub struct ResourcesState(HashMap<PathBuf, (Duration, u64)>);
 
 impl ResourcesState {
     pub fn current(paths: &[PathBuf]) -> Result<Self> {
@@ -19,9 +20,10 @@ impl ResourcesState {
             list_files(paths)
                 .into_par_iter()
                 .map(|file| {
+                    let modified = get_file_modified(&file)?;
                     let file_hash = compute_file_hash(&file)
                         .with_context(|| format!("Failed to compute hash of {}", file.display()))?;
-                    Ok((file, file_hash))
+                    Ok((file, (modified, file_hash)))
                 })
                 .collect::<Result<HashMap<_, _>>>()?,
         ))
@@ -34,17 +36,27 @@ impl ResourcesState {
             return Ok(false);
         }
 
-        Ok(files.par_iter().all(|file_path| {
-            match self.0.get(file_path) {
-                Some(&saved_hash) => compute_file_hash(file_path)
-                    .map(|hash| hash == saved_hash)
-                    .unwrap_or_else(|e| {
-                        log::error!("{:?}", e);
-                        false // Propagating the error would be better, but I don't know how this can be achieved
-                    }),
+        Ok(files
+            .par_iter()
+            .all(|file_path| match self.0.get(file_path) {
                 None => false,
-            }
-        }))
+                Some(&(saved_modified, saved_hash)) => match get_file_modified(&file_path) {
+                    Err(e) => {
+                        log::error!("{:?}", e);
+                        false
+                    }
+                    Ok(modified) => {
+                        modified == saved_modified
+                            || match compute_file_hash(file_path) {
+                                Err(e) => {
+                                    log::error!("{:?}", e);
+                                    false
+                                }
+                                Ok(hash) => hash == saved_hash,
+                            }
+                    }
+                },
+            }))
     }
 }
 
@@ -52,11 +64,11 @@ fn list_files(paths: &[PathBuf]) -> HashSet<PathBuf> {
     let mut files = HashSet::new();
 
     for path in paths {
-        for entry in WalkDir::new(path) {
+        for entry in WalkDir::new(path).into_iter() {
             match entry {
                 Err(e) => log::debug!("Failed to walk dir {}: {}", path.display(), e),
                 Ok(entry) => {
-                    let path = entry.path().to_path_buf();
+                    let path = entry.into_path();
                     if path.is_file() && !work_dir::is_in_work_dir(&path) {
                         files.insert(path);
                     }
@@ -66,6 +78,26 @@ fn list_files(paths: &[PathBuf]) -> HashSet<PathBuf> {
     }
 
     files
+}
+
+fn get_file_modified(file: &Path) -> Result<Duration> {
+    let metadata = file
+        .metadata()
+        .with_context(|| format!("Failed to obtain metadata of file {}", file.display()))?;
+    let modified = metadata.modified().with_context(|| {
+        format!(
+            "Failed to obtain modified timestamp of file {}",
+            file.display()
+        )
+    })?;
+    modified
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .with_context(|| {
+            format!(
+                "Failed to obtain duration between UNIX EPOCH and modified timestamp for file {}",
+                file.display()
+            )
+        })
 }
 
 fn compute_file_hash(file_path: &Path) -> Result<u64> {
