@@ -1,6 +1,5 @@
 use std::time::Instant;
 
-use super::process;
 use crate::run_script;
 use anyhow::{anyhow, Context, Result};
 use crossbeam::channel::{tick, Receiver};
@@ -39,7 +38,9 @@ pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result
                     }
                 },
                 recv(termination_events) -> _ => {
-                    process::kill_and_wait(&mut build_process).with_context(|| format!("Failed to kill build process for {}", target))?;
+                    build_process.kill()
+                        .and_then(|_| build_process.wait())
+                        .with_context(|| format!("Failed to kill build process for {}", target))?;
                     return Err(anyhow!("Build cancelled for target {}", target));
                 },
             }

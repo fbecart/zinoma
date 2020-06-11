@@ -1,9 +1,7 @@
-use super::process;
 use crate::domain::Target;
 use crate::run_script;
 use anyhow::{Context, Result};
-use std::process::Child;
-use std::process::Stdio;
+use std::process::{Child, Stdio};
 
 pub struct ServicesRunner {
     service_processes: Vec<Option<Child>>,
@@ -23,7 +21,9 @@ impl ServicesRunner {
     pub fn restart_service(&mut self, target: &Target) -> Result<()> {
         if let Some(Some(service_process)) = self.service_processes.get_mut(target.id) {
             log::trace!("{} - Stopping service", target);
-            process::kill_and_wait(service_process)
+            service_process
+                .kill()
+                .and_then(|_| service_process.wait())
                 .with_context(|| format!("Failed to kill service {}", target))?;
         }
 
