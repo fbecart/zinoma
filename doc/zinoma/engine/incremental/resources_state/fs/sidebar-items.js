@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["compute_file_hash",""],["list_files",""]],"struct":[["ResourcesState",""]]});
+initSidebarItems({"fn":[["compute_file_hash",""],["get_file_modified",""],["list_files",""]],"struct":[["ResourcesState",""]]});
