@@ -100,8 +100,8 @@ Targets operate on resources (e.g. files), transforming some resources (aka `inp
 By looking at the resources declared in the `input` and `output` of your targets,
 Žinoma can tell if a target needs to run again, or can be skipped.
 
-Žinoma identifies file updates by looking at their checksum.
-The checksums are stored in the `.zinoma` directory, located next to `zinoma.yml`.
+Žinoma identifies file updates by looking at their modified timestamp and checksum.
+These informations are stored in the `.zinoma` directory, located next to `zinoma.yml`.
 This directory should be ignored in your version control.
 
 #### Watch mode (`--watch`)
