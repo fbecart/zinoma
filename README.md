@@ -204,7 +204,7 @@ cargo test
 
 ## Žinoma for the curious
 
-Žinoma is a Lithuanian word. Pronounced it with a stress on the first syllable, which should sound like the _gi_ of _regime_.
+Žinoma is a Lithuanian word. Pronounce it with a stress on the first syllable, which should sound like the _gi_ of _regime_.
 
 In Lithuanian, žinoma has two meanings:
 
