@@ -22,12 +22,6 @@ impl fmt::Display for Target {
     }
 }
 
-#[derive(Debug)]
-pub struct Project {
-    pub dir: PathBuf,
-    pub name: Option<String>,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TargetCanonicalName {
     pub project_name: Option<String>,
