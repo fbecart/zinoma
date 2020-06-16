@@ -31,3 +31,8 @@ targets:
       - cmd_stdout: which zinoma
       - cmd_stdout: zinoma --version
     build: exec cargo install --path .
+
+  doc:
+    input:
+      - paths: [src]
+    build: exec cargo doc

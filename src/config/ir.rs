@@ -177,11 +177,12 @@ impl Config {
 }
 
 pub fn get_dependencies(target: &yaml::Target) -> &Vec<String> {
-    match target {
+    &match target {
         yaml::Target::Build { dependencies, .. } => dependencies,
         yaml::Target::Service { dependencies, .. } => dependencies,
         yaml::Target::Aggregate { dependencies } => dependencies,
     }
+    .0
 }
 
 fn into_target_type(
@@ -224,11 +225,11 @@ fn into_target_type(
 }
 
 fn transform_input(
-    input: Vec<yaml::InputResource>,
+    input: yaml::InputResources,
     target_canonical_name: &TargetCanonicalName,
     project_dir: &Path,
 ) -> Result<(domain::Resources, Vec<TargetCanonicalName>)> {
-    input.into_iter().fold(
+    input.0.into_iter().fold(
         Ok((domain::Resources::new(), Vec::new())),
         |acc, resource| {
             let (mut input, mut dependencies_from_input) = acc?;
@@ -262,8 +263,9 @@ fn transform_input(
     )
 }
 
-fn transform_output(output: Vec<yaml::OutputResource>, project_dir: &Path) -> domain::Resources {
+fn transform_output(output: yaml::OutputResources, project_dir: &Path) -> domain::Resources {
     output
+        .0
         .into_iter()
         .fold(domain::Resources::new(), |mut acc, resource| {
             use yaml::OutputResource::*;
@@ -393,25 +395,27 @@ mod tests {
 
     fn build_target_with_dependencies(dependencies: Vec<&str>) -> yaml::Target {
         yaml::Target::Aggregate {
-            dependencies: dependencies.into_iter().map(str::to_string).collect(),
+            dependencies: yaml::Dependencies(
+                dependencies.into_iter().map(str::to_string).collect(),
+            ),
         }
     }
 
     fn build_target_with_input(input: Vec<yaml::InputResource>) -> yaml::Target {
         yaml::Target::Build {
-            dependencies: vec![],
+            dependencies: yaml::Dependencies(vec![]),
             build: ":".to_string(),
-            input,
-            output: vec![],
+            input: yaml::InputResources(input),
+            output: yaml::OutputResources(vec![]),
         }
     }
 
     fn build_target_with_output(output: Vec<yaml::OutputResource>) -> yaml::Target {
         yaml::Target::Build {
-            dependencies: vec![],
+            dependencies: yaml::Dependencies(vec![]),
             build: ":".to_string(),
-            input: vec![],
-            output,
+            input: yaml::InputResources(vec![]),
+            output: yaml::OutputResources(output),
         }
     }
 
