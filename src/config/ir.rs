@@ -111,11 +111,19 @@ impl Config {
                 })
                 .collect::<Result<Vec<_>>>()?;
 
-            // TODO Dependency from input only makes sense if dependency is BuildStep!
-            dependencies_from_input
-                .iter()
-                .flat_map(|dependency| domain_targets[target_id_mapping[&dependency]].get_output())
-                .for_each(|dependency_output| target_type.extend_input(dependency_output).unwrap());
+            for dependency_name in &dependencies_from_input {
+                let dependency = &domain_targets[target_id_mapping[&dependency_name]];
+
+                if let domain::TargetType::Build { output, .. } = &dependency.target_type {
+                    target_type.extend_input(output).unwrap();
+                } else {
+                    return Err(anyhow!(
+                        "Target {} can not depend on {}'s output as it is not a build target",
+                        target_canonical_name,
+                        dependency_name
+                    ));
+                };
+            }
 
             let target_id = domain_targets.len();
             target_id_mapping.insert(target_canonical_name.clone(), target_id);
@@ -169,11 +177,10 @@ impl Config {
 }
 
 pub fn get_dependencies(target: &yaml::Target) -> &Vec<String> {
-    use yaml::Target::*;
     match target {
-        BuildStep { dependencies, .. } => dependencies,
-        Service { dependencies, .. } => dependencies,
-        Aggregate { dependencies } => dependencies,
+        yaml::Target::Build { dependencies, .. } => dependencies,
+        yaml::Target::Service { dependencies, .. } => dependencies,
+        yaml::Target::Aggregate { dependencies } => dependencies,
     }
 }
 
@@ -183,7 +190,7 @@ fn into_target_type(
     project_dir: &Path,
 ) -> Result<(domain::TargetType, Vec<TargetCanonicalName>)> {
     match yaml_target {
-        yaml::Target::BuildStep {
+        yaml::Target::Build {
             build,
             input,
             output,
@@ -193,7 +200,7 @@ fn into_target_type(
                 transform_input(input, target_canonical_name, project_dir)?;
             let output = transform_output(output, project_dir);
             Ok((
-                domain::TargetType::BuildStep {
+                domain::TargetType::Build {
                     build_script: build,
                     input,
                     output,
@@ -391,7 +398,7 @@ mod tests {
     }
 
     fn build_target_with_input(input: Vec<yaml::InputResource>) -> yaml::Target {
-        yaml::Target::BuildStep {
+        yaml::Target::Build {
             dependencies: vec![],
             build: ":".to_string(),
             input,
@@ -400,7 +407,7 @@ mod tests {
     }
 
     fn build_target_with_output(output: Vec<yaml::OutputResource>) -> yaml::Target {
-        yaml::Target::BuildStep {
+        yaml::Target::Build {
             dependencies: vec![],
             build: ":".to_string(),
             input: vec![],

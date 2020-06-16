@@ -16,19 +16,8 @@ impl TargetWatcher {
     ) -> Result<Option<Self>> {
         if let Some(target_input) = target.get_input() {
             if !target_input.paths.is_empty() {
-                let target_id = target.id;
-                let mut watcher: RecommendedWatcher =
-                    Watcher::new_immediate(move |result: notify::Result<notify::Event>| {
-                        if result.unwrap().paths.iter().any(|path| {
-                            !is_tmp_editor_file(path) && !work_dir::is_in_work_dir(path)
-                        }) {
-                            target_invalidated_sender
-                                .send(target_id)
-                                .with_context(|| "Sender error")
-                                .unwrap();
-                        }
-                    })
-                    .with_context(|| "Error creating watcher")?;
+                let mut watcher =
+                    Self::build_immediate_watcher(target.id, target_invalidated_sender)?;
 
                 for path in &target_input.paths {
                     match watcher.watch(path, RecursiveMode::Recursive) {
@@ -58,6 +47,26 @@ impl TargetWatcher {
         }
 
         Ok(None)
+    }
+
+    fn build_immediate_watcher(
+        target_id: TargetId,
+        target_invalidated_sender: Sender<TargetId>,
+    ) -> Result<RecommendedWatcher> {
+        Watcher::new_immediate(move |result: notify::Result<notify::Event>| {
+            if result
+                .unwrap()
+                .paths
+                .iter()
+                .any(|path| !is_tmp_editor_file(path) && !work_dir::is_in_work_dir(path))
+            {
+                target_invalidated_sender
+                    .send(target_id)
+                    .with_context(|| "Sender error")
+                    .unwrap();
+            }
+        })
+        .with_context(|| "Error creating watcher")
     }
 }
 

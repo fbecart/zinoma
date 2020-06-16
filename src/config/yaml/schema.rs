@@ -166,7 +166,7 @@ pub struct Project {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, untagged)]
 pub enum Target {
-    BuildStep {
+    Build {
         /// Lists the targets that must complete successfully before this target can be built.
         ///
         /// It should be an array of strings.

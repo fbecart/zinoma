@@ -22,7 +22,7 @@ impl fmt::Display for Target {
 impl Target {
     pub fn get_input(&self) -> Option<&Resources> {
         match &self.target_type {
-            TargetType::BuildStep { input, .. } => Some(&input),
+            TargetType::Build { input, .. } => Some(&input),
             TargetType::Service { input, .. } => Some(&input),
             _ => None,
         }
@@ -30,7 +30,7 @@ impl Target {
 
     pub fn get_output(&self) -> Option<&Resources> {
         match &self.target_type {
-            TargetType::BuildStep { output, .. } => Some(&output),
+            TargetType::Build { output, .. } => Some(&output),
             _ => None,
         }
     }
@@ -38,7 +38,7 @@ impl Target {
 
 #[derive(Debug)]
 pub enum TargetType {
-    BuildStep {
+    Build {
         build_script: String,
         input: Resources,
         output: Resources,
@@ -53,7 +53,7 @@ pub enum TargetType {
 impl TargetType {
     pub fn extend_input(&mut self, resources: &Resources) -> Result<()> {
         match self {
-            TargetType::BuildStep { input, .. } => input.extend(resources),
+            TargetType::Build { input, .. } => input.extend(resources),
             TargetType::Service { input, .. } => input.extend(resources),
             TargetType::Aggregate => {
                 return Err(anyhow!("Can't extend the input of an aggregate target"))

@@ -6,10 +6,10 @@ use crossbeam::channel::{tick, Receiver};
 use std::process::Stdio;
 use std::time::Duration;
 
-use crate::domain::{Target,TargetType};
+use crate::domain::{Target, TargetType};
 
 pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result<()> {
-    if let TargetType::BuildStep { build_script, ..} = &target.target_type {
+    if let TargetType::Build { build_script, .. } = &target.target_type {
         let target_start = Instant::now();
         log::info!("{} - Building", target);
 
