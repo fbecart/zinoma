@@ -29,7 +29,7 @@ impl Engine {
             .iter()
             .map(|target| TargetWatcher::new(target, target_invalidated_sender.clone()))
             .collect::<Result<Vec<_>>>()
-            .with_context(|| "Failed setting up filesystem watchers");
+            .with_context(|| "Failed setting up filesystem watchers")?;
 
         let mut services_runner = ServicesRunner::new(&self.targets);
         let (build_report_sender, build_report_events) = unbounded();

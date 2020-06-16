@@ -162,149 +162,234 @@ pub struct Project {
     pub imports: HashMap<String, String>,
 }
 
+// TODO Document enum and cases
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct Target {
-    /// Lists the targets that must complete successfully before this target can be built.
+#[serde(deny_unknown_fields, untagged)]
+pub enum Target {
+    BuildStep {
+        /// Lists the targets that must complete successfully before this target can be built.
+        ///
+        /// It should be an array of strings.
+        ///
+        /// If any of the dependencies fails to complete, this target will not be executed.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   target1: {}
+        ///   target2:
+        ///     dependencies: [target1]
+        ///   target3:
+        ///     dependencies: [target2]
+        /// ```
+        ///
+        /// In this example, `target1` must complete successfully before `target2` begins, while `target3` waits for `target2` to complete.
+        ///
+        /// `zinoma target2` will run sequentially `target1` and `target2`.
+        ///
+        /// `zinoma target3` will run sequentially `target1`, `target2` and `target3`.
+        #[serde(default)]
+        dependencies: Vec<String>,
+
+        /// The shell script to run in order to build this target.
+        ///
+        /// It should be a string which can have one or multiple lines.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   create_my_file:
+        ///     build: |
+        ///       mkdir -p deep/dir
+        ///       touch deep/dir/my_file
+        /// ```
+        ///
+        /// In this example, running `zinoma create_my_file` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.
+        build: String,
+
+        /// Lists resources identifying the artifacts this target depends on.
+        ///
+        /// `input` should be an array of [`resources`].
+        ///
+        /// [`resources`]: enum.InputResource.html#variants
+        ///
+        /// Specifying a target's `input` enables the incremental build for this target.
+        /// This means that, at the time of executing the target, Žinoma will skip its build if its input resources (and [`output`] resources, if any) have not changed since its last successful completion.
+        ///
+        /// [`output`]: #structfield.output
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   npm_install:
+        ///     input:
+        ///       - paths: [package.json, package-lock.json]
+        ///     build: npm install
+        /// ```
+        ///
+        /// In this example, running `zinoma npm_install` once will execute `npm install`.
+        /// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
+        #[serde(default)]
+        input: Vec<InputResource>,
+
+        /// Lists resources identifying the artifacts produced by this target.
+        ///
+        /// It should be an array of [`resources`].
+        ///
+        /// [`resources`]: enum.OutputResource.html#variants
+        ///
+        /// If the `--clean` flag is provided to `zinoma`, the files or directories specified in [`output.paths`] will be deleted before running the build flow.
+        ///
+        /// [`output.paths`]: enum.EnvProbe.html#variant.Paths.field.paths
+        ///
+        /// The incremental build takes in account the target `output`.
+        /// Just like with [`input`], if any of the target output resources were altered since its previous successful execution, the target state will be invalidated and its build will be run again.
+        ///
+        /// [`input`]: #structfield.input
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   npm_install:
+        ///     input:
+        ///       - paths: [package.json, package-lock.json]
+        ///     output:
+        ///       - paths: [node_modules]
+        ///     build: npm install
+        /// ```
+        ///
+        /// In this example, running `zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.
+        ///
+        /// Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
+        #[serde(default)]
+        output: Vec<OutputResource>,
+    },
+
+    Service {
+        /// Lists the targets that must complete successfully before this target can be built.
+        ///
+        /// It should be an array of strings.
+        ///
+        /// If any of the dependencies fails to complete, this target will not be executed.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   target1: {}
+        ///   target2:
+        ///     dependencies: [target1]
+        ///   target3:
+        ///     dependencies: [target2]
+        /// ```
+        ///
+        /// In this example, `target1` must complete successfully before `target2` begins, while `target3` waits for `target2` to complete.
+        ///
+        /// `zinoma target2` will run sequentially `target1` and `target2`.
+        ///
+        /// `zinoma target3` will run sequentially `target1`, `target2` and `target3`.
+        #[serde(default)]
+        dependencies: Vec<String>,
+
+        /// Shell script starting a long-lasting service to run upon successful build of the target.
+        ///
+        /// It should be a string.
+        ///
+        /// This keyword is meant to enable the execution of long-lasting commands, such as servers.
+        ///
+        /// If the targets to run do not define services, `zinoma` will automatically exit after all builds ran to completion.
+        /// On the contrary, if at least one target defines a service, `zinoma` will keep running even after all builds completed, so that the services can remain alive.
+        ///
+        /// In watch mode (when the `--watch` flag is passed to `zinoma`), services are restarted every time the target `build` runs to completion.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   npm_server:
+        ///     input:
+        ///       - paths: [package.json, index.js]
+        ///     build: npm install
+        ///     service: npm start
+        /// ```
+        ///
+        /// In this example, `zinoma npm_server` will run `npm install` and then `npm start`.
+        service: String,
+
+        /// Lists resources identifying the artifacts this target depends on.
+        ///
+        /// `input` should be an array of [`resources`].
+        ///
+        /// [`resources`]: enum.InputResource.html#variants
+        ///
+        /// Specifying a target's `input` enables the incremental build for this target.
+        /// This means that, at the time of executing the target, Žinoma will skip its build if its input resources (and [`output`] resources, if any) have not changed since its last successful completion.
+        ///
+        /// [`output`]: #structfield.output
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   npm_install:
+        ///     input:
+        ///       - paths: [package.json, package-lock.json]
+        ///     build: npm install
+        /// ```
+        ///
+        /// In this example, running `zinoma npm_install` once will execute `npm install`.
+        /// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
+        #[serde(default)]
+        input: Vec<InputResource>,
+    },
+
+    /// Aggregates other targets.
     ///
-    /// It should be an array of strings.
-    ///
-    /// If a target fails, targets that depend on it will not be executed.
-    ///
-    /// __Example__
+    /// e.g.
     ///
     /// ```yaml
     /// targets:
-    ///   target1: {}
-    ///   target2:
-    ///     dependencies: [target1]
-    ///   target3:
-    ///     dependencies: [target2]
+    ///   fmt:
+    ///     build: cargo fmt -- --check
+    ///   lint:
+    ///     build: cargo clippy
+    ///   test:
+    ///     build: cargo test
+    ///   check:
+    ///     dependencies: [fmt, lint, test]
     /// ```
     ///
-    /// In this example, `target1` must complete successfully before `target2` begins, while `target3` waits for `target2` to complete.
-    ///
-    /// `zinoma target2` will run sequentially `target1` and `target2`.
-    ///
-    /// `zinoma target3` will run sequentially `target1`, `target2` and `target3`.
-    #[serde(default)]
-    pub dependencies: Vec<String>,
-
-    /// The shell script to run in order to build this target.
-    ///
-    /// It should be a string which can have one or multiple lines.
-    ///
-    /// __Example__
-    ///
-    /// ```yaml
-    /// targets:
-    ///   create_my_file:
-    ///     build: |
-    ///       mkdir -p deep/dir
-    ///       touch deep/dir/my_file
-    /// ```
-    ///
-    /// In this example, running `zinoma create_my_file` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.
-    #[serde(default)]
-    pub build: Option<String>,
-
-    /// Lists resources identifying the artifacts this target depends on.
-    ///
-    /// `input` should be an array of [`resources`].
-    ///
-    /// [`resources`]: enum.InputResource.html#variants
-    ///
-    /// Specifying a target's `input` enables the incremental build for this target.
-    /// This means that, at the time of executing the target, Žinoma will skip its build if its input resources (and [`output`] resources, if any) have not changed since its last successful completion.
-    ///
-    /// [`output`]: #structfield.output
-    ///
-    /// __Example__
-    ///
-    /// ```yaml
-    /// targets:
-    ///   npm_install:
-    ///     input:
-    ///       - paths: [package.json, package-lock.json]
-    ///     build: npm install
-    /// ```
-    ///
-    /// In this example, running `zinoma npm_install` once will execute `npm install`.
-    /// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
-    #[serde(default)]
-    pub input: Vec<InputResource>,
-
-    /// Lists resources identifying the artifacts produced by this target.
-    ///
-    /// It should be an array of [`resources`].
-    ///
-    /// [`resources`]: enum.OutputResource.html#variants
-    ///
-    /// If the `--clean` flag is provided to `zinoma`, the files or directories specified in [`output.paths`] will be deleted before running the build flow.
-    ///
-    /// [`output.paths`]: enum.EnvProbe.html#variant.Paths.field.paths
-    ///
-    /// The incremental build takes in account the target `output`.
-    /// Just like with [`input`], if any of the target output resources were altered since its previous successful execution, the target state will be invalidated and its build will be run again.
-    ///
-    /// [`input`]: #structfield.input
-    ///
-    /// __Example__
-    ///
-    /// ```yaml
-    /// targets:
-    ///   npm_install:
-    ///     input:
-    ///       - paths: [package.json, package-lock.json]
-    ///     output:
-    ///       - paths: [node_modules]
-    ///     build: npm install
-    /// ```
-    ///
-    /// In this example, running `zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.
-    ///
-    /// Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
-    #[serde(default)]
-    pub output: Vec<OutputResource>,
-
-    /// Shell script starting a long-lasting service to run upon successful build of the target.
-    ///
-    /// It should be a string.
-    ///
-    /// This keyword is meant to enable the execution of long-lasting commands, such as servers.
-    ///
-    /// If the targets to run do not define services, `zinoma` will automatically exit after all builds ran to completion.
-    /// On the contrary, if at least one target defines a service, `zinoma` will keep running even after all builds completed, so that the services can remain alive.
-    ///
-    /// In watch mode (when the `--watch` flag is passed to `zinoma`), services are restarted every time the target `build` runs to completion.
-    ///
-    /// __Example__
-    ///
-    /// ```yaml
-    /// targets:
-    ///   npm_server:
-    ///     input:
-    ///       - paths: [package.json, index.js]
-    ///     build: npm install
-    ///     service: npm start
-    /// ```
-    ///
-    /// In this example, `zinoma npm_server` will run `npm install` and then `npm start`.
-    #[serde(default)]
-    pub service: Option<String>,
-}
-
-impl Target {
-    #[cfg(test)]
-    pub fn new() -> Self {
-        Self {
-            dependencies: vec![],
-            build: None,
-            input: vec![],
-            output: vec![],
-            service: None,
-        }
-    }
+    /// In this example, the target named `check` aggregates the 3 other targets.
+    /// `zinoma check` is equivalent to running `zinoma fmt lint test`.
+    Aggregate {
+        /// Lists the targets that must complete successfully before this target can be built.
+        ///
+        /// It should be an array of strings.
+        ///
+        /// If any of the dependencies fails to complete, this target will not be executed.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   target1: {}
+        ///   target2:
+        ///     dependencies: [target1]
+        ///   target3:
+        ///     dependencies: [target2]
+        /// ```
+        ///
+        /// In this example, `target1` must complete successfully before `target2` begins, while `target3` waits for `target2` to complete.
+        ///
+        /// `zinoma target2` will run sequentially `target1` and `target2`.
+        ///
+        /// `zinoma target3` will run sequentially `target1`, `target2` and `target3`.
+        dependencies: Vec<String>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]

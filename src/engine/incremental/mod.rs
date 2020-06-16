@@ -1,7 +1,7 @@
 mod resources_state;
 pub mod storage;
 
-use crate::domain::Target;
+use crate::domain::{Resources, Target};
 use anyhow::{Context, Result};
 use rayon::prelude::*;
 use resources_state::ResourcesState;
@@ -51,33 +51,43 @@ fn env_state_has_not_changed_since_last_successful_execution(target: &Target) ->
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct TargetEnvState {
-    input: ResourcesState,
-    output: ResourcesState,
+    input: Option<ResourcesState>, // TODO Remove Option?
+    output: Option<ResourcesState>,
 }
 
 impl TargetEnvState {
     pub fn current(target: &Target) -> Result<Option<Self>> {
-        if target.input.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(TargetEnvState {
-                input: ResourcesState::current(&target.input)?,
-                output: ResourcesState::current(&target.output)?,
-            }))
-        }
+        if target.get_input().map_or(true, Resources::is_empty) {
+            return Ok(None);
+        };
+
+        let input = target
+            .get_input()
+            .map(|target_input| ResourcesState::current(target_input))
+            .transpose()?;
+        let output = target
+            .get_output()
+            .map(|target_output| ResourcesState::current(target_output))
+            .transpose()?;
+
+        Ok(Some(TargetEnvState { input, output }))
     }
 
     pub fn eq_current_state(&self, target: &Target) -> bool {
-        [(&self.input, &target.input), (&self.output, &target.output)]
-            .par_iter()
-            .all(
-                |(env_state, resources)| match env_state.eq_current_state(resources) {
-                    Ok(res) => res,
-                    Err(e) => {
+        [
+            (&self.input, &target.get_input()),
+            (&self.output, &target.get_output()),
+        ]
+        .par_iter()
+        .all(|(env_state, resources)| {
+            resources.map_or(true, |resources| {
+                env_state.as_ref().map_or(false, |env_state| {
+                    env_state.eq_current_state(resources).unwrap_or_else(|e|{
                         log::error!("Failed to run {} incrementally: {}", target, e);
                         false
-                    }
-                },
-            )
+                    })
+                })
+            })
+        })
     }
 }
