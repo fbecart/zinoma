@@ -81,6 +81,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Restore Cargo cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -175,6 +184,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Restore Cargo cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -260,6 +278,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Restore Cargo cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -285,7 +312,7 @@ jobs:
           echo "::set-env name=OUTDIR::$outdir"
           echo "outdir path: $outdir"
 
-      - name: Upload configuration schema
+      - name: Upload Yaml schema
         uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
