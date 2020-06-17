@@ -2,6 +2,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Schema of the build flow configuration file `zinoma.yml`.
+///
 /// In order to use Žinoma with your project, you need to create a file named `zinoma.yml`.
 /// We recommend putting this file in the root directory of your project.
 ///
