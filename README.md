@@ -116,7 +116,7 @@ Instead, it will keep an eye open on the targets' `input`'s paths and will re-ex
 This flag helps you clean up your build environment.
 It will delete files specified in your [`output.paths`] and will reinitialize the targets incremental states.
 
-[`output.paths`]: https://fbecart.github.io/zinoma/doc/zinoma/config/yaml/schema/struct.OutputResources.html
+[`output.paths`]: https://fbecart.github.io/zinoma/doc/zinoma/config/yaml/schema/enum.OutputResource.html#variant.Paths.field.paths
 
 If provided alone, the `--clean` flag will clean up all targets of your build flow.
 
