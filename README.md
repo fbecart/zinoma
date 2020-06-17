@@ -96,7 +96,7 @@ while simplifying the execution of your most common build flows.
 The best way to speed up your build flow is simply to avoid running its commands.
 Žinoma helps you do this in a fully automated way.
 
-Targets operate on resources (e.g. files), transforming some resources (aka `input`) into other resources (aka `output`).
+Build targets operate on resources (e.g. files), transforming some resources (aka `input`) into other resources (aka `output`).
 By looking at the resources declared in the `input` and `output` of your targets,
 Žinoma can tell if a target needs to run again, or can be skipped.
 

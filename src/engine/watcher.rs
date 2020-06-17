@@ -10,48 +10,63 @@ pub struct TargetWatcher {
 }
 
 impl TargetWatcher {
-    pub fn new(target: &Target, target_invalidated_sender: Sender<TargetId>) -> Result<Self> {
-        let target_id = target.id;
-        let mut watcher: RecommendedWatcher =
-            Watcher::new_immediate(move |result: notify::Result<notify::Event>| {
-                if result
-                    .unwrap()
-                    .paths
-                    .iter()
-                    .any(|path| !is_tmp_editor_file(path) && !work_dir::is_in_work_dir(path))
-                {
-                    target_invalidated_sender
-                        .send(target_id)
-                        .with_context(|| "Sender error")
-                        .unwrap();
-                }
-            })
-            .with_context(|| "Error creating watcher")?;
+    pub fn new(
+        target: &Target,
+        target_invalidated_sender: Sender<TargetId>,
+    ) -> Result<Option<Self>> {
+        if let Some(target_input) = target.get_input() {
+            if !target_input.paths.is_empty() {
+                let mut watcher =
+                    Self::build_immediate_watcher(target.id, target_invalidated_sender)?;
 
-        for path in &target.input.paths {
-            match watcher.watch(path, RecursiveMode::Recursive) {
-                Ok(_) => {}
-                Err(notify::Error {
-                    kind: ErrorKind::PathNotFound,
-                    ..
-                }) => {
-                    log::warn!(
-                        "{} - Skipping watch on non-existing path: {}",
-                        target,
-                        path.display(),
-                    );
+                for path in &target_input.paths {
+                    match watcher.watch(path, RecursiveMode::Recursive) {
+                        Ok(_) => {}
+                        Err(notify::Error {
+                            kind: ErrorKind::PathNotFound,
+                            ..
+                        }) => {
+                            log::warn!(
+                                "{} - Skipping watch on non-existing path: {}",
+                                target,
+                                path.display(),
+                            );
+                        }
+                        Err(e) => {
+                            return Err(Error::new(e).context(format!(
+                                "Error watching path {} for target {}",
+                                path.display(),
+                                target,
+                            )));
+                        }
+                    }
                 }
-                Err(e) => {
-                    return Err(Error::new(e).context(format!(
-                        "Error watching path {} for target {}",
-                        path.display(),
-                        target,
-                    )));
-                }
+
+                return Ok(Some(Self { _watcher: watcher }));
             }
         }
 
-        Ok(Self { _watcher: watcher })
+        Ok(None)
+    }
+
+    fn build_immediate_watcher(
+        target_id: TargetId,
+        target_invalidated_sender: Sender<TargetId>,
+    ) -> Result<RecommendedWatcher> {
+        Watcher::new_immediate(move |result: notify::Result<notify::Event>| {
+            if result
+                .unwrap()
+                .paths
+                .iter()
+                .any(|path| !is_tmp_editor_file(path) && !work_dir::is_in_work_dir(path))
+            {
+                target_invalidated_sender
+                    .send(target_id)
+                    .with_context(|| "Sender error")
+                    .unwrap();
+            }
+        })
+        .with_context(|| "Error creating watcher")
     }
 }
 

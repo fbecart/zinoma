@@ -52,32 +52,40 @@ fn env_state_has_not_changed_since_last_successful_execution(target: &Target) ->
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct TargetEnvState {
     input: ResourcesState,
-    output: ResourcesState,
+    output: Option<ResourcesState>,
 }
 
 impl TargetEnvState {
     pub fn current(target: &Target) -> Result<Option<Self>> {
-        if target.input.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(TargetEnvState {
-                input: ResourcesState::current(&target.input)?,
-                output: ResourcesState::current(&target.output)?,
-            }))
+        match target.get_input() {
+            Some(target_input) if !target_input.is_empty() => {
+                let input = ResourcesState::current(target_input)?;
+                let output = target
+                    .get_output()
+                    .map(|target_output| ResourcesState::current(target_output))
+                    .transpose()?;
+
+                Ok(Some(TargetEnvState { input, output }))
+            }
+            _ => Ok(None),
         }
     }
 
     pub fn eq_current_state(&self, target: &Target) -> bool {
-        [(&self.input, &target.input), (&self.output, &target.output)]
-            .par_iter()
-            .all(
-                |(env_state, resources)| match env_state.eq_current_state(resources) {
-                    Ok(res) => res,
-                    Err(e) => {
+        [
+            (Some(&self.input), &target.get_input()),
+            (self.output.as_ref(), &target.get_output()),
+        ]
+        .par_iter()
+        .all(|(env_state, resources)| {
+            resources.map_or(true, |resources| {
+                env_state.as_ref().map_or(false, |env_state| {
+                    env_state.eq_current_state(resources).unwrap_or_else(|e| {
                         log::error!("Failed to run {} incrementally: {}", target, e);
                         false
-                    }
-                },
-            )
+                    })
+                })
+            })
+        })
     }
 }

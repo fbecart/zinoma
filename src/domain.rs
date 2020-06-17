@@ -10,10 +10,7 @@ pub struct Target {
     pub name: TargetCanonicalName,
     pub project_dir: PathBuf,
     pub dependencies: Vec<TargetId>,
-    pub build: Option<String>,
-    pub input: Resources,
-    pub output: Resources,
-    pub service: Option<String>,
+    pub target_type: TargetType,
 }
 
 impl fmt::Display for Target {
@@ -22,10 +19,49 @@ impl fmt::Display for Target {
     }
 }
 
+impl Target {
+    pub fn get_input(&self) -> Option<&Resources> {
+        match &self.target_type {
+            TargetType::Build { input, .. } => Some(&input),
+            TargetType::Service { input, .. } => Some(&input),
+            _ => None,
+        }
+    }
+
+    pub fn get_output(&self) -> Option<&Resources> {
+        match &self.target_type {
+            TargetType::Build { output, .. } => Some(&output),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug)]
-pub struct Project {
-    pub dir: PathBuf,
-    pub name: Option<String>,
+pub enum TargetType {
+    Build {
+        build_script: String,
+        input: Resources,
+        output: Resources,
+    },
+    Service {
+        run_script: String,
+        input: Resources,
+    },
+    Aggregate,
+}
+
+impl TargetType {
+    pub fn extend_input(&mut self, resources: &Resources) -> Result<()> {
+        match self {
+            TargetType::Build { input, .. } => input.extend(resources),
+            TargetType::Service { input, .. } => input.extend(resources),
+            TargetType::Aggregate => {
+                return Err(anyhow!("Can't extend the input of an aggregate target"))
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

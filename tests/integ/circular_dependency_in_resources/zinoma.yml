@@ -1,5 +1,7 @@
 targets:
   target_1:
     input: [target_2.output]
+    build: ":"
   target_2:
     input: [target_1.output]
+    build: ":"
