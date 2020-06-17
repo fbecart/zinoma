@@ -57,20 +57,17 @@ pub struct TargetEnvState {
 
 impl TargetEnvState {
     pub fn current(target: &Target) -> Result<Option<Self>> {
-        if let Some(target_input) = target.get_input() {
-            if target_input.is_empty() {
-                return Ok(None);
-            };
+        match target.get_input() {
+            Some(target_input) if !target_input.is_empty() => {
+                let input = ResourcesState::current(target_input)?;
+                let output = target
+                    .get_output()
+                    .map(|target_output| ResourcesState::current(target_output))
+                    .transpose()?;
 
-            let input = ResourcesState::current(target_input)?;
-            let output = target
-                .get_output()
-                .map(|target_output| ResourcesState::current(target_output))
-                .transpose()?;
-
-            Ok(Some(TargetEnvState { input, output }))
-        } else {
-            Ok(None)
+                Ok(Some(TargetEnvState { input, output }))
+            }
+            _ => Ok(None),
         }
     }
 
