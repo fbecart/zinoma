@@ -2,6 +2,11 @@
 
 ## TBD
 
+### BREAKING CHANGES
+
+- Targets should now be one of the following: build target, service or aggregate.
+  Each of these target types have distinct fields available (see [details of each variant](https://fbecart.github.io/zinoma/doc/zinoma/config/yaml/schema/enum.Target.html)).
+
 ## 0.15.3 (2020-06-11)
 
 Žinoma 0.15.3 is a patch release containing small performance improvements.
