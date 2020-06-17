@@ -1,0 +1,8 @@
+targets:
+  my_service:
+    service: ":"
+  
+  my_build:
+    input:
+      - my_service.output
+    build: ":"

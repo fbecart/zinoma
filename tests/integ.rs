@@ -155,6 +155,16 @@ fn incremental_multi_projects_build() {
         .stderr(contains("print_outputs - Build success"));
 }
 
+#[test]
+fn input_should_reject_service_output() {
+    zinoma_command("input_should_reject_service_output", &["my_build"])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "Target my_build can not depend on my_service's output as it is not a build target",
+        ));
+}
+
 fn zinoma_command<I, S>(integ_test_dir_name: &str, args: I) -> Command
 where
     I: IntoIterator<Item = S>,
