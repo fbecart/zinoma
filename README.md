@@ -96,7 +96,7 @@ while simplifying the execution of your most common build flows.
 The best way to speed up your build flow is simply to avoid running its commands.
 Žinoma helps you do this in a fully automated way.
 
-Targets operate on resources (e.g. files), transforming some resources (aka `input`) into other resources (aka `output`).
+Build targets operate on resources (e.g. files), transforming some resources (aka `input`) into other resources (aka `output`).
 By looking at the resources declared in the `input` and `output` of your targets,
 Žinoma can tell if a target needs to run again, or can be skipped.
 
@@ -116,7 +116,7 @@ Instead, it will keep an eye open on the targets' `input`'s paths and will re-ex
 This flag helps you clean up your build environment.
 It will delete files specified in your [`output.paths`] and will reinitialize the targets incremental states.
 
-[`output.paths`]: https://fbecart.github.io/zinoma/doc/zinoma/config/yaml/schema/enum.OutputResource.html#variant.Paths.field.paths
+[`output.paths`]: https://fbecart.github.io/zinoma/doc/zinoma/config/yaml/schema/struct.OutputResources.html
 
 If provided alone, the `--clean` flag will clean up all targets of your build flow.
 
