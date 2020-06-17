@@ -432,11 +432,73 @@
 <span id="432">432</span>
 <span id="433">433</span>
 <span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">schemars</span>::<span class="ident">JsonSchema</span>;
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">collections</span>::<span class="ident">HashMap</span>;
 
+<span class="doccomment">/// Schema of the build flow configuration file `zinoma.yml`.</span>
+<span class="doccomment">///</span>
 <span class="doccomment">/// In order to use Žinoma with your project, you need to create a file named `zinoma.yml`.</span>
 <span class="doccomment">/// We recommend putting this file in the root directory of your project.</span>
 <span class="doccomment">///</span>
@@ -505,16 +567,16 @@
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Project</span> {
     <span class="doccomment">/// Targets (aka tasks) of this project.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Each [`target`] is a unit of work to perform as part of the build flow.</span>
+    <span class="doccomment">/// [`Targets`] represent commands and scripts to execute in your build flow.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// [`target`]: struct.Target.html</span>
+    <span class="doccomment">/// [`Targets`]: struct.Target.html</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Targets run in parallel by default.</span>
-    <span class="doccomment">/// To run targets sequentially, you can define dependencies on other targets using the [`dependencies`] keyword.</span>
+    <span class="doccomment">/// To force targets to run sequentially, you can define [`dependencies`] on other targets.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// [`dependencies`]: struct.Target.html#structfield.dependencies</span>
+    <span class="doccomment">/// [`dependencies`]: enum.Target.html#variant.Build.field.dependencies</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Each target must have a unique name.</span>
+    <span class="doccomment">/// Each target must have a unique name inside the project.</span>
     <span class="doccomment">/// The target name must be a string. It should start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// __Example__</span>
@@ -531,7 +593,7 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// - `zinoma speak_cow` will print `Moo`</span>
     <span class="doccomment">/// - `zinoma speak_dog` will print `Woof!`</span>
-    <span class="doccomment">/// - `zinoma speak_cow speak_dog` will print both `Moo` and `Woof!`, not necessarily in order.</span>
+    <span class="doccomment">/// - `zinoma speak_cow speak_dog` will print both `Moo` and `Woof!` (not necessarily in this order)</span>
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
     <span class="kw">pub</span> <span class="ident">targets</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Target</span><span class="op">&gt;</span>,
 
@@ -597,149 +659,112 @@
     <span class="kw">pub</span> <span class="ident">imports</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span>,
 }
 
+<span class="doccomment">/// A target is a command or a set of commands to run as part of your build flow.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Targets run in parallel by default.</span>
+<span class="doccomment">/// To force targets to run sequentially, you can define [`dependencies`] on other targets.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// [`dependencies`]: struct.Dependencies.html</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
-<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Target</span> {
-    <span class="doccomment">/// Lists the targets that must complete successfully before this target can be built.</span>
+<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>, <span class="ident">untagged</span>)]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Target</span> {
+    <span class="doccomment">/// A build target represents a shell script to run as part of your build flow.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// It should be an array of strings.</span>
+    <span class="doccomment">/// This build script is expected to eventually complete,</span>
+    <span class="doccomment">/// as opposed to the run script of a [`service`] target.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// If a target fails, targets that depend on it will not be executed.</span>
+    <span class="doccomment">/// [`service`]: #variant.Service.field.service</span>
+    <span class="ident">Build</span> {
+        <span class="doccomment">/// Dependencies of the target.</span>
+        <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
+        <span class="ident">dependencies</span>: <span class="ident">Dependencies</span>,
+
+        <span class="doccomment">/// The shell script to run in order to build this target.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// It should be a string. This string can be multi-line, in case of scripts with multiple commands.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// __Example__</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// ```yaml</span>
+        <span class="doccomment">/// targets:</span>
+        <span class="doccomment">///   create_file_deep:</span>
+        <span class="doccomment">///     build: |</span>
+        <span class="doccomment">///       mkdir -p deep/dir</span>
+        <span class="doccomment">///       touch deep/dir/file</span>
+        <span class="doccomment">///     output:</span>
+        <span class="doccomment">///       - paths: [deep/dir/file]</span>
+        <span class="doccomment">/// ```</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// In this example, running `zinoma create_file_deep` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.</span>
+        <span class="ident">build</span>: <span class="ident">String</span>,
+
+        <span class="doccomment">/// Input resources of the target.</span>
+        <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
+        <span class="ident">input</span>: <span class="ident">InputResources</span>,
+
+        <span class="doccomment">/// Output resources of the target.</span>
+        <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
+        <span class="ident">output</span>: <span class="ident">OutputResources</span>,
+    },
+
+    <span class="doccomment">/// service targets are useful to run scripts that do not complete.</span>
+    <span class="doccomment">/// They enable the execution of long-lasting commands, such as servers.</span>
+    <span class="ident">Service</span> {
+        <span class="doccomment">/// Dependencies of the target.</span>
+        <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
+        <span class="ident">dependencies</span>: <span class="ident">Dependencies</span>,
+
+        <span class="doccomment">/// Shell script starting a long-lasting service.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// It should be a string.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// If `zinoma` has no service target to run, it will automatically exit after all build targets ran to completion.</span>
+        <span class="doccomment">/// On the contrary, if there is at least one service target to run,</span>
+        <span class="doccomment">/// `zinoma` will keep running even after all build targets completed, so that the services can remain alive.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// In watch mode (when the `--watch` flag is passed to `zinoma`), services are restarted when the relevant paths are modified.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// __Example__</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// ```yaml</span>
+        <span class="doccomment">/// targets:</span>
+        <span class="doccomment">///   npm_server:</span>
+        <span class="doccomment">///     input:</span>
+        <span class="doccomment">///       - paths: [package.json, index.js]</span>
+        <span class="doccomment">///     service: npm start</span>
+        <span class="doccomment">/// ```</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// In this example, `zinoma npm_server --watch` will run `npm start`,</span>
+        <span class="doccomment">/// and will restart this process every time `package.json` or `index.js` are updated.</span>
+        <span class="ident">service</span>: <span class="ident">String</span>,
+
+        <span class="doccomment">/// Input resources of the target.</span>
+        <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
+        <span class="ident">input</span>: <span class="ident">InputResources</span>,
+    },
+
+    <span class="doccomment">/// Aggregates other targets.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// __Example__</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// ```yaml</span>
     <span class="doccomment">/// targets:</span>
-    <span class="doccomment">///   target1: {}</span>
-    <span class="doccomment">///   target2:</span>
-    <span class="doccomment">///     dependencies: [target1]</span>
-    <span class="doccomment">///   target3:</span>
-    <span class="doccomment">///     dependencies: [target2]</span>
+    <span class="doccomment">///   fmt:</span>
+    <span class="doccomment">///     build: cargo fmt -- --check</span>
+    <span class="doccomment">///   lint:</span>
+    <span class="doccomment">///     build: cargo clippy</span>
+    <span class="doccomment">///   test:</span>
+    <span class="doccomment">///     build: cargo test</span>
+    <span class="doccomment">///   check:</span>
+    <span class="doccomment">///     dependencies: [fmt, lint, test]</span>
     <span class="doccomment">/// ```</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// In this example, `target1` must complete successfully before `target2` begins, while `target3` waits for `target2` to complete.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// `zinoma target2` will run sequentially `target1` and `target2`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// `zinoma target3` will run sequentially `target1`, `target2` and `target3`.</span>
-    <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">dependencies</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
-
-    <span class="doccomment">/// The shell script to run in order to build this target.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// It should be a string which can have one or multiple lines.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// __Example__</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```yaml</span>
-    <span class="doccomment">/// targets:</span>
-    <span class="doccomment">///   create_my_file:</span>
-    <span class="doccomment">///     build: |</span>
-    <span class="doccomment">///       mkdir -p deep/dir</span>
-    <span class="doccomment">///       touch deep/dir/my_file</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// In this example, running `zinoma create_my_file` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.</span>
-    <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">build</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
-
-    <span class="doccomment">/// Lists resources identifying the artifacts this target depends on.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// `input` should be an array of [`resources`].</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`resources`]: enum.InputResource.html#variants</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Specifying a target&#39;s `input` enables the incremental build for this target.</span>
-    <span class="doccomment">/// This means that, at the time of executing the target, Žinoma will skip its build if its input resources (and [`output`] resources, if any) have not changed since its last successful completion.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`output`]: #structfield.output</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// __Example__</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```yaml</span>
-    <span class="doccomment">/// targets:</span>
-    <span class="doccomment">///   npm_install:</span>
-    <span class="doccomment">///     input:</span>
-    <span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
-    <span class="doccomment">///     build: npm install</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// In this example, running `zinoma npm_install` once will execute `npm install`.</span>
-    <span class="doccomment">/// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.</span>
-    <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">input</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">InputResource</span><span class="op">&gt;</span>,
-
-    <span class="doccomment">/// Lists resources identifying the artifacts produced by this target.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// It should be an array of [`resources`].</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`resources`]: enum.OutputResource.html#variants</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// If the `--clean` flag is provided to `zinoma`, the files or directories specified in [`output.paths`] will be deleted before running the build flow.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`output.paths`]: enum.EnvProbe.html#variant.Paths.field.paths</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The incremental build takes in account the target `output`.</span>
-    <span class="doccomment">/// Just like with [`input`], if any of the target output resources were altered since its previous successful execution, the target state will be invalidated and its build will be run again.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`input`]: #structfield.input</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// __Example__</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```yaml</span>
-    <span class="doccomment">/// targets:</span>
-    <span class="doccomment">///   npm_install:</span>
-    <span class="doccomment">///     input:</span>
-    <span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
-    <span class="doccomment">///     output:</span>
-    <span class="doccomment">///       - paths: [node_modules]</span>
-    <span class="doccomment">///     build: npm install</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// In this example, running `zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.</span>
-    <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">output</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">OutputResource</span><span class="op">&gt;</span>,
-
-    <span class="doccomment">/// Shell script starting a long-lasting service to run upon successful build of the target.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// It should be a string.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This keyword is meant to enable the execution of long-lasting commands, such as servers.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// If the targets to run do not define services, `zinoma` will automatically exit after all builds ran to completion.</span>
-    <span class="doccomment">/// On the contrary, if at least one target defines a service, `zinoma` will keep running even after all builds completed, so that the services can remain alive.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// In watch mode (when the `--watch` flag is passed to `zinoma`), services are restarted every time the target `build` runs to completion.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// __Example__</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```yaml</span>
-    <span class="doccomment">/// targets:</span>
-    <span class="doccomment">///   npm_server:</span>
-    <span class="doccomment">///     input:</span>
-    <span class="doccomment">///       - paths: [package.json, index.js]</span>
-    <span class="doccomment">///     build: npm install</span>
-    <span class="doccomment">///     service: npm start</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// In this example, `zinoma npm_server` will run `npm install` and then `npm start`.</span>
-    <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">service</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
-}
-
-<span class="kw">impl</span> <span class="ident">Target</span> {
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">dependencies</span>: <span class="macro">vec</span><span class="macro">!</span>[],
-            <span class="ident">build</span>: <span class="prelude-val">None</span>,
-            <span class="ident">input</span>: <span class="macro">vec</span><span class="macro">!</span>[],
-            <span class="ident">output</span>: <span class="macro">vec</span><span class="macro">!</span>[],
-            <span class="ident">service</span>: <span class="prelude-val">None</span>,
-        }
-    }
+    <span class="doccomment">/// In this example, the target named `check` aggregates the 3 other targets.</span>
+    <span class="doccomment">/// `zinoma check` is equivalent to running `zinoma fmt lint test`.</span>
+    <span class="ident">Aggregate</span> {
+        <span class="doccomment">/// Dependencies of the target.</span>
+        <span class="ident">dependencies</span>: <span class="ident">Dependencies</span>,
+    },
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
@@ -831,8 +856,9 @@
         <span class="doccomment">/// Paths to files or directories.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// It should be an array of strings.</span>
-        <span class="doccomment">///</span>
         <span class="doccomment">/// Each element of the array should be a path to a file or directory.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// If the `--clean` flag is provided to `zinoma`, the files or directories specified in `paths` will be deleted before running the build flow.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// __Example__</span>
         <span class="doccomment">///</span>
@@ -845,6 +871,14 @@
         <span class="doccomment">///       - paths: [node_modules]</span>
         <span class="doccomment">///     build: npm install</span>
         <span class="doccomment">/// ```</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// In this example, as the target specifies an `input`, `zinoma npm_install` is incremental.</span>
+        <span class="doccomment">/// The script `npm install` will be skipped until `package.json`, `package-lock.json` or `node_modules` are modified.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// Additionally:</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// - the command `zinoma --clean` will delete `node_modules`;</span>
+        <span class="doccomment">/// - the command `zinoma --clean npm_install` will delete `node_modules`, then run `npm install`.</span>
         <span class="ident">paths</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
     },
     <span class="ident">CmdStdout</span> {
@@ -867,5 +901,91 @@
         <span class="ident">cmd_stdout</span>: <span class="ident">String</span>,
     },
 }
+
+<span class="doccomment">/// List of [`targets`] that must complete successfully before this target can be built.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// [`targets`]: enum.Target.html</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// It should be an array of strings.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// If any of the dependencies fails to complete, this target will not be executed.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// __Example__</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```yaml</span>
+<span class="doccomment">/// targets:</span>
+<span class="doccomment">///   target1:</span>
+<span class="doccomment">///     dependencies: []</span>
+<span class="doccomment">///   target2:</span>
+<span class="doccomment">///     dependencies: [target1]</span>
+<span class="doccomment">///   target3:</span>
+<span class="doccomment">///     dependencies: [target2]</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// In this example, `target1` must complete successfully before `target2` begins, while `target3` waits for `target2` to complete.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// `zinoma target2` will run sequentially `target1` and `target2`.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// `zinoma target3` will run sequentially `target1`, `target2` and `target3`.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
+<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Dependencies</span>(<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span> <span class="kw">pub</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>);
+
+<span class="doccomment">/// List of artifacts that this target depends on.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// `input` should be an array of [`resources`].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// [`resources`]: enum.InputResource.html</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Specifying a target&#39;s `input` enables the incremental build for this target.</span>
+<span class="doccomment">/// This means that, at the time of executing the target, Žinoma will skip its build if its input resources (and [`output`] resources, if any) have not changed since its last successful completion.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// [`output`]: struct.OutputResources.html</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// __Example__</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```yaml</span>
+<span class="doccomment">/// targets:</span>
+<span class="doccomment">///   npm_install:</span>
+<span class="doccomment">///     input:</span>
+<span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
+<span class="doccomment">///     build: npm install</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// In this example, running `zinoma npm_install` once will execute `npm install`.</span>
+<span class="doccomment">/// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
+<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InputResources</span>(<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span> <span class="kw">pub</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">InputResource</span><span class="op">&gt;</span>);
+
+<span class="doccomment">/// List of artifacts produced by this target.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// It should be an array of [`resources`].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// [`resources`]: enum.OutputResource.html</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The incremental build takes in account the target `output`.</span>
+<span class="doccomment">/// Just like with [`input`], if any of the target output resources were altered since its previous successful execution, the target state will be invalidated and its build will be run again.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// [`input`]: struct.InputResources.html</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// __Example__</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```yaml</span>
+<span class="doccomment">/// targets:</span>
+<span class="doccomment">///   npm_install:</span>
+<span class="doccomment">///     input:</span>
+<span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
+<span class="doccomment">///     output:</span>
+<span class="doccomment">///       - paths: [node_modules]</span>
+<span class="doccomment">///     build: npm install</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// In this example, running `zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
+<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OutputResources</span>(<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span> <span class="kw">pub</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">OutputResource</span><span class="op">&gt;</span>);
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../../../";window.currentCrate = "zinoma";</script><script src="../../../../aliases.js"></script><script src="../../../../main.js"></script><script src="../../../../source-script.js"></script><script src="../../../../source-files.js"></script><script defer src="../../../../search-index.js"></script></body></html>

@@ -206,7 +206,7 @@
             .<span class="ident">iter</span>()
             .<span class="ident">map</span>(<span class="op">|</span><span class="ident">target</span><span class="op">|</span> <span class="ident">TargetWatcher</span>::<span class="ident">new</span>(<span class="ident">target</span>, <span class="ident">target_invalidated_sender</span>.<span class="ident">clone</span>()))
             .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()
-            .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="string">&quot;Failed setting up filesystem watchers&quot;</span>);
+            .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="string">&quot;Failed setting up filesystem watchers&quot;</span>)<span class="question-mark">?</span>;
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">services_runner</span> <span class="op">=</span> <span class="ident">ServicesRunner</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">targets</span>);
         <span class="kw">let</span> (<span class="ident">build_report_sender</span>, <span class="ident">build_report_events</span>) <span class="op">=</span> <span class="ident">unbounded</span>();

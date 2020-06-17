@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Project",""],["Resources",""],["Target",""],["TargetCanonicalName",""]],"type":[["TargetId",""]]});
+initSidebarItems({"enum":[["TargetType",""]],"struct":[["Resources",""],["Target",""],["TargetCanonicalName",""]],"type":[["TargetId",""]]});
