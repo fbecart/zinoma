@@ -59,7 +59,7 @@ fn main() -> Result<()> {
         config.list_all_targets()
     };
 
-    let targets = config.try_into_domain_targets(root_targets)?;
+    let (targets, root_target_ids) = config.try_into_domain_targets(root_targets)?;
 
     if arg_matches.is_present(cli::arg::CLEAN) {
         if requested_targets.is_some() {
@@ -72,7 +72,7 @@ fn main() -> Result<()> {
     }
 
     if requested_targets.is_some() {
-        let engine = Engine::new(targets);
+        let engine = Engine::new(targets, root_target_ids);
         let (termination_sender, termination_events) = unbounded();
         terminate_on_ctrlc(termination_sender.clone())?;
 

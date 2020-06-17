@@ -15,11 +15,15 @@ use watcher::TargetWatcher;
 
 pub struct Engine {
     targets: Vec<Target>,
+    root_target_ids: Vec<TargetId>,
 }
 
 impl Engine {
-    pub fn new(targets: Vec<Target>) -> Self {
-        Self { targets }
+    pub fn new(targets: Vec<Target>, root_target_ids: Vec<TargetId>) -> Self {
+        Self {
+            targets,
+            root_target_ids,
+        }
     }
 
     pub fn watch(self, termination_events: Receiver<()>) -> Result<()> {
@@ -129,11 +133,26 @@ impl Engine {
                 }
             }
 
-            if services_runner.has_running_services() {
+            let necessary_services =
+                service::get_service_graph_targets(&self.targets, &self.root_target_ids);
+            let unnecessary_services = services_runner
+                .list_running_services()
+                .iter()
+                .filter(|target_id| !necessary_services.contains(target_id))
+                .cloned()
+                .collect::<Vec<_>>();
+
+            if !unnecessary_services.is_empty() {
+                log::debug!("Terminating unnecessary services");
+                services_runner.terminate_services(&unnecessary_services);
+            }
+
+            if !necessary_services.is_empty() {
+                // Wait for termination event to terminate all services
                 termination_events
                     .recv()
                     .with_context(|| "Failed to listen to termination event")?;
-                target_build_states.join_all_build_threads();
+                log::debug!("Terminating all services");
                 services_runner.terminate_all_services();
             }
 

@@ -117,6 +117,6 @@ impl<'a> TargetBuildState<'a> {
         build_thread
             .unwrap()
             .join()
-            .unwrap_or_else(|_| println!("Failed to join build thread"));
+            .unwrap_or_else(|_| log::error!("Failed to join build thread"));
     }
 }
