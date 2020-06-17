@@ -250,7 +250,7 @@ pub enum Target {
 
     /// Aggregates other targets.
     ///
-    /// e.g.
+    /// __Example__
     ///
     /// ```yaml
     /// targets:
@@ -419,7 +419,8 @@ pub enum OutputResource {
 ///
 /// ```yaml
 /// targets:
-///   target1: {}
+///   target1:
+///     dependencies: []
 ///   target2:
 ///     dependencies: [target1]
 ///   target3:
