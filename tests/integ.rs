@@ -165,6 +165,17 @@ fn input_should_reject_service_output() {
         ));
 }
 
+/// A service that is not directly requested, but only a transitive dependency of a build target,
+/// should not prevent zinoma from exiting after the build is successful.
+#[test]
+fn non_requested_service() {
+    zinoma_command("non_requested_service", &["my_build_target"])
+        .assert()
+        .success()
+        .stderr(contains("my_service - Starting service"))
+        .stderr(contains("my_build_target - Build success"));
+}
+
 fn zinoma_command<I, S>(integ_test_dir_name: &str, args: I) -> Command
 where
     I: IntoIterator<Item = S>,

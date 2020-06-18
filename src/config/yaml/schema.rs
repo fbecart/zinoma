@@ -212,7 +212,8 @@ pub enum Target {
         output: OutputResources,
     },
 
-    /// service targets are useful to run scripts that do not complete.
+    /// Service targets are useful to run scripts that do not complete.
+    ///
     /// They enable the execution of long-lasting commands, such as servers.
     Service {
         /// Dependencies of the target.
@@ -224,7 +225,7 @@ pub enum Target {
         /// It should be a string.
         ///
         /// If `zinoma` has no service target to run, it will automatically exit after all build targets ran to completion.
-        /// On the contrary, if there is at least one service target to run,
+        /// On the contrary, if at least one service target is specified in the command line,
         /// `zinoma` will keep running even after all build targets completed, so that the services can remain alive.
         ///
         /// In watch mode (when the `--watch` flag is passed to `zinoma`), services are restarted when the relevant paths are modified.

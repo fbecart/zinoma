@@ -47,8 +47,8 @@ impl Config {
 
     pub fn try_into_domain_targets(
         mut self,
-        root_targets: Vec<TargetCanonicalName>,
-    ) -> Result<Vec<domain::Target>> {
+        root_target_names: Vec<TargetCanonicalName>,
+    ) -> Result<(Vec<domain::Target>, Vec<domain::TargetId>)> {
         fn add_target(
             mut domain_targets: &mut Vec<domain::Target>,
             mut target_id_mapping: &mut HashMap<TargetCanonicalName, domain::TargetId>,
@@ -139,20 +139,21 @@ impl Config {
             Ok(target_id)
         }
 
-        let mut domain_targets = Vec::with_capacity(root_targets.len());
-        let mut target_id_mapping = HashMap::with_capacity(root_targets.len());
+        let mut domain_targets = Vec::with_capacity(root_target_names.len());
+        let mut root_target_ids = Vec::with_capacity(root_target_names.len());
+        let mut target_id_mapping = HashMap::with_capacity(root_target_names.len());
 
-        for target in root_targets.into_iter() {
-            add_target(
+        for target in root_target_names.into_iter() {
+            root_target_ids.push(add_target(
                 &mut domain_targets,
                 &mut target_id_mapping,
                 &mut self,
                 target,
                 &[],
-            )?;
+            )?);
         }
 
-        Ok(domain_targets)
+        Ok((domain_targets, root_target_ids))
     }
 
     pub fn list_all_targets(&self) -> Vec<TargetCanonicalName> {
@@ -295,7 +296,7 @@ mod tests {
             ("target_2", build_empty_target()),
         ]);
 
-        let actual_targets = projects
+        let (actual_targets, _) = projects
             .try_into_domain_targets(build_target_canonical_names(vec!["target_2"]))
             .expect("Conversion of valid targets should be successful");
 
@@ -329,7 +330,7 @@ mod tests {
             ),
         ]);
 
-        let actual_targets = config
+        let (actual_targets, _) = config
             .try_into_domain_targets(build_target_canonical_names(vec!["target_2"]))
             .unwrap();
 
