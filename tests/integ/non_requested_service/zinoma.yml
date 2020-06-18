@@ -1,0 +1,6 @@
+targets:
+  my_service:
+    service: ":"
+  my_build_target:
+    dependencies: [my_service]
+    build: ":"

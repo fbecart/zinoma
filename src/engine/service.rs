@@ -43,7 +43,7 @@ impl ServicesRunner {
                 .stdout(Stdio::inherit())
                 .stderr(Stdio::inherit())
                 .spawn()
-                .with_context(|| format!("Failed to stargt service {}", target))?;
+                .with_context(|| format!("Failed to start service {}", target))?;
 
             self.service_processes[target.id] = Some(service_process);
         }
