@@ -449,6 +449,7 @@
 <span id="449">449</span>
 <span id="450">450</span>
 <span id="451">451</span>
+<span id="452">452</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">yaml</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::{<span class="self">self</span>, <span class="ident">TargetCanonicalName</span>};
@@ -499,8 +500,8 @@
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_into_domain_targets</span>(
         <span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">root_targets</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TargetCanonicalName</span><span class="op">&gt;</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">domain</span>::<span class="ident">Target</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="ident">root_target_names</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TargetCanonicalName</span><span class="op">&gt;</span>,
+    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">domain</span>::<span class="ident">Target</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">domain</span>::<span class="ident">TargetId</span><span class="op">&gt;</span>)<span class="op">&gt;</span> {
         <span class="kw">fn</span> <span class="ident">add_target</span>(
             <span class="kw-2">mut</span> <span class="ident">domain_targets</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">domain</span>::<span class="ident">Target</span><span class="op">&gt;</span>,
             <span class="kw-2">mut</span> <span class="ident">target_id_mapping</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">TargetCanonicalName</span>, <span class="ident">domain</span>::<span class="ident">TargetId</span><span class="op">&gt;</span>,
@@ -591,20 +592,21 @@
             <span class="prelude-val">Ok</span>(<span class="ident">target_id</span>)
         }
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">domain_targets</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">with_capacity</span>(<span class="ident">root_targets</span>.<span class="ident">len</span>());
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">target_id_mapping</span> <span class="op">=</span> <span class="ident">HashMap</span>::<span class="ident">with_capacity</span>(<span class="ident">root_targets</span>.<span class="ident">len</span>());
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">domain_targets</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">with_capacity</span>(<span class="ident">root_target_names</span>.<span class="ident">len</span>());
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">root_target_ids</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">with_capacity</span>(<span class="ident">root_target_names</span>.<span class="ident">len</span>());
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">target_id_mapping</span> <span class="op">=</span> <span class="ident">HashMap</span>::<span class="ident">with_capacity</span>(<span class="ident">root_target_names</span>.<span class="ident">len</span>());
 
-        <span class="kw">for</span> <span class="ident">target</span> <span class="kw">in</span> <span class="ident">root_targets</span>.<span class="ident">into_iter</span>() {
-            <span class="ident">add_target</span>(
+        <span class="kw">for</span> <span class="ident">target</span> <span class="kw">in</span> <span class="ident">root_target_names</span>.<span class="ident">into_iter</span>() {
+            <span class="ident">root_target_ids</span>.<span class="ident">push</span>(<span class="ident">add_target</span>(
                 <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">domain_targets</span>,
                 <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">target_id_mapping</span>,
                 <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
                 <span class="ident">target</span>,
                 <span class="kw-2">&amp;</span>[],
-            )<span class="question-mark">?</span>;
+            )<span class="question-mark">?</span>);
         }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">domain_targets</span>)
+        <span class="prelude-val">Ok</span>((<span class="ident">domain_targets</span>, <span class="ident">root_target_ids</span>))
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">list_all_targets</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TargetCanonicalName</span><span class="op">&gt;</span> {
@@ -747,7 +749,7 @@
             (<span class="string">&quot;target_2&quot;</span>, <span class="ident">build_empty_target</span>()),
         ]);
 
-        <span class="kw">let</span> <span class="ident">actual_targets</span> <span class="op">=</span> <span class="ident">projects</span>
+        <span class="kw">let</span> (<span class="ident">actual_targets</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">projects</span>
             .<span class="ident">try_into_domain_targets</span>(<span class="ident">build_target_canonical_names</span>(<span class="macro">vec</span><span class="macro">!</span>[<span class="string">&quot;target_2&quot;</span>]))
             .<span class="ident">expect</span>(<span class="string">&quot;Conversion of valid targets should be successful&quot;</span>);
 
@@ -781,7 +783,7 @@
             ),
         ]);
 
-        <span class="kw">let</span> <span class="ident">actual_targets</span> <span class="op">=</span> <span class="ident">config</span>
+        <span class="kw">let</span> (<span class="ident">actual_targets</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">config</span>
             .<span class="ident">try_into_domain_targets</span>(<span class="ident">build_target_canonical_names</span>(<span class="macro">vec</span><span class="macro">!</span>[<span class="string">&quot;target_2&quot;</span>]))
             .<span class="ident">unwrap</span>();
 

@@ -492,6 +492,7 @@
 <span id="492">492</span>
 <span id="493">493</span>
 <span id="494">494</span>
+<span id="495">495</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">schemars</span>::<span class="ident">JsonSchema</span>;
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
@@ -707,7 +708,8 @@
         <span class="ident">output</span>: <span class="ident">OutputResources</span>,
     },
 
-    <span class="doccomment">/// service targets are useful to run scripts that do not complete.</span>
+    <span class="doccomment">/// Service targets are useful to run scripts that do not complete.</span>
+    <span class="doccomment">///</span>
     <span class="doccomment">/// They enable the execution of long-lasting commands, such as servers.</span>
     <span class="ident">Service</span> {
         <span class="doccomment">/// Dependencies of the target.</span>
@@ -719,7 +721,7 @@
         <span class="doccomment">/// It should be a string.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// If `zinoma` has no service target to run, it will automatically exit after all build targets ran to completion.</span>
-        <span class="doccomment">/// On the contrary, if there is at least one service target to run,</span>
+        <span class="doccomment">/// On the contrary, if at least one service target is specified in the command line,</span>
         <span class="doccomment">/// `zinoma` will keep running even after all build targets completed, so that the services can remain alive.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// In watch mode (when the `--watch` flag is passed to `zinoma`), services are restarted when the relevant paths are modified.</span>

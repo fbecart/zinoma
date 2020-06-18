@@ -156,7 +156,7 @@
         <span class="ident">config</span>.<span class="ident">list_all_targets</span>()
     };
 
-    <span class="kw">let</span> <span class="ident">targets</span> <span class="op">=</span> <span class="ident">config</span>.<span class="ident">try_into_domain_targets</span>(<span class="ident">root_targets</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> (<span class="ident">targets</span>, <span class="ident">root_target_ids</span>) <span class="op">=</span> <span class="ident">config</span>.<span class="ident">try_into_domain_targets</span>(<span class="ident">root_targets</span>)<span class="question-mark">?</span>;
 
     <span class="kw">if</span> <span class="ident">arg_matches</span>.<span class="ident">is_present</span>(<span class="ident">cli</span>::<span class="ident">arg</span>::<span class="ident">CLEAN</span>) {
         <span class="kw">if</span> <span class="ident">requested_targets</span>.<span class="ident">is_some</span>() {
@@ -169,7 +169,7 @@
     }
 
     <span class="kw">if</span> <span class="ident">requested_targets</span>.<span class="ident">is_some</span>() {
-        <span class="kw">let</span> <span class="ident">engine</span> <span class="op">=</span> <span class="ident">Engine</span>::<span class="ident">new</span>(<span class="ident">targets</span>);
+        <span class="kw">let</span> <span class="ident">engine</span> <span class="op">=</span> <span class="ident">Engine</span>::<span class="ident">new</span>(<span class="ident">targets</span>, <span class="ident">root_target_ids</span>);
         <span class="kw">let</span> (<span class="ident">termination_sender</span>, <span class="ident">termination_events</span>) <span class="op">=</span> <span class="ident">unbounded</span>();
         <span class="ident">terminate_on_ctrlc</span>(<span class="ident">termination_sender</span>.<span class="ident">clone</span>())<span class="question-mark">?</span>;
 
