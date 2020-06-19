@@ -11,13 +11,13 @@ use crate::domain::{Target, TargetType};
 pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result<()> {
     if let TargetType::Build { build_script, .. } = &target.target_type {
         let target_start = Instant::now();
-        log::info!("{} - Building", target);
+        log::info!("{} - Building", target.id);
 
         let mut build_process = run_script::build_command(build_script, &target.project_dir)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .spawn()
-            .with_context(|| format!("Failed to spawn build command for {}", target))?;
+            .with_context(|| format!("Failed to spawn build command for {}", target.id))?;
 
         let ticks = tick(Duration::from_millis(10));
 
@@ -26,12 +26,12 @@ pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result
                 recv(ticks) -> _ => {
                     if let Some(exit_status) = build_process.try_wait()? {
                         if !exit_status.success() {
-                            return Err(anyhow!("Build failed for target {} ({})", target, exit_status));
+                            return Err(anyhow!("Build failed for target {} ({})", target.id, exit_status));
                         }
                         let target_build_duration = target_start.elapsed();
                         log::info!(
                             "{} - Build success (took: {}ms)",
-                            target,
+                            target.id,
                             target_build_duration.as_millis()
                         );
                         break;
@@ -40,8 +40,8 @@ pub fn build_target(target: &Target, termination_events: Receiver<()>) -> Result
                 recv(termination_events) -> _ => {
                     build_process.kill()
                         .and_then(|_| build_process.wait())
-                        .with_context(|| format!("Failed to kill build process for {}", target))?;
-                    return Err(anyhow!("Build cancelled for target {}", target));
+                        .with_context(|| format!("Failed to kill build process for {}", target.id))?;
+                    return Err(anyhow!("Build cancelled for target {}", target.id));
                 },
             }
         }

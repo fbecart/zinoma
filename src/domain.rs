@@ -10,13 +10,6 @@ pub struct Target {
     pub target_type: TargetType,
 }
 
-// TODO Remove
-impl fmt::Display for Target {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.id.fmt(fmt)
-    }
-}
-
 impl Target {
     pub fn get_input(&self) -> Option<&Resources> {
         match &self.target_type {

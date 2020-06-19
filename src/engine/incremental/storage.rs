@@ -20,7 +20,7 @@ pub fn read_saved_target_env_state(target: &Target) -> Result<Option<TargetEnvSt
             Err(e) => {
                 log::trace!(
                     "{} - Dropping corrupted checksums file (Error: {})",
-                    target,
+                    target.id,
                     e
                 );
                 delete_saved_env_state(&target)?;
@@ -52,5 +52,5 @@ pub fn save_env_state(target: &Target, env_state: &TargetEnvState) -> Result<()>
     let file = File::create(&file_path)
         .with_context(|| format!("Failed to create checksums file {}", file_path.display()))?;
     bincode::serialize_into(file, env_state)
-        .with_context(|| format!("Failed to serialize checksums for {}", target))
+        .with_context(|| format!("Failed to serialize checksums for {}", target.id))
 }
