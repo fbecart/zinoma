@@ -113,7 +113,6 @@ impl Config {
                 };
             }
 
-            // TODO rename *_name or *_canonical_name to *id everywhere
             // TODO Should TargetId be behind Rc?
             domain_targets.insert(
                 target_id.clone(),
@@ -169,7 +168,7 @@ pub fn get_dependencies(target: &yaml::Target) -> &Vec<String> {
 
 fn into_target_type(
     yaml_target: yaml::Target,
-    target_canonical_name: &TargetId,
+    target_id: &TargetId,
     project_dir: &Path,
 ) -> Result<(domain::TargetType, Vec<TargetId>)> {
     match yaml_target {
@@ -179,8 +178,7 @@ fn into_target_type(
             output,
             ..
         } => {
-            let (input, dependencies_from_input) =
-                transform_input(input, target_canonical_name, project_dir)?;
+            let (input, dependencies_from_input) = transform_input(input, target_id, project_dir)?;
             let output = transform_output(output, project_dir);
             Ok((
                 domain::TargetType::Build {
@@ -192,8 +190,7 @@ fn into_target_type(
             ))
         }
         yaml::Target::Service { service, input, .. } => {
-            let (input, dependencies_from_input) =
-                transform_input(input, target_canonical_name, project_dir)?;
+            let (input, dependencies_from_input) = transform_input(input, target_id, project_dir)?;
             Ok((
                 domain::TargetType::Service {
                     run_script: service,
@@ -208,7 +205,7 @@ fn into_target_type(
 
 fn transform_input(
     input: yaml::InputResources,
-    target_canonical_name: &TargetId,
+    target_id: &TargetId,
     project_dir: &Path,
 ) -> Result<(domain::Resources, Vec<TargetId>)> {
     input.0.into_iter().fold(
@@ -229,12 +226,12 @@ fn transform_input(
                             Regex::new(r"^((\w[-\w]*::)?\w[-\w]*)\.output$").unwrap();
                     }
                     if let Some(captures) = RE.captures(&id) {
-                        let dependency_canonical_name = TargetId::try_parse(
+                        let dependency_id = TargetId::try_parse(
                             captures.get(1).unwrap().as_str(),
-                            &target_canonical_name.project_name,
+                            &target_id.project_name,
                         )
                         .unwrap();
-                        dependencies_from_input.push(dependency_canonical_name);
+                        dependencies_from_input.push(dependency_id);
                     } else {
                         return Err(anyhow!("Invalid input: {}", id));
                     }
@@ -278,7 +275,7 @@ mod tests {
         ]);
 
         let actual_targets = projects
-            .try_into_domain_targets(&build_target_canonical_names(vec!["target_2"]))
+            .try_into_domain_targets(&build_target_ids(vec!["target_2"]))
             .expect("Conversion of valid targets should be successful");
 
         assert_eq!(actual_targets.len(), 1);
@@ -290,7 +287,7 @@ mod tests {
         let projects = build_config(vec![("target_1", build_empty_target())]);
 
         projects
-            .try_into_domain_targets(&build_target_canonical_names(vec!["not_a_target"]))
+            .try_into_domain_targets(&build_target_ids(vec!["not_a_target"]))
             .expect_err("Should reject an invalid requested target");
     }
 
@@ -312,7 +309,7 @@ mod tests {
         ]);
 
         let actual_targets = config
-            .try_into_domain_targets(&build_target_canonical_names(vec!["target_2"]))
+            .try_into_domain_targets(&build_target_ids(vec!["target_2"]))
             .unwrap();
 
         assert_eq!(actual_targets.len(), 2);
@@ -330,7 +327,7 @@ mod tests {
         ]);
 
         projects
-            .try_into_domain_targets(&build_target_canonical_names(vec!["target_1", "target_2"]))
+            .try_into_domain_targets(&build_target_ids(vec!["target_1", "target_2"]))
             .expect("Valid targets should be accepted");
     }
 
@@ -342,7 +339,7 @@ mod tests {
         )]);
 
         projects
-            .try_into_domain_targets(&build_target_canonical_names(vec!["target_1"]))
+            .try_into_domain_targets(&build_target_ids(vec!["target_1"]))
             .expect_err("Unknown dependencies should be rejected");
     }
 
@@ -355,13 +352,11 @@ mod tests {
         ]);
 
         projects
-            .try_into_domain_targets(&build_target_canonical_names(vec![
-                "target_1", "target_2", "target_3",
-            ]))
+            .try_into_domain_targets(&build_target_ids(vec!["target_1", "target_2", "target_3"]))
             .expect_err("Circular dependencies should be rejected");
     }
 
-    fn build_target_canonical_names(names: Vec<&str>) -> Vec<TargetId> {
+    fn build_target_ids(names: Vec<&str>) -> Vec<TargetId> {
         names
             .iter()
             .map(|&target_name| TargetId {
