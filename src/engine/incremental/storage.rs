@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 /// File where the state of the target inputs and outputs are stored upon successful build.
 fn get_checksums_file_path(target: &Target) -> PathBuf {
-    work_dir::get_work_dir_path(&target.project_dir).join(format!("{}.checksums", target.name))
+    work_dir::get_work_dir_path(&target.project_dir).join(format!("{}.checksums", target.id))
 }
 
 pub fn read_saved_target_env_state(target: &Target) -> Result<Option<TargetEnvState>> {

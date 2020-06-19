@@ -10,7 +10,7 @@ use anyhow::{Context, Result};
 use clean::clean_target_output_paths;
 use config::{ir, yaml};
 use crossbeam::channel::{unbounded, Sender};
-use domain::TargetCanonicalName;
+use domain::TargetId;
 use engine::incremental::storage::delete_saved_env_state;
 use engine::Engine;
 use std::convert::TryInto;
@@ -53,22 +53,22 @@ fn main() -> Result<()> {
 
     let requested_targets = arg_matches.values_of_lossy(cli::arg::TARGETS);
 
-    let root_targets = if let Some(requested_targets) = &requested_targets {
-        TargetCanonicalName::try_parse_many(requested_targets, &config.root_project_name).unwrap()
+    let root_target_ids = if let Some(requested_targets) = &requested_targets {
+        TargetId::try_parse_many(requested_targets, &config.root_project_name).unwrap()
     } else {
         config.list_all_targets()
     };
 
-    let (targets, root_target_ids) = config.try_into_domain_targets(root_targets)?;
+    let targets = config.try_into_domain_targets(&root_target_ids)?;
 
     if arg_matches.is_present(cli::arg::CLEAN) {
         if requested_targets.is_some() {
-            targets.iter().try_for_each(delete_saved_env_state)?;
+            targets.values().try_for_each(delete_saved_env_state)?;
         } else {
             project_dirs.into_iter().try_for_each(remove_work_dir)?;
         }
 
-        targets.iter().try_for_each(clean_target_output_paths)?;
+        targets.values().try_for_each(clean_target_output_paths)?;
     }
 
     if requested_targets.is_some() {

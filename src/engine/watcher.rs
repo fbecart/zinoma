@@ -17,7 +17,7 @@ impl TargetWatcher {
         if let Some(target_input) = target.get_input() {
             if !target_input.paths.is_empty() {
                 let mut watcher =
-                    Self::build_immediate_watcher(target.id, target_invalidated_sender)?;
+                    Self::build_immediate_watcher(target.id.clone(), target_invalidated_sender)?;
 
                 for path in &target_input.paths {
                     match watcher.watch(path, RecursiveMode::Recursive) {
@@ -61,7 +61,7 @@ impl TargetWatcher {
                 .any(|path| !is_tmp_editor_file(path) && !work_dir::is_in_work_dir(path))
             {
                 target_invalidated_sender
-                    .send(target_id)
+                    .send(target_id.clone())
                     .with_context(|| "Sender error")
                     .unwrap();
             }
