@@ -113,7 +113,6 @@ impl Config {
                 };
             }
 
-            // TODO Should TargetId be behind Rc?
             domain_targets.insert(
                 target_id.clone(),
                 domain::Target {
