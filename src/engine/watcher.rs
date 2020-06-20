@@ -17,7 +17,7 @@ impl TargetWatcher {
         if let Some(target_input) = target.get_input() {
             if !target_input.paths.is_empty() {
                 let mut watcher =
-                    Self::build_immediate_watcher(target.id, target_invalidated_sender)?;
+                    Self::build_immediate_watcher(target.id.clone(), target_invalidated_sender)?;
 
                 for path in &target_input.paths {
                     match watcher.watch(path, RecursiveMode::Recursive) {
@@ -28,7 +28,7 @@ impl TargetWatcher {
                         }) => {
                             log::warn!(
                                 "{} - Skipping watch on non-existing path: {}",
-                                target,
+                                target.id,
                                 path.display(),
                             );
                         }
@@ -36,7 +36,7 @@ impl TargetWatcher {
                             return Err(Error::new(e).context(format!(
                                 "Error watching path {} for target {}",
                                 path.display(),
-                                target,
+                                target.id,
                             )));
                         }
                     }
@@ -61,7 +61,7 @@ impl TargetWatcher {
                 .any(|path| !is_tmp_editor_file(path) && !work_dir::is_in_work_dir(path))
             {
                 target_invalidated_sender
-                    .send(target_id)
+                    .send(target_id.clone())
                     .with_context(|| "Sender error")
                     .unwrap();
             }

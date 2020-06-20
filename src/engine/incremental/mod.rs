@@ -31,7 +31,7 @@ where
             Ok(None) => {}
             Err(e) => log::error!(
                 "{} - Failed to compute state of inputs and outputs: {}",
-                target,
+                target.id,
                 e
             ),
         }
@@ -42,7 +42,7 @@ where
 
 fn env_state_has_not_changed_since_last_successful_execution(target: &Target) -> Result<bool> {
     let saved_state = storage::read_saved_target_env_state(target)
-        .with_context(|| format!("Failed to read saved env state for {}", target))?;
+        .with_context(|| format!("Failed to read saved env state for {}", target.id))?;
 
     Ok(saved_state
         .map(|saved_state| saved_state.eq_current_state(target))
@@ -81,7 +81,7 @@ impl TargetEnvState {
             resources.map_or(true, |resources| {
                 env_state.as_ref().map_or(false, |env_state| {
                     env_state.eq_current_state(resources).unwrap_or_else(|e| {
-                        log::error!("Failed to run {} incrementally: {}", target, e);
+                        log::error!("Failed to run {} incrementally: {}", target.id, e);
                         false
                     })
                 })

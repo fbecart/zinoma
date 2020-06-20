@@ -2,21 +2,12 @@ use anyhow::{anyhow, Result};
 use std::fmt;
 use std::path::PathBuf;
 
-pub type TargetId = usize;
-
 #[derive(Debug)]
 pub struct Target {
     pub id: TargetId,
-    pub name: TargetCanonicalName,
     pub project_dir: PathBuf,
     pub dependencies: Vec<TargetId>,
     pub target_type: TargetType,
-}
-
-impl fmt::Display for Target {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.name.fmt(fmt)
-    }
 }
 
 impl Target {
@@ -65,12 +56,12 @@ impl TargetType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TargetCanonicalName {
+pub struct TargetId {
     pub project_name: Option<String>,
     pub target_name: String,
 }
 
-impl TargetCanonicalName {
+impl TargetId {
     pub fn try_parse(target_name: &str, current_project: &Option<String>) -> Result<Self> {
         let parts = target_name.split("::").collect::<Vec<_>>();
         match parts[..] {
@@ -100,7 +91,7 @@ impl TargetCanonicalName {
     }
 }
 
-impl fmt::Display for TargetCanonicalName {
+impl fmt::Display for TargetId {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(project_name) = &self.project_name {
             fmt.write_fmt(format_args!("{}::", project_name))?;

@@ -11,15 +11,16 @@ use builder::build_target;
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use incremental::IncrementalRunResult;
 use service::ServicesRunner;
+use std::collections::HashMap;
 use watcher::TargetWatcher;
 
 pub struct Engine {
-    targets: Vec<Target>,
+    targets: HashMap<TargetId, Target>,
     root_target_ids: Vec<TargetId>,
 }
 
 impl Engine {
-    pub fn new(targets: Vec<Target>, root_target_ids: Vec<TargetId>) -> Self {
+    pub fn new(targets: HashMap<TargetId, Target>, root_target_ids: Vec<TargetId>) -> Self {
         Self {
             targets,
             root_target_ids,
@@ -31,19 +32,22 @@ impl Engine {
         let _target_watchers = self
             .targets
             .iter()
-            .map(|target| TargetWatcher::new(target, target_invalidated_sender.clone()))
-            .collect::<Result<Vec<_>>>()
+            .map(|(target_id, target)| {
+                TargetWatcher::new(target, target_invalidated_sender.clone())
+                    .map(|watcher| (target_id, watcher))
+            })
+            .collect::<Result<HashMap<_, _>>>()
             .with_context(|| "Failed setting up filesystem watchers")?;
 
-        let mut services_runner = ServicesRunner::new(&self.targets);
+        let mut services_runner = ServicesRunner::new();
         let (build_report_sender, build_report_events) = unbounded();
 
         crossbeam::scope(|scope| -> Result<()> {
             let mut target_build_states = TargetBuildStates::new(&self.targets);
 
             loop {
-                for &target_id in &target_build_states.get_ready_to_build_targets() {
-                    let target = &self.targets[target_id];
+                for target_id in target_build_states.get_ready_to_build_targets() {
+                    let target = &self.targets[&target_id];
                     let termination_events = termination_events.clone();
                     let build_report_sender = build_report_sender.clone();
                     let build_thread = scope.spawn(move |_| {
@@ -53,21 +57,21 @@ impl Engine {
                             &build_report_sender,
                         )
                     });
-                    target_build_states.set_build_started(target_id, build_thread);
+                    target_build_states.set_build_started(&target_id, build_thread);
                 }
 
                 crossbeam_channel::select! {
                     recv(target_invalidated_events) -> target_id => {
-                        target_build_states.set_build_invalidated(target_id?);
+                        target_build_states.set_build_invalidated(&target_id?);
                     }
                     recv(build_report_events) -> build_report => {
                         let BuildReport { target_id, result } = build_report?;
-                        let target = &self.targets[target_id];
+                        let target = &self.targets[&target_id];
 
-                        target_build_states.set_build_finished(target_id, &result);
+                        target_build_states.set_build_finished(&target_id, &result);
 
                         if let IncrementalRunResult::Run(Err(e)) = result {
-                            log::warn!("{} - {}", target, e);
+                            log::warn!("{} - {}", target.id, e);
                         } else {
                             services_runner.restart_service(target)?;
                         }
@@ -88,15 +92,15 @@ impl Engine {
         termination_sender: Sender<()>,
         termination_events: Receiver<()>,
     ) -> Result<()> {
-        let mut services_runner = ServicesRunner::new(&self.targets);
+        let mut services_runner = ServicesRunner::new();
         let (build_report_sender, build_report_events) = unbounded();
 
         crossbeam::scope(|scope| {
             let mut target_build_states = TargetBuildStates::new(&self.targets);
 
             while !target_build_states.all_are_built() {
-                for &target_id in &target_build_states.get_ready_to_build_targets() {
-                    let target = &self.targets[target_id];
+                for target_id in target_build_states.get_ready_to_build_targets() {
+                    let target = &self.targets[&target_id];
                     let termination_events = termination_events.clone();
                     let build_report_sender = build_report_sender.clone();
                     let build_thread = scope.spawn(move |_| {
@@ -106,14 +110,14 @@ impl Engine {
                             &build_report_sender,
                         )
                     });
-                    target_build_states.set_build_started(target_id, build_thread);
+                    target_build_states.set_build_started(&target_id, build_thread);
                 }
 
                 crossbeam_channel::select! {
                     recv(build_report_events) -> build_report => {
                         let BuildReport { target_id, result } = build_report?;
 
-                        target_build_states.set_build_finished(target_id, &result);
+                        target_build_states.set_build_finished(&target_id, &result);
 
                         if let IncrementalRunResult::Run(Err(e)) = result {
                             termination_sender.send(()).with_context(|| "Sender error")?;
@@ -122,7 +126,7 @@ impl Engine {
                             return Err(e);
                         }
 
-                        let target = &self.targets[target_id];
+                        let target = &self.targets[&target_id];
                         services_runner.start_service(target)?;
                     }
                     recv(termination_events) -> _ => {
@@ -170,15 +174,15 @@ fn build_target_incrementally(
     let result = incremental::run(&target, || {
         build_target(&target, termination_events.clone())
     })
-    .with_context(|| format!("{} - Build failed", target))
+    .with_context(|| format!("{} - Build failed", target.id))
     .unwrap();
 
     if let IncrementalRunResult::Skipped = result {
-        log::info!("{} - Build skipped (Not Modified)", target);
+        log::info!("{} - Build skipped (Not Modified)", target.id);
     }
 
     build_report_sender
-        .send(BuildReport::new(target.id, result))
+        .send(BuildReport::new(target.id.clone(), result))
         .with_context(|| "Sender error")
         .unwrap();
 }

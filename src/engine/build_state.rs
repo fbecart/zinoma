@@ -2,38 +2,49 @@ use super::incremental::IncrementalRunResult;
 use crate::domain::{Target, TargetId};
 use anyhow::Result;
 use crossbeam::thread::ScopedJoinHandle;
+use std::collections::HashMap;
 
 pub struct TargetBuildStates<'a: 's, 's> {
-    targets: &'a [Target],
-    build_states: Vec<TargetBuildState<'s>>,
+    targets: &'a HashMap<TargetId, Target>,
+    build_states: HashMap<TargetId, TargetBuildState<'s>>,
 }
 
 impl<'a, 's> TargetBuildStates<'a, 's> {
-    pub fn new(targets: &'a [Target]) -> Self {
+    pub fn new(targets: &'a HashMap<TargetId, Target>) -> Self {
         Self {
             targets,
-            build_states: targets.iter().map(|_| TargetBuildState::new()).collect(),
+            build_states: targets
+                .keys()
+                .cloned()
+                .map(|target_id| (target_id, TargetBuildState::new()))
+                .collect(),
         }
     }
 
-    pub fn set_build_invalidated(&mut self, target_id: TargetId) {
-        self.build_states[target_id].build_invalidated();
+    pub fn set_build_invalidated(&mut self, target_id: &TargetId) {
+        self.build_states
+            .get_mut(target_id)
+            .unwrap()
+            .build_invalidated();
     }
 
     pub fn set_build_started(
         &mut self,
-        target_id: TargetId,
+        target_id: &TargetId,
         build_thread: ScopedJoinHandle<'s, ()>,
     ) {
-        self.build_states[target_id].build_started(build_thread);
+        self.build_states
+            .get_mut(target_id)
+            .unwrap()
+            .build_started(build_thread);
     }
 
     pub fn set_build_finished(
         &mut self,
-        target_id: TargetId,
+        target_id: &TargetId,
         result: &IncrementalRunResult<Result<()>>,
     ) {
-        let target_build_state = &mut self.build_states[target_id];
+        let target_build_state = self.build_states.get_mut(target_id).unwrap();
         if let IncrementalRunResult::Run(Err(_)) = result {
             target_build_state.build_failed();
         } else {
@@ -44,31 +55,31 @@ impl<'a, 's> TargetBuildStates<'a, 's> {
     pub fn get_ready_to_build_targets(&self) -> Vec<TargetId> {
         self.build_states
             .iter()
-            .enumerate()
             .filter(|(_target_id, build_state)| {
                 build_state.to_build && build_state.build_thread.is_none()
             })
             .map(|(target_id, _build_state)| target_id)
             .filter(|&target_id| self.has_all_dependencies_built(target_id))
+            .cloned()
             .collect()
     }
 
-    fn has_all_dependencies_built(&self, target_id: TargetId) -> bool {
+    fn has_all_dependencies_built(&self, target_id: &TargetId) -> bool {
         let target = &self.targets[target_id];
 
-        target.dependencies.iter().all(|&dependency_id| {
+        target.dependencies.iter().all(|dependency_id| {
             self.build_states[dependency_id].built && self.has_all_dependencies_built(dependency_id)
         })
     }
 
     pub fn all_are_built(&self) -> bool {
         self.build_states
-            .iter()
+            .values()
             .all(|build_state| build_state.built)
     }
 
     pub fn join_all_build_threads(&mut self) {
-        for build_state in self.build_states.iter_mut() {
+        for build_state in self.build_states.values_mut() {
             if build_state.build_thread.is_some() {
                 build_state.join_build_thread();
             }
