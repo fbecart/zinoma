@@ -20,7 +20,7 @@ serde_yaml = "0.8"
 crossbeam = "=0.7.3"
 crossbeam-channel = "0.4.2"
 walkdir = "2"
-notify = { version = "=5.0.0-pre.2", features = ["serde"] }
+notify = { version = "=5.0.0-pre.3", features = ["serde"] }
 clap = "3.0.0-beta.1"
 log = "0.4.8"
 stderrlog = "0.4.3"
