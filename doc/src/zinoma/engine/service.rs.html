@@ -104,9 +104,8 @@
 <span id="104">104</span>
 <span id="105">105</span>
 <span id="106">106</span>
-<span id="107">107</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::{<span class="ident">Target</span>, <span class="ident">TargetId</span>, <span class="ident">TargetType</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::{<span class="ident">ServiceTarget</span>, <span class="ident">Target</span>, <span class="ident">TargetId</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">run_script</span>;
 <span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">Context</span>, <span class="prelude-ty">Result</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">collections</span>::{<span class="ident">HashMap</span>, <span class="ident">HashSet</span>};
@@ -127,31 +126,30 @@
         <span class="self">self</span>.<span class="ident">service_processes</span>.<span class="ident">keys</span>().<span class="ident">cloned</span>().<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">restart_service</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">Target</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">service_process</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">service_processes</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">id</span>) {
-            <span class="ident">log</span>::<span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;{} - Stopping service&quot;</span>, <span class="ident">target</span>.<span class="ident">id</span>);
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">restart_service</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">ServiceTarget</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">service_process</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">service_processes</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">metadata</span>.<span class="ident">id</span>) {
+            <span class="ident">log</span>::<span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;{} - Stopping service&quot;</span>, <span class="ident">target</span>);
             <span class="ident">service_process</span>
                 .<span class="ident">kill</span>()
                 .<span class="ident">and_then</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">service_process</span>.<span class="ident">wait</span>())
-                .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;Failed to kill service {}&quot;</span>, <span class="ident">target</span>.<span class="ident">id</span>))<span class="question-mark">?</span>;
+                .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;Failed to kill service {}&quot;</span>, <span class="ident">target</span>))<span class="question-mark">?</span>;
         }
 
         <span class="self">self</span>.<span class="ident">start_service</span>(<span class="ident">target</span>)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">start_service</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">Target</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">TargetType</span>::<span class="ident">Service</span> { <span class="ident">run_script</span>, .. } <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">target_type</span> {
-            <span class="ident">log</span>::<span class="macro">info</span><span class="macro">!</span>(<span class="string">&quot;{} - Starting service&quot;</span>, <span class="ident">target</span>.<span class="ident">id</span>);
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">start_service</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">ServiceTarget</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="ident">log</span>::<span class="macro">info</span><span class="macro">!</span>(<span class="string">&quot;{} - Starting service&quot;</span>, <span class="ident">target</span>);
 
-            <span class="kw">let</span> <span class="ident">service_process</span> <span class="op">=</span> <span class="ident">run_script</span>::<span class="ident">build_command</span>(<span class="kw-2">&amp;</span><span class="ident">run_script</span>, <span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">project_dir</span>)
+        <span class="kw">let</span> <span class="ident">service_process</span> <span class="op">=</span>
+            <span class="ident">run_script</span>::<span class="ident">build_command</span>(<span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">run_script</span>, <span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">metadata</span>.<span class="ident">project_dir</span>)
                 .<span class="ident">stdout</span>(<span class="ident">Stdio</span>::<span class="ident">inherit</span>())
                 .<span class="ident">stderr</span>(<span class="ident">Stdio</span>::<span class="ident">inherit</span>())
                 .<span class="ident">spawn</span>()
-                .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;Failed to start service {}&quot;</span>, <span class="ident">target</span>.<span class="ident">id</span>))<span class="question-mark">?</span>;
+                .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;Failed to start service {}&quot;</span>, <span class="ident">target</span>))<span class="question-mark">?</span>;
 
-            <span class="self">self</span>.<span class="ident">service_processes</span>
-                .<span class="ident">insert</span>(<span class="ident">target</span>.<span class="ident">id</span>.<span class="ident">clone</span>(), <span class="ident">service_process</span>);
-        }
+        <span class="self">self</span>.<span class="ident">service_processes</span>
+            .<span class="ident">insert</span>(<span class="ident">target</span>.<span class="ident">metadata</span>.<span class="ident">id</span>.<span class="ident">clone</span>(), <span class="ident">service_process</span>);
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -193,21 +191,21 @@
         .<span class="ident">fold</span>(<span class="ident">HashSet</span>::<span class="ident">new</span>(), <span class="op">|</span><span class="kw-2">mut</span> <span class="ident">service_ids</span>, <span class="ident">target_id</span><span class="op">|</span> {
             <span class="kw">let</span> <span class="ident">target</span> <span class="op">=</span> <span class="ident">targets</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">target_id</span>).<span class="ident">unwrap</span>();
 
-            <span class="kw">match</span> <span class="ident">target</span>.<span class="ident">target_type</span> {
-                <span class="ident">TargetType</span>::<span class="ident">Service</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="kw">match</span> <span class="ident">target</span> {
+                <span class="ident">Target</span>::<span class="ident">Service</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="ident">service_ids</span>.<span class="ident">insert</span>(<span class="ident">target_id</span>.<span class="ident">clone</span>());
                     <span class="ident">service_ids</span> <span class="op">=</span> <span class="ident">service_ids</span>
-                        .<span class="ident">union</span>(<span class="kw-2">&amp;</span><span class="ident">get_service_graph_targets</span>(<span class="ident">targets</span>, <span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">dependencies</span>))
+                        .<span class="ident">union</span>(<span class="kw-2">&amp;</span><span class="ident">get_service_graph_targets</span>(<span class="ident">targets</span>, <span class="ident">target</span>.<span class="ident">dependencies</span>()))
                         .<span class="ident">cloned</span>()
                         .<span class="ident">collect</span>();
                 }
-                <span class="ident">TargetType</span>::<span class="ident">Aggregate</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="ident">Target</span>::<span class="ident">Aggregate</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="ident">service_ids</span> <span class="op">=</span> <span class="ident">service_ids</span>
-                        .<span class="ident">union</span>(<span class="kw-2">&amp;</span><span class="ident">get_service_graph_targets</span>(<span class="ident">targets</span>, <span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">dependencies</span>))
+                        .<span class="ident">union</span>(<span class="kw-2">&amp;</span><span class="ident">get_service_graph_targets</span>(<span class="ident">targets</span>, <span class="ident">target</span>.<span class="ident">dependencies</span>()))
                         .<span class="ident">cloned</span>()
                         .<span class="ident">collect</span>();
                 }
-                <span class="ident">TargetType</span>::<span class="ident">Build</span> { .. } <span class="op">=</span><span class="op">&gt;</span> {}
+                <span class="ident">Target</span>::<span class="ident">Build</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {}
             }
 
             <span class="ident">service_ids</span>

@@ -123,7 +123,7 @@
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) <span class="op">=</span><span class="op">&gt;</span> {}
             <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">log</span>::<span class="macro">error</span><span class="macro">!</span>(
                 <span class="string">&quot;{} - Failed to compute state of inputs and outputs: {}&quot;</span>,
-                <span class="ident">target</span>.<span class="ident">id</span>,
+                <span class="ident">target</span>,
                 <span class="ident">e</span>
             ),
         }
@@ -134,7 +134,7 @@
 
 <span class="kw">fn</span> <span class="ident">env_state_has_not_changed_since_last_successful_execution</span>(<span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">Target</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">saved_state</span> <span class="op">=</span> <span class="ident">storage</span>::<span class="ident">read_saved_target_env_state</span>(<span class="ident">target</span>)
-        .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;Failed to read saved env state for {}&quot;</span>, <span class="ident">target</span>.<span class="ident">id</span>))<span class="question-mark">?</span>;
+        .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;Failed to read saved env state for {}&quot;</span>, <span class="ident">target</span>))<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(<span class="ident">saved_state</span>
         .<span class="ident">map</span>(<span class="op">|</span><span class="ident">saved_state</span><span class="op">|</span> <span class="ident">saved_state</span>.<span class="ident">eq_current_state</span>(<span class="ident">target</span>))
@@ -149,11 +149,11 @@
 
 <span class="kw">impl</span> <span class="ident">TargetEnvState</span> {
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">current</span>(<span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">Target</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">target</span>.<span class="ident">get_input</span>() {
+        <span class="kw">match</span> <span class="ident">target</span>.<span class="ident">input</span>() {
             <span class="prelude-val">Some</span>(<span class="ident">target_input</span>) <span class="kw">if</span> <span class="op">!</span><span class="ident">target_input</span>.<span class="ident">is_empty</span>() <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">ResourcesState</span>::<span class="ident">current</span>(<span class="ident">target_input</span>)<span class="question-mark">?</span>;
                 <span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="ident">target</span>
-                    .<span class="ident">get_output</span>()
+                    .<span class="ident">output</span>()
                     .<span class="ident">map</span>(<span class="op">|</span><span class="ident">target_output</span><span class="op">|</span> <span class="ident">ResourcesState</span>::<span class="ident">current</span>(<span class="ident">target_output</span>))
                     .<span class="ident">transpose</span>()<span class="question-mark">?</span>;
 
@@ -165,15 +165,15 @@
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">eq_current_state</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">Target</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
         [
-            (<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input</span>), <span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">get_input</span>()),
-            (<span class="self">self</span>.<span class="ident">output</span>.<span class="ident">as_ref</span>(), <span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">get_output</span>()),
+            (<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input</span>), <span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">input</span>()),
+            (<span class="self">self</span>.<span class="ident">output</span>.<span class="ident">as_ref</span>(), <span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">output</span>()),
         ]
         .<span class="ident">par_iter</span>()
         .<span class="ident">all</span>(<span class="op">|</span>(<span class="ident">env_state</span>, <span class="ident">resources</span>)<span class="op">|</span> {
             <span class="ident">resources</span>.<span class="ident">map_or</span>(<span class="bool-val">true</span>, <span class="op">|</span><span class="ident">resources</span><span class="op">|</span> {
                 <span class="ident">env_state</span>.<span class="ident">as_ref</span>().<span class="ident">map_or</span>(<span class="bool-val">false</span>, <span class="op">|</span><span class="ident">env_state</span><span class="op">|</span> {
                     <span class="ident">env_state</span>.<span class="ident">eq_current_state</span>(<span class="ident">resources</span>).<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                        <span class="ident">log</span>::<span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;Failed to run {} incrementally: {}&quot;</span>, <span class="ident">target</span>.<span class="ident">id</span>, <span class="ident">e</span>);
+                        <span class="ident">log</span>::<span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;Failed to run {} incrementally: {}&quot;</span>, <span class="ident">target</span>, <span class="ident">e</span>);
                         <span class="bool-val">false</span>
                     })
                 })

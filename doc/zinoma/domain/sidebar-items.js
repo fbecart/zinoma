@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["TargetType",""]],"struct":[["Resources",""],["Target",""],["TargetId",""]]});
+initSidebarItems({"enum":[["Target",""]],"struct":[["AggregateTarget",""],["BuildTarget",""],["Resources",""],["ServiceTarget",""],["TargetId",""],["TargetMetadata",""]]});
