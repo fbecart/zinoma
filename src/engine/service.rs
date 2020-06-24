@@ -1,4 +1,4 @@
-use crate::domain::{Target, TargetId, TargetType};
+use crate::domain::{ServiceTarget, Target, TargetId};
 use crate::run_script;
 use anyhow::{Context, Result};
 use std::collections::{HashMap, HashSet};
@@ -19,31 +19,30 @@ impl ServicesRunner {
         self.service_processes.keys().cloned().collect::<Vec<_>>()
     }
 
-    pub fn restart_service(&mut self, target: &Target) -> Result<()> {
-        if let Some(service_process) = self.service_processes.get_mut(&target.id) {
-            log::trace!("{} - Stopping service", target.id);
+    pub fn restart_service(&mut self, target: &ServiceTarget) -> Result<()> {
+        if let Some(service_process) = self.service_processes.get_mut(&target.metadata.id) {
+            log::trace!("{} - Stopping service", target);
             service_process
                 .kill()
                 .and_then(|_| service_process.wait())
-                .with_context(|| format!("Failed to kill service {}", target.id))?;
+                .with_context(|| format!("Failed to kill service {}", target))?;
         }
 
         self.start_service(target)
     }
 
-    pub fn start_service(&mut self, target: &Target) -> Result<()> {
-        if let TargetType::Service { run_script, .. } = &target.target_type {
-            log::info!("{} - Starting service", target.id);
+    pub fn start_service(&mut self, target: &ServiceTarget) -> Result<()> {
+        log::info!("{} - Starting service", target);
 
-            let service_process = run_script::build_command(&run_script, &target.project_dir)
+        let service_process =
+            run_script::build_command(&target.run_script, &target.metadata.project_dir)
                 .stdout(Stdio::inherit())
                 .stderr(Stdio::inherit())
                 .spawn()
-                .with_context(|| format!("Failed to start service {}", target.id))?;
+                .with_context(|| format!("Failed to start service {}", target))?;
 
-            self.service_processes
-                .insert(target.id.clone(), service_process);
-        }
+        self.service_processes
+            .insert(target.metadata.id.clone(), service_process);
 
         Ok(())
     }
@@ -85,21 +84,21 @@ pub fn get_service_graph_targets(
         .fold(HashSet::new(), |mut service_ids, target_id| {
             let target = targets.get(&target_id).unwrap();
 
-            match target.target_type {
-                TargetType::Service { .. } => {
+            match target {
+                Target::Service(_) => {
                     service_ids.insert(target_id.clone());
                     service_ids = service_ids
-                        .union(&get_service_graph_targets(targets, &target.dependencies))
+                        .union(&get_service_graph_targets(targets, target.dependencies()))
                         .cloned()
                         .collect();
                 }
-                TargetType::Aggregate { .. } => {
+                Target::Aggregate(_) => {
                     service_ids = service_ids
-                        .union(&get_service_graph_targets(targets, &target.dependencies))
+                        .union(&get_service_graph_targets(targets, target.dependencies()))
                         .cloned()
                         .collect();
                 }
-                TargetType::Build { .. } => {}
+                Target::Build(_) => {}
             }
 
             service_ids

@@ -86,24 +86,21 @@ impl Config {
                 (project_dir.clone(), yaml_target)
             };
 
-            let mut dependencies =
-                TargetId::try_parse_many(get_dependencies(&yaml_target), &target_id.project_name)?;
+            let (mut target, dependencies_from_input) =
+                transform_target(target_id, yaml_target, project_dir)?;
 
-            let (mut target_type, dependencies_from_input) =
-                into_target_type(yaml_target, target_id, &project_dir)?;
-
-            dependencies.extend_from_slice(&dependencies_from_input);
+            target.extend_dependencies(&dependencies_from_input);
 
             let targets_chain = [parent_targets, &[target_id]].concat();
-            for dependency_id in &dependencies {
+            for dependency_id in target.dependencies() {
                 add_target(&mut domain_targets, config, dependency_id, &targets_chain)?
             }
 
             for dependency_id in &dependencies_from_input {
                 let dependency = &domain_targets[dependency_id];
 
-                if let domain::TargetType::Build { output, .. } = &dependency.target_type {
-                    target_type.extend_input(output).unwrap();
+                if let domain::Target::Build(dependency) = dependency {
+                    target.extend_input(&dependency.output).unwrap();
                 } else {
                     return Err(anyhow!(
                         "Target {} can not depend on {}'s output as it is not a build target",
@@ -113,15 +110,7 @@ impl Config {
                 };
             }
 
-            domain_targets.insert(
-                target_id.clone(),
-                domain::Target {
-                    id: target_id.clone(),
-                    project_dir,
-                    dependencies,
-                    target_type,
-                },
-            );
+            domain_targets.insert(target_id.clone(), target);
 
             Ok(())
         }
@@ -165,11 +154,20 @@ pub fn get_dependencies(target: &yaml::Target) -> &Vec<String> {
     .0
 }
 
-fn into_target_type(
-    yaml_target: yaml::Target,
+fn transform_target(
     target_id: &TargetId,
-    project_dir: &Path,
-) -> Result<(domain::TargetType, Vec<TargetId>)> {
+    yaml_target: yaml::Target,
+    project_dir: PathBuf,
+) -> Result<(domain::Target, Vec<TargetId>)> {
+    let dependencies =
+        TargetId::try_parse_many(get_dependencies(&yaml_target), &target_id.project_name)?;
+
+    let metadata = domain::TargetMetadata {
+        id: target_id.clone(),
+        project_dir,
+        dependencies,
+    };
+
     match yaml_target {
         yaml::Target::Build {
             build,
@@ -177,28 +175,35 @@ fn into_target_type(
             output,
             ..
         } => {
-            let (input, dependencies_from_input) = transform_input(input, target_id, project_dir)?;
-            let output = transform_output(output, project_dir);
+            let (input, dependencies_from_input) =
+                transform_input(input, &metadata.id, &metadata.project_dir)?;
+            let output = transform_output(output, &metadata.project_dir);
             Ok((
-                domain::TargetType::Build {
+                domain::Target::Build(domain::BuildTarget {
+                    metadata,
                     build_script: build,
                     input,
                     output,
-                },
+                }),
                 dependencies_from_input,
             ))
         }
         yaml::Target::Service { service, input, .. } => {
-            let (input, dependencies_from_input) = transform_input(input, target_id, project_dir)?;
+            let (input, dependencies_from_input) =
+                transform_input(input, &metadata.id, &metadata.project_dir)?;
             Ok((
-                domain::TargetType::Service {
+                domain::Target::Service(domain::ServiceTarget {
+                    metadata,
                     run_script: service,
                     input,
-                },
+                }),
                 dependencies_from_input,
             ))
         }
-        yaml::Target::Aggregate { .. } => Ok((domain::TargetType::Aggregate, vec![])),
+        yaml::Target::Aggregate { .. } => Ok((
+            domain::Target::Aggregate(domain::AggregateTarget { metadata }),
+            vec![],
+        )),
     }
 }
 
@@ -314,8 +319,8 @@ mod tests {
         assert_eq!(actual_targets.len(), 2);
         let target1 = find_target(&actual_targets, "target_1").unwrap();
         let target2 = find_target(&actual_targets, "target_2").unwrap();
-        assert_eq!(target2.dependencies, vec![target1.id.clone()]);
-        assert_eq!(target2.get_input(), target1.get_output());
+        assert_eq!(target2.dependencies(), &vec![target1.id().clone()]);
+        assert_eq!(target2.input(), target1.output());
     }
 
     #[test]

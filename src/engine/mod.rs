@@ -71,8 +71,8 @@ impl Engine {
                         target_build_states.set_build_finished(&target_id, &result);
 
                         if let IncrementalRunResult::Run(Err(e)) = result {
-                            log::warn!("{} - {}", target.id, e);
-                        } else {
+                            log::warn!("{} - {}", target, e);
+                        } else if let Target::Service(target) = target {
                             services_runner.restart_service(target)?;
                         }
                     }
@@ -127,7 +127,9 @@ impl Engine {
                         }
 
                         let target = &self.targets[&target_id];
-                        services_runner.start_service(target)?;
+                        if let Target::Service(target) = target {
+                            services_runner.start_service(target)?;
+                        }
                     }
                     recv(termination_events) -> _ => {
                         target_build_states.join_all_build_threads();
@@ -172,17 +174,21 @@ fn build_target_incrementally(
     build_report_sender: &Sender<BuildReport>,
 ) {
     let result = incremental::run(&target, || {
-        build_target(&target, termination_events.clone())
+        if let Target::Build(target) = target {
+            build_target(&target, termination_events.clone())?;
+        }
+
+        Ok(())
     })
-    .with_context(|| format!("{} - Build failed", target.id))
+    .with_context(|| format!("{} - Build failed", target))
     .unwrap();
 
     if let IncrementalRunResult::Skipped = result {
-        log::info!("{} - Build skipped (Not Modified)", target.id);
+        log::info!("{} - Build skipped (Not Modified)", target);
     }
 
     build_report_sender
-        .send(BuildReport::new(target.id.clone(), result))
+        .send(BuildReport::new(target.id().clone(), result))
         .with_context(|| "Sender error")
         .unwrap();
 }

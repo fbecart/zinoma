@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use std::path::Path;
 
 pub fn clean_target_output_paths(target: &Target) -> Result<()> {
-    if let Some(output) = target.get_output() {
+    if let Some(output) = target.output() {
         for output_path in &output.paths {
             clean_path(output_path)?;
         }

@@ -1,57 +1,112 @@
 use anyhow::{anyhow, Result};
 use std::fmt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
-pub struct Target {
+pub struct TargetMetadata {
     pub id: TargetId,
     pub project_dir: PathBuf,
     pub dependencies: Vec<TargetId>,
-    pub target_type: TargetType,
 }
 
-impl Target {
-    pub fn get_input(&self) -> Option<&Resources> {
-        match &self.target_type {
-            TargetType::Build { input, .. } => Some(&input),
-            TargetType::Service { input, .. } => Some(&input),
-            _ => None,
-        }
-    }
+#[derive(Debug)]
+pub struct BuildTarget {
+    pub metadata: TargetMetadata,
+    pub build_script: String,
+    pub input: Resources,
+    pub output: Resources,
+}
 
-    pub fn get_output(&self) -> Option<&Resources> {
-        match &self.target_type {
-            TargetType::Build { output, .. } => Some(&output),
-            _ => None,
-        }
+impl fmt::Display for BuildTarget {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "{}", self.metadata.id)
     }
 }
 
 #[derive(Debug)]
-pub enum TargetType {
-    Build {
-        build_script: String,
-        input: Resources,
-        output: Resources,
-    },
-    Service {
-        run_script: String,
-        input: Resources,
-    },
-    Aggregate,
+pub struct ServiceTarget {
+    pub metadata: TargetMetadata,
+    pub run_script: String,
+    pub input: Resources,
 }
 
-impl TargetType {
+impl fmt::Display for ServiceTarget {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "{}", self.metadata.id)
+    }
+}
+
+#[derive(Debug)]
+pub struct AggregateTarget {
+    pub metadata: TargetMetadata,
+}
+
+#[derive(Debug)]
+pub enum Target {
+    Build(BuildTarget),
+    Service(ServiceTarget),
+    Aggregate(AggregateTarget),
+}
+
+impl Target {
+    fn metadata(&self) -> &TargetMetadata {
+        match self {
+            Target::Build(target) => &target.metadata,
+            Target::Service(target) => &target.metadata,
+            Target::Aggregate(target) => &target.metadata,
+        }
+    }
+
+    pub fn id(&self) -> &TargetId {
+        &self.metadata().id
+    }
+
+    pub fn project_dir(&self) -> &Path {
+        &self.metadata().project_dir
+    }
+
+    pub fn dependencies(&self) -> &Vec<TargetId> {
+        &self.metadata().dependencies
+    }
+
+    pub fn extend_dependencies(&mut self, additional_dependencies: &[TargetId]) {
+        let metadata = match self {
+            Target::Build(target) => &mut target.metadata,
+            Target::Service(target) => &mut target.metadata,
+            Target::Aggregate(target) => &mut target.metadata,
+        };
+        metadata
+            .dependencies
+            .extend_from_slice(additional_dependencies);
+    }
+
+    pub fn input(&self) -> Option<&Resources> {
+        match self {
+            Target::Build(target) => Some(&target.input),
+            Target::Service(target) => Some(&target.input),
+            _ => None,
+        }
+    }
+
+    pub fn output(&self) -> Option<&Resources> {
+        match self {
+            Target::Build(target) => Some(&target.output),
+            _ => None,
+        }
+    }
+
     pub fn extend_input(&mut self, resources: &Resources) -> Result<()> {
         match self {
-            TargetType::Build { input, .. } => input.extend(resources),
-            TargetType::Service { input, .. } => input.extend(resources),
-            TargetType::Aggregate => {
-                return Err(anyhow!("Can't extend the input of an aggregate target"))
-            }
+            Target::Build(target) => Ok(target.input.extend(resources)),
+            Target::Service(target) => Ok(target.input.extend(resources)),
+            Target::Aggregate(_) => Err(anyhow!("Can't extend the input of an aggregate target")),
         }
+    }
+}
 
-        Ok(())
+impl fmt::Display for Target {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "{}", self.id())
     }
 }
 

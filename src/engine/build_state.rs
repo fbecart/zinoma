@@ -67,7 +67,7 @@ impl<'a, 's> TargetBuildStates<'a, 's> {
     fn has_all_dependencies_built(&self, target_id: &TargetId) -> bool {
         let target = &self.targets[target_id];
 
-        target.dependencies.iter().all(|dependency_id| {
+        target.dependencies().iter().all(|dependency_id| {
             self.build_states[dependency_id].built && self.has_all_dependencies_built(dependency_id)
         })
     }

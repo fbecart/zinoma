@@ -31,7 +31,7 @@ where
             Ok(None) => {}
             Err(e) => log::error!(
                 "{} - Failed to compute state of inputs and outputs: {}",
-                target.id,
+                target,
                 e
             ),
         }
@@ -42,7 +42,7 @@ where
 
 fn env_state_has_not_changed_since_last_successful_execution(target: &Target) -> Result<bool> {
     let saved_state = storage::read_saved_target_env_state(target)
-        .with_context(|| format!("Failed to read saved env state for {}", target.id))?;
+        .with_context(|| format!("Failed to read saved env state for {}", target))?;
 
     Ok(saved_state
         .map(|saved_state| saved_state.eq_current_state(target))
@@ -57,11 +57,11 @@ pub struct TargetEnvState {
 
 impl TargetEnvState {
     pub fn current(target: &Target) -> Result<Option<Self>> {
-        match target.get_input() {
+        match target.input() {
             Some(target_input) if !target_input.is_empty() => {
                 let input = ResourcesState::current(target_input)?;
                 let output = target
-                    .get_output()
+                    .output()
                     .map(|target_output| ResourcesState::current(target_output))
                     .transpose()?;
 
@@ -73,15 +73,15 @@ impl TargetEnvState {
 
     pub fn eq_current_state(&self, target: &Target) -> bool {
         [
-            (Some(&self.input), &target.get_input()),
-            (self.output.as_ref(), &target.get_output()),
+            (Some(&self.input), &target.input()),
+            (self.output.as_ref(), &target.output()),
         ]
         .par_iter()
         .all(|(env_state, resources)| {
             resources.map_or(true, |resources| {
                 env_state.as_ref().map_or(false, |env_state| {
                     env_state.eq_current_state(resources).unwrap_or_else(|e| {
-                        log::error!("Failed to run {} incrementally: {}", target.id, e);
+                        log::error!("Failed to run {} incrementally: {}", target, e);
                         false
                     })
                 })

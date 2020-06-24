@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 /// File where the state of the target inputs and outputs are stored upon successful build.
 fn get_checksums_file_path(target: &Target) -> PathBuf {
-    work_dir::get_work_dir_path(&target.project_dir).join(format!("{}.checksums", target.id))
+    work_dir::get_work_dir_path(&target.project_dir()).join(format!("{}.checksums", target))
 }
 
 pub fn read_saved_target_env_state(target: &Target) -> Result<Option<TargetEnvState>> {
@@ -20,7 +20,7 @@ pub fn read_saved_target_env_state(target: &Target) -> Result<Option<TargetEnvSt
             Err(e) => {
                 log::trace!(
                     "{} - Dropping corrupted checksums file (Error: {})",
-                    target.id,
+                    target,
                     e
                 );
                 delete_saved_env_state(&target)?;
@@ -46,11 +46,11 @@ pub fn delete_saved_env_state(target: &Target) -> Result<()> {
 }
 
 pub fn save_env_state(target: &Target, env_state: &TargetEnvState) -> Result<()> {
-    fs::create_dir(work_dir::get_work_dir_path(&target.project_dir)).ok();
+    fs::create_dir(work_dir::get_work_dir_path(&target.project_dir())).ok();
 
     let file_path = get_checksums_file_path(target);
     let file = File::create(&file_path)
         .with_context(|| format!("Failed to create checksums file {}", file_path.display()))?;
     bincode::serialize_into(file, env_state)
-        .with_context(|| format!("Failed to serialize checksums for {}", target.id))
+        .with_context(|| format!("Failed to serialize checksums for {}", target))
 }
