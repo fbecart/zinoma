@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use crate::run_script;
 use anyhow::{anyhow, Context, Result};
+use async_std::task;
 use crossbeam::channel::{tick, Receiver};
 use std::process::Stdio;
 use std::time::Duration;
@@ -39,7 +40,7 @@ pub fn build_target(target: &BuildTarget, termination_events: Receiver<()>) -> R
             },
             recv(termination_events) -> _ => {
                 build_process.kill()
-                    .and_then(|_| build_process.wait())
+                    .and_then(|_| task::block_on(async { build_process.await }))
                     .with_context(|| format!("Failed to kill build process for {}", target))?;
                 return Err(anyhow!("Build cancelled for target {}", target));
             },

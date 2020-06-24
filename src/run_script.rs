@@ -1,5 +1,5 @@
 use std::path::Path;
-use std::process::Command;
+use tokio::process::Command;
 
 pub fn build_command(script: &str, dir: &Path) -> Command {
     let (program, run_arg) = if cfg!(windows) {
