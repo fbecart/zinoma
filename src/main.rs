@@ -5,6 +5,7 @@ mod domain;
 mod engine;
 mod run_script;
 mod work_dir;
+mod receiver;
 
 use anyhow::{Context, Result};
 use clean::clean_target_output_paths;

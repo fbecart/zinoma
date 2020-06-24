@@ -1,11 +1,11 @@
 use std::time::Instant;
 
+use crate::receiver::Receiver;
 use crate::run_script;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context, Error, Result};
+use async_std::prelude::*;
 use async_std::task;
-use crossbeam::channel::{tick, Receiver};
 use std::process::Stdio;
-use std::time::Duration;
 
 use crate::domain::BuildTarget;
 
@@ -13,39 +13,40 @@ pub fn build_target(target: &BuildTarget, termination_events: Receiver<()>) -> R
     let target_start = Instant::now();
     log::info!("{} - Building", target);
 
-    let mut build_process =
-        run_script::build_command(&target.build_script, &target.metadata.project_dir)
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .spawn()
-            .with_context(|| format!("Failed to spawn build command for {}", target))?;
+    task::block_on(async {
+        let build_process =
+            run_script::build_command(&target.build_script, &target.metadata.project_dir)
+                .stdout(Stdio::inherit())
+                .stderr(Stdio::inherit())
+                .kill_on_drop(true)
+                .spawn()
+                .with_context(|| format!("Failed to spawn build command for {}", target))?;
 
-    let ticks = tick(Duration::from_millis(10));
+        let build_completed = async { Some(build_process.await) };
+        let termination_events = async {
+            let _ = termination_events.await;
+            None
+        };
 
-    loop {
-        crossbeam_channel::select! {
-            recv(ticks) -> _ => {
-                if let Some(exit_status) = build_process.try_wait()? {
-                    if !exit_status.success() {
-                        return Err(anyhow!("Build failed for target {} ({})", target, exit_status));
-                    }
-                    let target_build_duration = target_start.elapsed();
-                    log::info!(
-                        "{} - Build success (took: {}ms)",
-                        target,
-                        target_build_duration.as_millis()
-                    );
-                    break;
-                }
-            },
-            recv(termination_events) -> _ => {
-                build_process.kill()
-                    .and_then(|_| task::block_on(async { build_process.await }))
-                    .with_context(|| format!("Failed to kill build process for {}", target))?;
-                return Err(anyhow!("Build cancelled for target {}", target));
-            },
+        match build_completed.race(termination_events).await {
+            None => Err(anyhow!("{} - Build cancelled", target)),
+            Some(Err(build_error)) => {
+                Err(Error::new(build_error).context(format!("Build failed to run")))
+            }
+            Some(Ok(exit_status)) if !exit_status.success() => Err(anyhow!(
+                "{} - Build failed (exit status: {})",
+                target,
+                exit_status
+            )),
+            Some(Ok(_exit_status)) => {
+                let target_build_duration = target_start.elapsed();
+                log::info!(
+                    "{} - Build success (took: {}ms)",
+                    target,
+                    target_build_duration.as_millis()
+                );
+                Ok(())
+            }
         }
-    }
-
-    Ok(())
+    })
 }

@@ -11,7 +11,7 @@ use builder::build_target;
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use incremental::IncrementalRunResult;
 use service::ServicesRunner;
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 use watcher::TargetWatcher;
 
 pub struct Engine {
@@ -175,7 +175,13 @@ fn build_target_incrementally(
 ) {
     let result = incremental::run(&target, || {
         if let Target::Build(target) = target {
-            build_target(&target, termination_events.clone())?;
+            build_target(
+                &target,
+                crate::receiver::Receiver::new(
+                    termination_events.clone(),
+                    Duration::from_millis(10),
+                ),
+            )?;
         }
 
         Ok(())
