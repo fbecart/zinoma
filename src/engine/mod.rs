@@ -7,7 +7,8 @@ mod watcher;
 use crate::domain::{Target, TargetId};
 use anyhow::{Context, Result};
 use async_std::prelude::*;
-use async_std::sync::{Receiver, Sender};
+use async_std::sync::{self, Receiver, Sender};
+use async_std::task;
 use build_state::TargetBuildStates;
 use builder::build_target;
 use futures::FutureExt;
@@ -31,7 +32,7 @@ impl Engine {
 
     pub async fn watch(self, mut termination_events: Receiver<()>) -> Result<()> {
         let (target_invalidated_sender, mut target_invalidated_events) =
-            async_std::sync::channel(crate::DEFAULT_CHANNEL_CAP);
+            sync::channel(crate::DEFAULT_CHANNEL_CAP);
         let _target_watchers = self
             .targets
             .iter()
@@ -44,7 +45,7 @@ impl Engine {
 
         let mut services_runner = ServicesRunner::new();
         let (build_report_sender, mut build_report_events) =
-            async_std::sync::channel(crate::DEFAULT_CHANNEL_CAP);
+            sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
@@ -53,8 +54,8 @@ impl Engine {
                 let target = self.targets[&target_id].clone();
                 let termination_events = termination_events.clone();
                 let build_report_sender = build_report_sender.clone();
-                let build_thread = async_std::task::spawn_blocking(move || {
-                    async_std::task::block_on(async {
+                let build_thread = task::spawn_blocking(move || {
+                    task::block_on(async {
                         build_target_incrementally(
                             &target,
                             &termination_events,
@@ -98,7 +99,7 @@ impl Engine {
     ) -> Result<()> {
         let mut services_runner = ServicesRunner::new();
         let (build_report_sender, mut build_report_events) =
-            async_std::sync::channel(crate::DEFAULT_CHANNEL_CAP);
+            sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
         let mut target_build_states = TargetBuildStates::new(&self.targets);
 
@@ -107,8 +108,8 @@ impl Engine {
                 let target = self.targets[&target_id].clone();
                 let termination_events = termination_events.clone();
                 let build_report_sender = build_report_sender.clone();
-                let build_thread = async_std::task::spawn_blocking(move || {
-                    async_std::task::block_on(async {
+                let build_thread = task::spawn_blocking(move || {
+                    task::block_on(async {
                         build_target_incrementally(
                             &target,
                             &termination_events,
@@ -181,7 +182,7 @@ async fn build_target_incrementally(
 ) {
     let result = incremental::run(&target, || {
         if let Target::Build(target) = target {
-            build_target(&target, termination_events.clone())?;
+            task::block_on(async { build_target(&target, termination_events.clone()).await })?;
         }
 
         Ok(())

@@ -9,7 +9,8 @@ mod run_script;
 mod work_dir;
 
 use anyhow::{Context, Result};
-use async_std::sync::Sender;
+use async_std::sync::{self, Sender};
+use async_std::task;
 use clean::clean_target_output_paths;
 use config::{ir, yaml};
 use domain::TargetId;
@@ -26,6 +27,7 @@ use jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
+// TODO Adjust more specifically
 pub static DEFAULT_CHANNEL_CAP: usize = 100;
 
 fn main() -> Result<()> {
@@ -77,11 +79,10 @@ fn main() -> Result<()> {
 
     if requested_targets.is_some() {
         let engine = Engine::new(targets, root_target_ids);
-        let (termination_sender, termination_events) =
-            async_std::sync::channel(DEFAULT_CHANNEL_CAP);
+        let (termination_sender, termination_events) = sync::channel(DEFAULT_CHANNEL_CAP);
         terminate_on_ctrlc(termination_sender.clone())?;
 
-        async_std::task::block_on(async {
+        task::block_on(async {
             if arg_matches.is_present(cli::arg::WATCH) {
                 engine
                     .watch(termination_events)
@@ -100,8 +101,6 @@ fn main() -> Result<()> {
 }
 
 fn terminate_on_ctrlc(termination_sender: Sender<()>) -> Result<()> {
-    ctrlc::set_handler(move || {
-        async_std::task::block_on(async { termination_sender.send(()).await })
-    })
-    .with_context(|| "Failed to set Ctrl-C handler")
+    ctrlc::set_handler(move || task::block_on(async { termination_sender.send(()).await }))
+        .with_context(|| "Failed to set Ctrl-C handler")
 }

@@ -2,8 +2,7 @@ use crate::domain::{ServiceTarget, Target, TargetId};
 use crate::run_script;
 use anyhow::{Context, Result};
 use std::collections::{HashMap, HashSet};
-use std::process::Child;
-use std::process::Stdio;
+use std::process::{Child, Stdio};
 
 pub struct ServicesRunner {
     service_processes: HashMap<TargetId, Child>,

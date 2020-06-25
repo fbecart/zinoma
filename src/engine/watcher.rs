@@ -4,6 +4,7 @@ use anyhow::{Context, Error, Result};
 use async_std::sync::Sender;
 use notify::{ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
+use async_std::task;
 
 pub struct TargetWatcher {
     _watcher: RecommendedWatcher,
@@ -60,7 +61,7 @@ impl TargetWatcher {
                 .iter()
                 .any(|path| !is_tmp_editor_file(path) && !work_dir::is_in_work_dir(path))
             {
-                async_std::task::block_on(async {
+                task::block_on(async {
                     target_invalidated_sender.send(target_id.clone()).await;
                 })
             }
