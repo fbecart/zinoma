@@ -97,10 +97,14 @@ impl Target {
 
     pub fn extend_input(&mut self, resources: &Resources) -> Result<()> {
         match self {
-            Target::Build(target) => Ok(target.input.extend(resources)),
-            Target::Service(target) => Ok(target.input.extend(resources)),
-            Target::Aggregate(_) => Err(anyhow!("Can't extend the input of an aggregate target")),
+            Target::Build(target) => target.input.extend(resources),
+            Target::Service(target) => target.input.extend(resources),
+            Target::Aggregate(_) => {
+                return Err(anyhow!("Can't extend the input of an aggregate target"))
+            }
         }
+
+        Ok(())
     }
 }
 

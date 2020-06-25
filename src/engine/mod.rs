@@ -165,7 +165,7 @@ impl Engine {
             termination_events
                 .recv()
                 .await
-                .with_context(|| format!("Failed to listen to termination event"))?;
+                .with_context(|| "Failed to listen to termination event".to_string())?;
             log::debug!("Terminating all services");
             services_runner.terminate_all_services();
         }
