@@ -2,9 +2,9 @@ use crate::domain::{Target, TargetId};
 use crate::work_dir;
 use anyhow::{Context, Error, Result};
 use async_std::sync::Sender;
+use async_std::task;
 use notify::{ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
-use async_std::task;
 
 pub struct TargetWatcher {
     _watcher: RecommendedWatcher,

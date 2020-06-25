@@ -9,6 +9,7 @@ mod run_script;
 mod work_dir;
 
 use anyhow::{Context, Result};
+use async_ctrlc::CtrlC;
 use async_std::sync::{self, Sender};
 use async_std::task;
 use clean::clean_target_output_paths;
@@ -101,6 +102,12 @@ fn main() -> Result<()> {
 }
 
 fn terminate_on_ctrlc(termination_sender: Sender<()>) -> Result<()> {
-    ctrlc::set_handler(move || task::block_on(async { termination_sender.send(()).await }))
-        .with_context(|| "Failed to set Ctrl-C handler")
+    let ctrlc = CtrlC::new().with_context(|| "Failed to set Ctrl-C handler")?;
+
+    task::spawn(async move {
+        ctrlc.await;
+        termination_sender.send(()).await;
+    });
+
+    Ok(())
 }

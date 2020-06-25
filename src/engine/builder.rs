@@ -8,7 +8,10 @@ use futures::FutureExt;
 use std::process::Stdio;
 use std::time::{Duration, Instant};
 
-pub async fn build_target(target: &BuildTarget, mut termination_events: Receiver<()>) -> Result<()> {
+pub async fn build_target(
+    target: &BuildTarget,
+    mut termination_events: Receiver<()>,
+) -> Result<()> {
     let target_start = Instant::now();
     log::info!("{} - Building", target);
 
