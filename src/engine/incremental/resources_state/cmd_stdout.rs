@@ -1,6 +1,5 @@
 use crate::run_script;
 use anyhow::{anyhow, Context, Result};
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -10,8 +9,9 @@ pub struct ResourcesState(HashMap<String, String>);
 
 impl ResourcesState {
     pub fn current(cmds: &[(String, PathBuf)]) -> Result<Self> {
+        // TODO Here was rayon
         let state = cmds
-            .par_iter()
+            .iter()
             .map(|(cmd, dir)| get_cmd_stdout(cmd, dir).map(|stdout| (cmd.to_string(), stdout)))
             .collect::<Result<_>>()?;
 
@@ -19,7 +19,8 @@ impl ResourcesState {
     }
 
     pub fn eq_current_state(&self, cmds: &[(String, PathBuf)]) -> bool {
-        cmds.par_iter()
+        // TODO Here was rayon
+        cmds.iter()
             .all(|(cmd, dir)| match get_cmd_stdout(cmd, dir) {
                 Ok(stdout) => self.0.get(&cmd.to_string()) == Some(&stdout),
                 Err(e) => {

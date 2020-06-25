@@ -4,7 +4,6 @@ pub mod storage;
 use crate::domain::Target;
 use anyhow::{Context, Result};
 use futures::Future;
-use rayon::prelude::*;
 use resources_state::ResourcesState;
 use serde::{Deserialize, Serialize};
 
@@ -76,11 +75,12 @@ impl TargetEnvState {
     }
 
     pub fn eq_current_state(&self, target: &Target) -> bool {
+        // TODO Here was rayon
         [
             (Some(&self.input), &target.input()),
             (self.output.as_ref(), &target.output()),
         ]
-        .par_iter()
+        .iter()
         .all(|(env_state, resources)| {
             resources.map_or(true, |resources| {
                 env_state.as_ref().map_or(false, |env_state| {

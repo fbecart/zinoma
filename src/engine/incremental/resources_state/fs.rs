@@ -1,6 +1,5 @@
 use crate::work_dir;
 use anyhow::{Context, Result};
-use rayon::prelude::*;
 use seahash::SeaHasher;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -16,9 +15,10 @@ pub struct ResourcesState(HashMap<PathBuf, (Duration, u64)>);
 
 impl ResourcesState {
     pub fn current(paths: &[PathBuf]) -> Result<Self> {
+        // TODO Here was rayon
         Ok(Self(
             list_files(paths)
-                .into_par_iter()
+                .into_iter()
                 .map(|file| {
                     let modified = get_file_modified(&file)?;
                     let file_hash = compute_file_hash(&file)
@@ -36,27 +36,26 @@ impl ResourcesState {
             return Ok(false);
         }
 
-        Ok(files
-            .par_iter()
-            .all(|file_path| match self.0.get(file_path) {
-                None => false,
-                Some(&(saved_modified, saved_hash)) => match get_file_modified(&file_path) {
-                    Err(e) => {
-                        log::error!("{:?}", e);
-                        false
-                    }
-                    Ok(modified) => {
-                        modified == saved_modified
-                            || match compute_file_hash(file_path) {
-                                Err(e) => {
-                                    log::error!("{:?}", e);
-                                    false
-                                }
-                                Ok(hash) => hash == saved_hash,
+        // TODO Here was rayon
+        Ok(files.iter().all(|file_path| match self.0.get(file_path) {
+            None => false,
+            Some(&(saved_modified, saved_hash)) => match get_file_modified(&file_path) {
+                Err(e) => {
+                    log::error!("{:?}", e);
+                    false
+                }
+                Ok(modified) => {
+                    modified == saved_modified
+                        || match compute_file_hash(file_path) {
+                            Err(e) => {
+                                log::error!("{:?}", e);
+                                false
                             }
-                    }
-                },
-            }))
+                            Ok(hash) => hash == saved_hash,
+                        }
+                }
+            },
+        }))
     }
 }
 
