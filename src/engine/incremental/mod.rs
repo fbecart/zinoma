@@ -3,6 +3,7 @@ pub mod storage;
 
 use crate::domain::Target;
 use anyhow::{Context, Result};
+use futures::Future;
 use rayon::prelude::*;
 use resources_state::ResourcesState;
 use serde::{Deserialize, Serialize};
@@ -13,9 +14,12 @@ pub enum IncrementalRunResult<T> {
     Run(T),
 }
 
-pub fn run<T, F>(target: &Target, function: F) -> Result<IncrementalRunResult<Result<T>>>
+pub async fn run<T, F>(
+    target: &Target,
+    function: impl Fn() -> F,
+) -> Result<IncrementalRunResult<F::Output>>
 where
-    F: Fn() -> Result<T>,
+    F: Future<Output = Result<T>>,
 {
     if env_state_has_not_changed_since_last_successful_execution(target)? {
         return Ok(IncrementalRunResult::Skipped);
@@ -23,7 +27,7 @@ where
 
     storage::delete_saved_env_state(&target)?;
 
-    let result = function();
+    let result = function().await;
 
     if result.is_ok() {
         match TargetEnvState::current(target) {

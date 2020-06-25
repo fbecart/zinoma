@@ -22,6 +22,7 @@ pub async fn build_target(
             .spawn()
             .with_context(|| format!("Failed to spawn build command for {}", target))?;
 
+    // TODO Set up exponential backoff
     let mut ticks = stream::interval(Duration::from_millis(10));
 
     loop {

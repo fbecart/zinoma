@@ -180,13 +180,14 @@ async fn build_target_incrementally(
     termination_events: &Receiver<()>,
     build_report_sender: &Sender<BuildReport>,
 ) {
-    let result = incremental::run(&target, || {
+    let result = incremental::run(&target, || async {
         if let Target::Build(target) = target {
-            task::block_on(async { build_target(&target, termination_events.clone()).await })?;
+            build_target(&target, termination_events.clone()).await?;
         }
 
         Ok(())
     })
+    .await
     .with_context(|| format!("{} - Build failed", target))
     .unwrap();
 
