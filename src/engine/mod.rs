@@ -5,13 +5,15 @@ mod service;
 mod watcher;
 
 use crate::domain::{Target, TargetId};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
+use async_std::prelude::*;
+use async_std::sync::{Receiver, Sender};
 use build_state::TargetBuildStates;
 use builder::build_target;
-use crossbeam::channel::{unbounded, Receiver, Sender};
+use futures::FutureExt;
 use incremental::IncrementalRunResult;
 use service::ServicesRunner;
-use std::{collections::HashMap, time::Duration};
+use std::collections::HashMap;
 use watcher::TargetWatcher;
 
 pub struct Engine {
@@ -27,8 +29,9 @@ impl Engine {
         }
     }
 
-    pub fn watch(self, termination_events: Receiver<()>) -> Result<()> {
-        let (target_invalidated_sender, target_invalidated_events) = unbounded();
+    pub async fn watch(self, mut termination_events: Receiver<()>) -> Result<()> {
+        let (target_invalidated_sender, mut target_invalidated_events) =
+            async_std::sync::channel(crate::DEFAULT_CHANNEL_CAP);
         let _target_watchers = self
             .targets
             .iter()
@@ -40,148 +43,145 @@ impl Engine {
             .with_context(|| "Failed setting up filesystem watchers")?;
 
         let mut services_runner = ServicesRunner::new();
-        let (build_report_sender, build_report_events) = unbounded();
+        let (build_report_sender, mut build_report_events) =
+            async_std::sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
-        crossbeam::scope(|scope| -> Result<()> {
-            let mut target_build_states = TargetBuildStates::new(&self.targets);
+        let mut target_build_states = TargetBuildStates::new(&self.targets);
 
-            loop {
-                for target_id in target_build_states.get_ready_to_build_targets() {
-                    let target = &self.targets[&target_id];
-                    let termination_events = termination_events.clone();
-                    let build_report_sender = build_report_sender.clone();
-                    let build_thread = scope.spawn(move |_| {
+        loop {
+            for target_id in target_build_states.get_ready_to_build_targets() {
+                let target = self.targets[&target_id].clone();
+                let termination_events = termination_events.clone();
+                let build_report_sender = build_report_sender.clone();
+                let build_thread = async_std::task::spawn_blocking(move || {
+                    async_std::task::block_on(async {
                         build_target_incrementally(
-                            target,
+                            &target,
                             &termination_events,
                             &build_report_sender,
                         )
-                    });
-                    target_build_states.set_build_started(&target_id, build_thread);
-                }
+                        .await
+                    })
+                });
+                target_build_states.set_build_started(&target_id, build_thread);
+            }
 
-                crossbeam_channel::select! {
-                    recv(target_invalidated_events) -> target_id => {
-                        target_build_states.set_build_invalidated(&target_id?);
-                    }
-                    recv(build_report_events) -> build_report => {
-                        let BuildReport { target_id, result } = build_report?;
-                        let target = &self.targets[&target_id];
+            futures::select! {
+                target_id = target_invalidated_events.next().fuse() => {
+                    target_build_states.set_build_invalidated(&target_id.unwrap());
+                },
+                build_report = build_report_events.next().fuse() => {
+                    let BuildReport { target_id, result } = build_report.unwrap();
+                    let target = &self.targets[&target_id];
 
-                        target_build_states.set_build_finished(&target_id, &result);
+                    target_build_states.set_build_finished(&target_id, &result).await;
 
-                        if let IncrementalRunResult::Run(Err(e)) = result {
-                            log::warn!("{} - {}", target, e);
-                        } else if let Target::Service(target) = target {
-                            services_runner.restart_service(target)?;
-                        }
+                    if let IncrementalRunResult::Run(Err(e)) = result {
+                        log::warn!("{} - {}", target, e);
+                    } else if let Target::Service(target) = target {
+                        services_runner.restart_service(target)?;
                     }
-                    recv(termination_events) -> _ => {
-                        target_build_states.join_all_build_threads();
-                        services_runner.terminate_all_services();
-                        return Ok(());
-                    }
+                },
+                _ = termination_events.next().fuse() => {
+                    target_build_states.join_all_build_threads().await;
+                    services_runner.terminate_all_services();
+                    return Ok(());
                 }
             }
-        })
-        .map_err(|_| anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
+        }
     }
 
-    pub fn build(
+    pub async fn build(
         self,
         termination_sender: Sender<()>,
-        termination_events: Receiver<()>,
+        mut termination_events: Receiver<()>,
     ) -> Result<()> {
         let mut services_runner = ServicesRunner::new();
-        let (build_report_sender, build_report_events) = unbounded();
+        let (build_report_sender, mut build_report_events) =
+            async_std::sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
-        crossbeam::scope(|scope| {
-            let mut target_build_states = TargetBuildStates::new(&self.targets);
+        let mut target_build_states = TargetBuildStates::new(&self.targets);
 
-            while !target_build_states.all_are_built() {
-                for target_id in target_build_states.get_ready_to_build_targets() {
-                    let target = &self.targets[&target_id];
-                    let termination_events = termination_events.clone();
-                    let build_report_sender = build_report_sender.clone();
-                    let build_thread = scope.spawn(move |_| {
+        while !target_build_states.all_are_built() {
+            for target_id in target_build_states.get_ready_to_build_targets() {
+                let target = self.targets[&target_id].clone();
+                let termination_events = termination_events.clone();
+                let build_report_sender = build_report_sender.clone();
+                let build_thread = async_std::task::spawn_blocking(move || {
+                    async_std::task::block_on(async {
                         build_target_incrementally(
-                            target,
+                            &target,
                             &termination_events,
                             &build_report_sender,
                         )
-                    });
-                    target_build_states.set_build_started(&target_id, build_thread);
-                }
+                        .await
+                    })
+                });
+                target_build_states.set_build_started(&target_id, build_thread);
+            }
 
-                crossbeam_channel::select! {
-                    recv(build_report_events) -> build_report => {
-                        let BuildReport { target_id, result } = build_report?;
+            futures::select! {
+                build_report = build_report_events.next().fuse() => {
+                    let BuildReport { target_id, result } = build_report.unwrap();
 
-                        target_build_states.set_build_finished(&target_id, &result);
+                    target_build_states.set_build_finished(&target_id, &result).await;
 
-                        if let IncrementalRunResult::Run(Err(e)) = result {
-                            termination_sender.send(()).with_context(|| "Sender error")?;
-                            target_build_states.join_all_build_threads();
-                            services_runner.terminate_all_services();
-                            return Err(e);
-                        }
-
-                        let target = &self.targets[&target_id];
-                        if let Target::Service(target) = target {
-                            services_runner.start_service(target)?;
-                        }
-                    }
-                    recv(termination_events) -> _ => {
-                        target_build_states.join_all_build_threads();
+                    if let IncrementalRunResult::Run(Err(e)) = result {
+                        termination_sender.send(()).await;
+                        target_build_states.join_all_build_threads().await;
                         services_runner.terminate_all_services();
-                        return Ok(());
+                        return Err(e);
+                    }
+
+                    let target = &self.targets[&target_id];
+                    if let Target::Service(target) = target {
+                        services_runner.start_service(target)?;
                     }
                 }
+                _ = termination_events.next().fuse() => {
+                    target_build_states.join_all_build_threads().await;
+                    services_runner.terminate_all_services();
+                    return Ok(());
+                }
             }
+        }
 
-            let necessary_services =
-                service::get_service_graph_targets(&self.targets, &self.root_target_ids);
-            let unnecessary_services = services_runner
-                .list_running_services()
-                .iter()
-                .filter(|target_id| !necessary_services.contains(target_id))
-                .cloned()
-                .collect::<Vec<_>>();
+        let necessary_services =
+            service::get_service_graph_targets(&self.targets, &self.root_target_ids);
+        let unnecessary_services = services_runner
+            .list_running_services()
+            .iter()
+            .filter(|target_id| !necessary_services.contains(target_id))
+            .cloned()
+            .collect::<Vec<_>>();
 
-            if !unnecessary_services.is_empty() {
-                log::debug!("Terminating unnecessary services");
-                services_runner.terminate_services(&unnecessary_services);
-            }
+        if !unnecessary_services.is_empty() {
+            log::debug!("Terminating unnecessary services");
+            services_runner.terminate_services(&unnecessary_services);
+        }
 
-            if !necessary_services.is_empty() {
-                // Wait for termination event to terminate all services
-                termination_events
-                    .recv()
-                    .with_context(|| "Failed to listen to termination event")?;
-                log::debug!("Terminating all services");
-                services_runner.terminate_all_services();
-            }
+        if !necessary_services.is_empty() {
+            // Wait for termination event to terminate all services
+            termination_events
+                .recv()
+                .await
+                .with_context(|| format!("Failed to listen to termination event"))?;
+            log::debug!("Terminating all services");
+            services_runner.terminate_all_services();
+        }
 
-            Ok(())
-        })
-        .map_err(|_| anyhow!("Unknown crossbeam parallelism failure (thread panicked)"))?
+        Ok(())
     }
 }
 
-fn build_target_incrementally(
+async fn build_target_incrementally(
     target: &Target,
     termination_events: &Receiver<()>,
     build_report_sender: &Sender<BuildReport>,
 ) {
     let result = incremental::run(&target, || {
         if let Target::Build(target) = target {
-            build_target(
-                &target,
-                crate::receiver::Receiver::new(
-                    termination_events.clone(),
-                    Duration::from_millis(10),
-                ),
-            )?;
+            build_target(&target, termination_events.clone())?;
         }
 
         Ok(())
@@ -195,8 +195,7 @@ fn build_target_incrementally(
 
     build_report_sender
         .send(BuildReport::new(target.id().clone(), result))
-        .with_context(|| "Sender error")
-        .unwrap();
+        .await;
 }
 
 pub struct BuildReport {

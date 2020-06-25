@@ -1,7 +1,7 @@
 use crate::domain::{Target, TargetId};
 use crate::work_dir;
 use anyhow::{Context, Error, Result};
-use crossbeam::channel::Sender;
+use async_std::sync::Sender;
 use notify::{ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
 
@@ -60,10 +60,9 @@ impl TargetWatcher {
                 .iter()
                 .any(|path| !is_tmp_editor_file(path) && !work_dir::is_in_work_dir(path))
             {
-                target_invalidated_sender
-                    .send(target_id.clone())
-                    .with_context(|| "Sender error")
-                    .unwrap();
+                async_std::task::block_on(async {
+                    target_invalidated_sender.send(target_id.clone()).await;
+                })
             }
         })
         .with_context(|| "Error creating watcher")

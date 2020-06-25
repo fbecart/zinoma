@@ -2,14 +2,14 @@ use anyhow::{anyhow, Result};
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TargetMetadata {
     pub id: TargetId,
     pub project_dir: PathBuf,
     pub dependencies: Vec<TargetId>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BuildTarget {
     pub metadata: TargetMetadata,
     pub build_script: String,
@@ -23,7 +23,7 @@ impl fmt::Display for BuildTarget {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ServiceTarget {
     pub metadata: TargetMetadata,
     pub run_script: String,
@@ -36,12 +36,12 @@ impl fmt::Display for ServiceTarget {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AggregateTarget {
     pub metadata: TargetMetadata,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Target {
     Build(BuildTarget),
     Service(ServiceTarget),
@@ -155,7 +155,7 @@ impl fmt::Display for TargetId {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Resources {
     pub paths: Vec<PathBuf>,
     pub cmds: Vec<(String, PathBuf)>,

@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 mod clean;
 mod cli;
 mod config;
@@ -5,12 +7,11 @@ mod domain;
 mod engine;
 mod run_script;
 mod work_dir;
-mod receiver;
 
 use anyhow::{Context, Result};
+use async_std::sync::Sender;
 use clean::clean_target_output_paths;
 use config::{ir, yaml};
-use crossbeam::channel::{unbounded, Sender};
 use domain::TargetId;
 use engine::incremental::storage::delete_saved_env_state;
 use engine::Engine;
@@ -24,6 +25,8 @@ use jemallocator::Jemalloc;
 #[cfg(all(not(target_env = "msvc"), target_pointer_width = "64"))]
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
+
+pub static DEFAULT_CHANNEL_CAP: usize = 100;
 
 fn main() -> Result<()> {
     let arg_matches = cli::get_app().get_matches();
@@ -74,24 +77,31 @@ fn main() -> Result<()> {
 
     if requested_targets.is_some() {
         let engine = Engine::new(targets, root_target_ids);
-        let (termination_sender, termination_events) = unbounded();
+        let (termination_sender, termination_events) =
+            async_std::sync::channel(DEFAULT_CHANNEL_CAP);
         terminate_on_ctrlc(termination_sender.clone())?;
 
-        if arg_matches.is_present(cli::arg::WATCH) {
-            engine
-                .watch(termination_events)
-                .with_context(|| "Watch error")?;
-        } else {
-            engine
-                .build(termination_sender, termination_events)
-                .with_context(|| "Build error")?;
-        }
+        async_std::task::block_on(async {
+            if arg_matches.is_present(cli::arg::WATCH) {
+                engine
+                    .watch(termination_events)
+                    .await
+                    .with_context(|| "Watch error")
+            } else {
+                engine
+                    .build(termination_sender, termination_events)
+                    .await
+                    .with_context(|| "Build error")
+            }
+        })?;
     }
 
     Ok(())
 }
 
 fn terminate_on_ctrlc(termination_sender: Sender<()>) -> Result<()> {
-    ctrlc::set_handler(move || termination_sender.send(()).unwrap())
-        .with_context(|| "Failed to set Ctrl-C handler")
+    ctrlc::set_handler(move || {
+        async_std::task::block_on(async { termination_sender.send(()).await })
+    })
+    .with_context(|| "Failed to set Ctrl-C handler")
 }
