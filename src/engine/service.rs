@@ -1,10 +1,9 @@
 use crate::domain::{ServiceTarget, Target, TargetId};
 use crate::run_script;
 use anyhow::{Context, Result};
-use async_std::task;
 use std::collections::{HashMap, HashSet};
 use std::process::Stdio;
-use tokio::process::Child;
+use std::process::Child;
 
 pub struct ServicesRunner {
     service_processes: HashMap<TargetId, Child>,
@@ -26,7 +25,7 @@ impl ServicesRunner {
             log::trace!("{} - Stopping service", target);
             service_process
                 .kill()
-                .and_then(|_| task::block_on(async { service_process.await }))
+                .and_then(|_| service_process.wait())
                 .with_context(|| format!("Failed to kill service {}", target))?;
         }
 
@@ -64,7 +63,7 @@ impl ServicesRunner {
 
         for target_id in services {
             if let Some(child_process) = self.service_processes.get_mut(&target_id) {
-                if let Err(e) = task::block_on(async { child_process.await }) {
+                if let Err(e) = child_process.wait() {
                     log::warn!("Failed to wait for service termination: {}", e)
                 }
             }

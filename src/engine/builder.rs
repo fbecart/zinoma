@@ -13,16 +13,17 @@ pub fn build_target(target: &BuildTarget, mut termination_events: Receiver<()>) 
     log::info!("{} - Building", target);
 
     task::block_on(async {
-        let build_process =
+        let mut build_process =
             run_script::build_command(&target.build_script, &target.metadata.project_dir)
                 .stdout(Stdio::inherit())
                 .stderr(Stdio::inherit())
-                .kill_on_drop(true)
                 .spawn()
                 .with_context(|| format!("Failed to spawn build command for {}", target))?;
 
+        let handle = async_std::task::spawn_blocking(move || build_process.wait());
+
         futures::select! {
-            result = build_process.fuse() => match result {
+            result = handle.fuse() => match result {
                 Err(build_error) => {
                     Err(Error::new(build_error).context(format!("Build failed to run")))
                 }
@@ -41,7 +42,13 @@ pub fn build_target(target: &BuildTarget, mut termination_events: Receiver<()>) 
                     Ok(())
                 }
             },
-            _ = termination_events.next().fuse() => Err(anyhow!("{} - Build cancelled", target)),
+            _ = termination_events.next().fuse() => {
+                // build_process.kill()
+                //     .and_then(|_| build_process.wait())
+                //     .with_context(|| format!("Failed to kill build process for {}", target))?;
+                // FIXME Kill and wait
+                Err(anyhow!("{} - Build cancelled", target))
+            },
         }
     })
 }

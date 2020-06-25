@@ -1,6 +1,5 @@
 use crate::run_script;
 use anyhow::{anyhow, Context, Result};
-use async_std::task;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -32,7 +31,8 @@ impl ResourcesState {
 }
 
 fn get_cmd_stdout(cmd: &str, dir: &Path) -> Result<String> {
-    let output = task::block_on(async { run_script::build_command(cmd, dir).output().await })
+    let output = run_script::build_command(cmd, dir)
+        .output()
         .with_context(|| format!("Failed to run command {}", cmd))?;
 
     if output.status.success() {
