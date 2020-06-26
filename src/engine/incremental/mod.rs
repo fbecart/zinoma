@@ -1,10 +1,9 @@
 mod resources_state;
 pub mod storage;
 
-use crate::domain::Target;
+use crate::domain::{Resources, Target, TargetId};
 use anyhow::{Context, Result};
-use async_std::task;
-use futures::Future;
+use futures::{future, Future};
 use resources_state::ResourcesState;
 use serde::{Deserialize, Serialize};
 
@@ -51,9 +50,11 @@ async fn env_state_has_not_changed_since_last_successful_execution(
         .await
         .with_context(|| format!("Failed to read saved env state for {}", target))?;
 
-    Ok(saved_state
-        .map(|saved_state| saved_state.eq_current_state(target))
-        .unwrap_or(false))
+    if let Some(saved_state) = saved_state {
+        Ok(saved_state.eq_current_state(target).await)
+    } else {
+        Ok(false)
+    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -67,12 +68,10 @@ impl TargetEnvState {
         match target.input() {
             Some(target_input) if !target_input.is_empty() => {
                 let input = ResourcesState::current(target_input).await?;
-                let output = target
-                    .output()
-                    .map(|target_output| {
-                        task::block_on(async { ResourcesState::current(target_output).await })
-                    })
-                    .transpose()?;
+                let output = match target.output() {
+                    Some(target_output) => Some(ResourcesState::current(target_output).await?),
+                    None => None,
+                };
 
                 Ok(Some(TargetEnvState { input, output }))
             }
@@ -80,27 +79,36 @@ impl TargetEnvState {
         }
     }
 
-    pub fn eq_current_state(&self, target: &Target) -> bool {
-        // TODO Here was rayon
-        [
-            (Some(&self.input), &target.input()),
-            (self.output.as_ref(), &target.output()),
-        ]
-        .iter()
-        .all(|(env_state, resources)| {
-            resources.map_or(true, |resources| {
-                env_state.as_ref().map_or(false, |env_state| {
-                    task::block_on(async {
-                        env_state
-                            .eq_current_state(resources)
-                            .await
-                            .unwrap_or_else(|e| {
-                                log::error!("Failed to run {} incrementally: {}", target, e);
-                                false
-                            })
-                    })
-                })
-            })
-        })
+    pub async fn eq_current_state(&self, target: &Target) -> bool {
+        // TODO Resolve at the first negative result
+        async fn eq(
+            env_state: &Option<&ResourcesState>,
+            resources: &Option<&Resources>,
+            target_id: &TargetId,
+        ) -> bool {
+            if let Some(resources) = resources {
+                if let Some(env_state) = env_state {
+                    env_state
+                        .eq_current_state(resources)
+                        .await
+                        .unwrap_or_else(|e| {
+                            log::error!("Failed to run {} incrementally: {}", target_id, e);
+                            false
+                        })
+                } else {
+                    false
+                }
+            } else {
+                true
+            }
+        };
+
+        let (input, output) = future::join(
+            eq(&Some(&self.input), &target.input(), target.id()),
+            eq(&self.output.as_ref(), &target.output(), target.id()),
+        )
+        .await;
+
+        input && output
     }
 }
