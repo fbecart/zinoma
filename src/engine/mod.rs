@@ -80,12 +80,12 @@ impl Engine {
                     if let IncrementalRunResult::Run(Err(e)) = result {
                         log::warn!("{} - {}", target, e);
                     } else if let Target::Service(target) = target {
-                        services_runner.restart_service(target)?;
+                        services_runner.restart_service(target).await?;
                     }
                 },
                 _ = termination_events.next().fuse() => {
                     target_build_states.join_all_build_threads().await;
-                    services_runner.terminate_all_services();
+                    services_runner.terminate_all_services().await;
                     return Ok(());
                 }
             }
@@ -130,18 +130,18 @@ impl Engine {
                     if let IncrementalRunResult::Run(Err(e)) = result {
                         termination_sender.send(()).await;
                         target_build_states.join_all_build_threads().await;
-                        services_runner.terminate_all_services();
+                        services_runner.terminate_all_services().await;
                         return Err(e);
                     }
 
                     let target = &self.targets[&target_id];
                     if let Target::Service(target) = target {
-                        services_runner.start_service(target)?;
+                        services_runner.start_service(target).await?;
                     }
                 }
                 _ = termination_events.next().fuse() => {
                     target_build_states.join_all_build_threads().await;
-                    services_runner.terminate_all_services();
+                    services_runner.terminate_all_services().await;
                     return Ok(());
                 }
             }
@@ -158,7 +158,7 @@ impl Engine {
 
         if !unnecessary_services.is_empty() {
             log::debug!("Terminating unnecessary services");
-            services_runner.terminate_services(&unnecessary_services);
+            services_runner.terminate_services(&unnecessary_services).await;
         }
 
         if !necessary_services.is_empty() {
@@ -168,7 +168,7 @@ impl Engine {
                 .await
                 .with_context(|| "Failed to listen to termination event".to_string())?;
             log::debug!("Terminating all services");
-            services_runner.terminate_all_services();
+            services_runner.terminate_all_services().await;
         }
 
         Ok(())

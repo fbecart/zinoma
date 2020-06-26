@@ -1,6 +1,8 @@
 use crate::domain::{ServiceTarget, Target, TargetId};
 use crate::run_script;
 use anyhow::{Context, Result};
+use async_std::task;
+use futures::future;
 use std::collections::{HashMap, HashSet};
 use std::process::{Child, Stdio};
 
@@ -19,27 +21,31 @@ impl ServicesRunner {
         self.service_processes.keys().cloned().collect::<Vec<_>>()
     }
 
-    pub fn restart_service(&mut self, target: &ServiceTarget) -> Result<()> {
-        if let Some(service_process) = self.service_processes.get_mut(&target.metadata.id) {
-            log::trace!("{} - Stopping service", target);
-            service_process
-                .kill()
-                .and_then(|_| service_process.wait())
-                .with_context(|| format!("Failed to kill service {}", target))?;
+    pub async fn restart_service(&mut self, target: &ServiceTarget) -> Result<()> {
+        if let Some((target_id, mut service_process)) =
+            self.service_processes.remove_entry(&target.metadata.id)
+        {
+            log::trace!("{} - Stopping service", target_id);
+            task::spawn_blocking(move || {
+                service_process.kill().and_then(|_| service_process.wait())
+            })
+            .await
+            .with_context(|| format!("{} - Failed to stop service", target_id))?;
         }
 
-        self.start_service(target)
+        self.start_service(target).await
     }
 
-    pub fn start_service(&mut self, target: &ServiceTarget) -> Result<()> {
+    pub async fn start_service(&mut self, target: &ServiceTarget) -> Result<()> {
         log::info!("{} - Starting service", target);
 
-        let service_process =
-            run_script::build_command(&target.run_script, &target.metadata.project_dir)
-                .stdout(Stdio::inherit())
-                .stderr(Stdio::inherit())
-                .spawn()
-                .with_context(|| format!("Failed to start service {}", target))?;
+        let mut command =
+            run_script::build_command(&target.run_script, &target.metadata.project_dir);
+        command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
+
+        let service_process = task::spawn_blocking(move || command.spawn())
+            .await
+            .with_context(|| format!("Failed to start service {}", target))?;
 
         self.service_processes
             .insert(target.metadata.id.clone(), service_process);
@@ -47,28 +53,27 @@ impl ServicesRunner {
         Ok(())
     }
 
-    pub fn terminate_all_services(&mut self) {
-        self.terminate_services(&self.list_running_services());
+    pub async fn terminate_all_services(&mut self) {
+        self.terminate_services(&self.list_running_services()).await;
     }
 
-    pub fn terminate_services(&mut self, services: &[TargetId]) {
-        for target_id in services {
-            if let Some(child_process) = self.service_processes.get_mut(&target_id) {
-                if let Err(e) = child_process.kill() {
-                    log::warn!("Failed to kill service: {}", e)
-                }
-            }
-        }
+    pub async fn terminate_services(&mut self, services: &[TargetId]) {
+        let processes = services
+            .iter()
+            .flat_map(|target_id| self.service_processes.remove_entry(target_id));
 
-        for target_id in services {
-            if let Some(child_process) = self.service_processes.get_mut(&target_id) {
-                if let Err(e) = child_process.wait() {
-                    log::warn!("Failed to wait for service termination: {}", e)
-                }
-            }
-
-            self.service_processes.remove(&target_id);
-        }
+        future::join_all(
+            processes.map(|(target_id, mut service_process)| async move {
+                task::spawn_blocking(move || {
+                    log::trace!("{} - Stopping service", target_id);
+                    if let Err(e) = service_process.kill().and_then(|_| service_process.wait()) {
+                        log::warn!("{} - Failed to stop service: {}", target_id, e);
+                    }
+                })
+                .await
+            }),
+        )
+        .await;
     }
 }
 
