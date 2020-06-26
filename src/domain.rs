@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
+use async_std::path::{Path, PathBuf};
 use std::fmt;
-use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct TargetMetadata {

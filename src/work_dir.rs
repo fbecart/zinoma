@@ -1,6 +1,7 @@
 use anyhow::{Error, Result};
+use async_std::fs;
+use async_std::path::{self, Path, PathBuf};
 use std::io::ErrorKind;
-use std::path::{self, Path, PathBuf};
 
 /// Name of the directory in which Žinoma stores its own files.
 const WORK_DIR_NAME: &str = ".zinoma";
@@ -15,7 +16,7 @@ pub fn is_in_work_dir(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::is_in_work_dir;
-    use std::path::Path;
+    use async_std::path::Path;
 
     #[test]
     fn test_is_in_work_dir() {
@@ -31,9 +32,9 @@ pub fn get_work_dir_path(project_dir: &Path) -> PathBuf {
     project_dir.join(WORK_DIR_NAME)
 }
 
-pub fn remove_work_dir(project_dir: PathBuf) -> Result<()> {
-    let checksums_dir = get_work_dir_path(&project_dir);
-    match std::fs::remove_dir_all(&checksums_dir) {
+pub async fn remove_work_dir(project_dir: &Path) -> Result<()> {
+    let checksums_dir = get_work_dir_path(project_dir);
+    match fs::remove_dir_all(&checksums_dir).await {
         Ok(_) => {}
         Err(e) if e.kind() == ErrorKind::NotFound => {}
         Err(e) => {

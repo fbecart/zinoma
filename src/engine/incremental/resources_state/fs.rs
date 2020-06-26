@@ -1,65 +1,77 @@
 use crate::work_dir;
 use anyhow::{Context, Result};
+use async_std::path::{Path, PathBuf};
+use async_std::task;
 use seahash::SeaHasher;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::hash::Hasher;
 use std::io::{BufReader, Read};
-use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 use walkdir::WalkDir;
 
 #[derive(Serialize, Deserialize, PartialEq)]
-pub struct ResourcesState(HashMap<PathBuf, (Duration, u64)>);
+pub struct ResourcesState(HashMap<std::path::PathBuf, (Duration, u64)>);
 
 impl ResourcesState {
-    pub fn current(paths: &[PathBuf]) -> Result<Self> {
+    pub async fn current(paths: &[PathBuf]) -> Result<Self> {
         // TODO Here was rayon
         Ok(Self(
             list_files(paths)
+                .await
                 .into_iter()
                 .map(|file| {
-                    let modified = get_file_modified(&file)?;
-                    let file_hash = compute_file_hash(&file)
-                        .with_context(|| format!("Failed to compute hash of {}", file.display()))?;
-                    Ok((file, (modified, file_hash)))
+                    task::block_on(async {
+                        let modified = get_file_modified(&file).await?;
+                        let file_hash = compute_file_hash(&file).with_context(|| {
+                            format!("Failed to compute hash of {}", file.display())
+                        })?;
+                        Ok((file.into(), (modified, file_hash)))
+                    })
                 })
                 .collect::<Result<HashMap<_, _>>>()?,
         ))
     }
 
-    pub fn eq_current_state(&self, paths: &[PathBuf]) -> Result<bool> {
-        let files = list_files(paths);
+    pub async fn eq_current_state(&self, paths: &[PathBuf]) -> Result<bool> {
+        let files = list_files(paths).await;
 
         if files.len() != self.0.len() {
             return Ok(false);
         }
 
         // TODO Here was rayon
-        Ok(files.iter().all(|file_path| match self.0.get(file_path) {
-            None => false,
-            Some(&(saved_modified, saved_hash)) => match get_file_modified(&file_path) {
-                Err(e) => {
-                    log::error!("{:?}", e);
-                    false
-                }
-                Ok(modified) => {
-                    modified == saved_modified
-                        || match compute_file_hash(file_path) {
+        Ok(files.into_iter().all(|file_path| {
+            task::block_on(async {
+                let std_path: &std::path::Path = file_path.as_path().into();
+                match self.0.get(std_path) {
+                    None => false,
+                    Some(&(saved_modified, saved_hash)) => {
+                        match get_file_modified(&file_path).await {
                             Err(e) => {
                                 log::error!("{:?}", e);
                                 false
                             }
-                            Ok(hash) => hash == saved_hash,
+                            Ok(modified) => {
+                                modified == saved_modified
+                                    || match compute_file_hash(&file_path) {
+                                        Err(e) => {
+                                            log::error!("{:?}", e);
+                                            false
+                                        }
+                                        Ok(hash) => hash == saved_hash,
+                                    }
+                            }
                         }
+                    }
                 }
-            },
+            })
         }))
     }
 }
 
-fn list_files(paths: &[PathBuf]) -> HashSet<PathBuf> {
+async fn list_files(paths: &[PathBuf]) -> HashSet<PathBuf> {
     let mut files = HashSet::new();
 
     for path in paths {
@@ -67,8 +79,8 @@ fn list_files(paths: &[PathBuf]) -> HashSet<PathBuf> {
             match entry {
                 Err(e) => log::debug!("Failed to walk dir {}: {}", path.display(), e),
                 Ok(entry) => {
-                    let path = entry.into_path();
-                    if path.is_file() && !work_dir::is_in_work_dir(&path) {
+                    let path: PathBuf = entry.into_path().into();
+                    if path.is_file().await && !work_dir::is_in_work_dir(&path) {
                         files.insert(path);
                     }
                 }
@@ -79,9 +91,10 @@ fn list_files(paths: &[PathBuf]) -> HashSet<PathBuf> {
     files
 }
 
-fn get_file_modified(file: &Path) -> Result<Duration> {
+async fn get_file_modified(file: &Path) -> Result<Duration> {
     let metadata = file
         .metadata()
+        .await
         .with_context(|| format!("Failed to obtain metadata of file {}", file.display()))?;
     let modified = metadata.modified().with_context(|| {
         format!(

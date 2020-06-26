@@ -2,17 +2,17 @@ use super::TargetEnvState;
 use crate::domain::Target;
 use crate::work_dir;
 use anyhow::{Context, Result};
+use async_std::path::PathBuf;
 use std::fs::{self, File};
-use std::path::PathBuf;
 
 /// File where the state of the target inputs and outputs are stored upon successful build.
 fn get_checksums_file_path(target: &Target) -> PathBuf {
     work_dir::get_work_dir_path(&target.project_dir()).join(format!("{}.checksums", target))
 }
 
-pub fn read_saved_target_env_state(target: &Target) -> Result<Option<TargetEnvState>> {
+pub async fn read_saved_target_env_state(target: &Target) -> Result<Option<TargetEnvState>> {
     let file_path = get_checksums_file_path(target);
-    if file_path.exists() {
+    if file_path.exists().await {
         let file = File::open(&file_path)
             .with_context(|| format!("Failed to open checksums file {}", file_path.display()))?;
         match bincode::deserialize_from(file) {
@@ -23,7 +23,7 @@ pub fn read_saved_target_env_state(target: &Target) -> Result<Option<TargetEnvSt
                     target,
                     e
                 );
-                delete_saved_env_state(&target)?;
+                delete_saved_env_state(&target).await?;
                 Ok(None)
             }
         }
@@ -32,9 +32,9 @@ pub fn read_saved_target_env_state(target: &Target) -> Result<Option<TargetEnvSt
     }
 }
 
-pub fn delete_saved_env_state(target: &Target) -> Result<()> {
+pub async fn delete_saved_env_state(target: &Target) -> Result<()> {
     let checksums_file = get_checksums_file_path(target);
-    if checksums_file.exists() {
+    if checksums_file.exists().await {
         fs::remove_file(&checksums_file).with_context(|| {
             format!(
                 "Failed to delete checksums file {}",

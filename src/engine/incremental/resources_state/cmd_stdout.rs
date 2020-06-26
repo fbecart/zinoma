@@ -1,8 +1,8 @@
 use crate::run_script;
 use anyhow::{anyhow, Context, Result};
+use async_std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct ResourcesState(HashMap<String, String>);

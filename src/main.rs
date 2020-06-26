@@ -10,6 +10,7 @@ mod work_dir;
 
 use anyhow::{Context, Result};
 use async_ctrlc::CtrlC;
+use async_std::path::PathBuf;
 use async_std::sync::{self, Sender};
 use async_std::task;
 use clean::clean_target_output_paths;
@@ -18,7 +19,6 @@ use domain::TargetId;
 use engine::incremental::storage::delete_saved_env_state;
 use engine::Engine;
 use std::convert::TryInto;
-use std::path::PathBuf;
 use work_dir::remove_work_dir;
 
 #[cfg(all(not(target_env = "msvc"), target_pointer_width = "64"))]
@@ -40,7 +40,8 @@ fn main() -> Result<()> {
         .init()
         .unwrap();
 
-    let root_project_dir = PathBuf::from(arg_matches.value_of(cli::arg::PROJECT_DIR).unwrap());
+    let root_project_dir =
+        std::path::PathBuf::from(arg_matches.value_of(cli::arg::PROJECT_DIR).unwrap());
     let config = yaml::Config::load(&root_project_dir)?;
     let project_dirs = config.get_project_dirs();
     let config: ir::Config = config.try_into()?;
@@ -68,37 +69,44 @@ fn main() -> Result<()> {
 
     let targets = config.try_into_domain_targets(&root_target_ids)?;
 
-    if arg_matches.is_present(cli::arg::CLEAN) {
-        if requested_targets.is_some() {
-            targets.values().try_for_each(delete_saved_env_state)?;
-        } else {
-            project_dirs.into_iter().try_for_each(remove_work_dir)?;
+    task::block_on(async {
+        if arg_matches.is_present(cli::arg::CLEAN) {
+            if requested_targets.is_some() {
+                for target in targets.values() {
+                    delete_saved_env_state(target).await?;
+                }
+            } else {
+                for project_dir in project_dirs {
+                    let project_dir: PathBuf = project_dir.into();
+                    remove_work_dir(&project_dir).await?;
+                }
+            }
+
+            for target in targets.values() {
+                clean_target_output_paths(target).await?;
+            }
         }
 
-        targets.values().try_for_each(clean_target_output_paths)?;
-    }
+        if requested_targets.is_some() {
+            let engine = Engine::new(targets, root_target_ids);
+            let (termination_sender, termination_events) = sync::channel(DEFAULT_CHANNEL_CAP);
+            terminate_on_ctrlc(termination_sender.clone())?;
 
-    if requested_targets.is_some() {
-        let engine = Engine::new(targets, root_target_ids);
-        let (termination_sender, termination_events) = sync::channel(DEFAULT_CHANNEL_CAP);
-        terminate_on_ctrlc(termination_sender.clone())?;
-
-        task::block_on(async {
             if arg_matches.is_present(cli::arg::WATCH) {
                 engine
                     .watch(termination_events)
                     .await
-                    .with_context(|| "Watch error")
+                    .with_context(|| "Watch error")?;
             } else {
                 engine
                     .build(termination_sender, termination_events)
                     .await
-                    .with_context(|| "Build error")
-            }
-        })?;
-    }
+                    .with_context(|| "Build error")?;
+            };
+        }
 
-    Ok(())
+        Ok(())
+    })
 }
 
 fn terminate_on_ctrlc(termination_sender: Sender<()>) -> Result<()> {

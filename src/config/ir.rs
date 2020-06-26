@@ -1,10 +1,10 @@
 use super::yaml;
 use crate::domain::{self, TargetId};
 use anyhow::{anyhow, Result};
+use async_std::path::{Path, PathBuf};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 
 pub struct Config {
     pub root_project_name: Option<String>,
@@ -18,7 +18,7 @@ impl From<yaml::Config> for Config {
             projects: config
                 .projects
                 .into_iter()
-                .map(|(project_dir, project)| (project.name.clone(), (project_dir, project)))
+                .map(|(project_dir, project)| (project.name.clone(), (project_dir.into(), project)))
                 .collect(),
         }
     }
@@ -268,8 +268,8 @@ mod tests {
     use super::Config;
     use crate::config::yaml;
     use crate::domain::{self, TargetId};
+    use async_std::path::PathBuf;
     use std::collections::HashMap;
-    use std::path::PathBuf;
 
     #[test]
     fn test_try_into_domain_targets_should_return_the_requested_targets() {

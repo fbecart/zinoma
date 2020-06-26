@@ -1,10 +1,10 @@
 use crate::domain::{Target, TargetId};
 use crate::work_dir;
 use anyhow::{Context, Error, Result};
+use async_std::path::{Path, PathBuf};
 use async_std::sync::Sender;
 use async_std::task;
 use notify::{ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
-use std::path::Path;
 
 pub struct TargetWatcher {
     _watcher: RecommendedWatcher,
@@ -55,16 +55,18 @@ impl TargetWatcher {
         target_invalidated_sender: Sender<TargetId>,
     ) -> Result<RecommendedWatcher> {
         Watcher::new_immediate(move |result: notify::Result<notify::Event>| {
-            if result
-                .unwrap()
-                .paths
-                .iter()
-                .any(|path| !is_tmp_editor_file(path) && !work_dir::is_in_work_dir(path))
-            {
-                task::block_on(async {
-                    target_invalidated_sender.send(target_id.clone()).await;
-                })
-            }
+            async_std::task::block_on(async {
+                let some_paths_are_relevant = result.unwrap().paths.into_iter().any(|path| {
+                    let path: PathBuf = path.into();
+                    !is_tmp_editor_file(&path) && !work_dir::is_in_work_dir(&path)
+                });
+
+                if some_paths_are_relevant {
+                    task::block_on(async {
+                        target_invalidated_sender.send(target_id.clone()).await;
+                    })
+                }
+            })
         })
         .with_context(|| "Error creating watcher")
     }
@@ -88,7 +90,7 @@ fn is_tmp_editor_file(file_path: &Path) -> bool {
 #[cfg(test)]
 mod is_tmp_editor_file_tests {
     use super::is_tmp_editor_file;
-    use std::path::Path;
+    use async_std::path::Path;
 
     #[test]
     fn src_file_should_not_be_tmp_editor_file() {
