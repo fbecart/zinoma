@@ -62,15 +62,9 @@ impl Engine {
                 let target = self.targets[&target_id].clone();
                 let termination_events = termination_events.clone();
                 let build_report_sender = build_report_sender.clone();
-                let build_thread = task::spawn_blocking(move || {
-                    task::block_on(async {
-                        build_target_incrementally(
-                            &target,
-                            &termination_events,
-                            &build_report_sender,
-                        )
+                let build_thread = task::spawn(async move {
+                    build_target_incrementally(&target, &termination_events, &build_report_sender)
                         .await
-                    })
                 });
                 target_build_states.set_build_started(&target_id, build_thread);
             }
@@ -116,15 +110,9 @@ impl Engine {
                 let target = self.targets[&target_id].clone();
                 let termination_events = termination_events.clone();
                 let build_report_sender = build_report_sender.clone();
-                let build_thread = task::spawn_blocking(move || {
-                    task::block_on(async {
-                        build_target_incrementally(
-                            &target,
-                            &termination_events,
-                            &build_report_sender,
-                        )
+                let build_thread = task::spawn(async move {
+                    build_target_incrementally(&target, &termination_events, &build_report_sender)
                         .await
-                    })
                 });
                 target_build_states.set_build_started(&target_id, build_thread);
             }
