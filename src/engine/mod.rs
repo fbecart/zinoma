@@ -11,7 +11,7 @@ use async_std::sync::{self, Receiver, Sender};
 use async_std::task;
 use build_state::TargetBuildStates;
 use builder::build_target;
-use futures::FutureExt;
+use futures::{future, FutureExt};
 use incremental::IncrementalRunResult;
 use service::ServicesRunner;
 use std::collections::HashMap;
@@ -33,15 +33,23 @@ impl Engine {
     pub async fn watch(self, mut termination_events: Receiver<()>) -> Result<()> {
         let (target_invalidated_sender, mut target_invalidated_events) =
             sync::channel(crate::DEFAULT_CHANNEL_CAP);
-        let _target_watchers = self
-            .targets
-            .iter()
-            .map(|(target_id, target)| {
-                TargetWatcher::new(target, target_invalidated_sender.clone())
+        let _target_watchers =
+            future::try_join_all(self.targets.iter().map(|(target_id, target)| {
+                let target_invalidated_sender = target_invalidated_sender.clone();
+                async move {
+                    TargetWatcher::new(
+                        target.id().clone(),
+                        target.input().cloned(),
+                        target_invalidated_sender,
+                    )
+                    .await
                     .map(|watcher| (target_id, watcher))
-            })
-            .collect::<Result<HashMap<_, _>>>()
-            .with_context(|| "Failed setting up filesystem watchers")?;
+                }
+            }))
+            .await
+            .with_context(|| "Failed setting up filesystem watchers")?
+            .into_iter()
+            .collect::<HashMap<_, _>>();
 
         let mut services_runner = ServicesRunner::new();
         let (build_report_sender, mut build_report_events) =
@@ -158,7 +166,9 @@ impl Engine {
 
         if !unnecessary_services.is_empty() {
             log::debug!("Terminating unnecessary services");
-            services_runner.terminate_services(&unnecessary_services).await;
+            services_runner
+                .terminate_services(&unnecessary_services)
+                .await;
         }
 
         if !necessary_services.is_empty() {
