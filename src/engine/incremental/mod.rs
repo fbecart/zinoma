@@ -31,7 +31,7 @@ where
 
     if result.is_ok() {
         match TargetEnvState::current(target).await {
-            Ok(Some(env_state)) => storage::save_env_state(&target, &env_state)?,
+            Ok(Some(env_state)) => storage::save_env_state(&target, env_state).await?,
             Ok(None) => {}
             Err(e) => log::error!(
                 "{} - Failed to compute state of inputs and outputs: {}",
