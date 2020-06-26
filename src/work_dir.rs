@@ -47,3 +47,11 @@ pub async fn remove_work_dir(project_dir: &Path) -> Result<()> {
 
     Ok(())
 }
+
+pub fn is_work_dir(entry: &walkdir::DirEntry) -> bool {
+    entry
+        .file_name()
+        .to_str()
+        .map(|file_name| file_name == WORK_DIR_NAME)
+        .unwrap_or(false)
+}

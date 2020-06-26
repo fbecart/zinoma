@@ -1,15 +1,18 @@
 use crate::work_dir;
 use anyhow::{Context, Result};
+use async_std::fs::File;
+use async_std::io::BufReader;
 use async_std::path::{Path, PathBuf};
+use async_std::prelude::*;
 use async_std::task;
+use futures::future;
 use seahash::SeaHasher;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::fs;
 use std::hash::Hasher;
-use std::io::{BufReader, Read};
 use std::time::{Duration, SystemTime};
 use walkdir::WalkDir;
+use work_dir::is_work_dir;
 
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct ResourcesState(HashMap<std::path::PathBuf, (Duration, u64)>);
@@ -18,13 +21,13 @@ impl ResourcesState {
     pub async fn current(paths: &[PathBuf]) -> Result<Self> {
         // TODO Here was rayon
         Ok(Self(
-            list_files(paths)
+            list_files_in_paths(paths)
                 .await
                 .into_iter()
                 .map(|file| {
                     task::block_on(async {
                         let modified = get_file_modified(&file).await?;
-                        let file_hash = compute_file_hash(&file).with_context(|| {
+                        let file_hash = compute_file_hash(&file).await.with_context(|| {
                             format!("Failed to compute hash of {}", file.display())
                         })?;
                         Ok((file.into(), (modified, file_hash)))
@@ -35,7 +38,7 @@ impl ResourcesState {
     }
 
     pub async fn eq_current_state(&self, paths: &[PathBuf]) -> Result<bool> {
-        let files = list_files(paths).await;
+        let files = list_files_in_paths(paths).await;
 
         if files.len() != self.0.len() {
             return Ok(false);
@@ -55,7 +58,7 @@ impl ResourcesState {
                             }
                             Ok(modified) => {
                                 modified == saved_modified
-                                    || match compute_file_hash(&file_path) {
+                                    || match compute_file_hash(&file_path).await {
                                         Err(e) => {
                                             log::error!("{:?}", e);
                                             false
@@ -71,24 +74,36 @@ impl ResourcesState {
     }
 }
 
-async fn list_files(paths: &[PathBuf]) -> HashSet<PathBuf> {
-    let mut files = HashSet::new();
+async fn list_files_in_paths(paths: &[PathBuf]) -> HashSet<PathBuf> {
+    future::join_all(paths.iter().map(|path| list_files_in_path(path)))
+        .await
+        .into_iter()
+        .flatten()
+        .collect()
+}
 
-    for path in paths {
-        for entry in WalkDir::new(path).into_iter() {
-            match entry {
-                Err(e) => log::debug!("Failed to walk dir {}: {}", path.display(), e),
-                Ok(entry) => {
-                    let path: PathBuf = entry.into_path().into();
-                    if path.is_file().await && !work_dir::is_in_work_dir(&path) {
-                        files.insert(path);
-                    }
+async fn list_files_in_path(path: &Path) -> Vec<PathBuf> {
+    let walkdir = WalkDir::new(path);
+
+    task::spawn_blocking(|| {
+        walkdir
+            .into_iter()
+            .filter_entry(|e| !is_work_dir(e))
+            .filter_map(|entry| match entry {
+                Err(e) => {
+                    log::debug!("Failed to walk dir: {}", e);
+                    None
                 }
-            }
-        }
-    }
-
-    files
+                Ok(entry) => {
+                    let path = entry.into_path();
+                    Some(path)
+                        .filter(|path| path.is_file())
+                        .map(|path| path.into())
+                }
+            })
+            .collect()
+    })
+    .await
 }
 
 async fn get_file_modified(file: &Path) -> Result<Duration> {
@@ -112,9 +127,10 @@ async fn get_file_modified(file: &Path) -> Result<Duration> {
         })
 }
 
-fn compute_file_hash(file_path: &Path) -> Result<u64> {
+async fn compute_file_hash(file_path: &Path) -> Result<u64> {
     let mut hasher = SeaHasher::default();
-    let file = fs::File::open(file_path)
+    let file = File::open(file_path)
+        .await
         .with_context(|| format!("Failed to open file {}", file_path.display()))?;
     let mut reader = BufReader::new(file);
 
@@ -122,6 +138,7 @@ fn compute_file_hash(file_path: &Path) -> Result<u64> {
     loop {
         let count = reader
             .read(&mut buffer)
+            .await
             .with_context(|| format!("Failed to read file {}", file_path.display()))?;
         if count == 0 {
             break;
