@@ -9,6 +9,7 @@ use futures::future;
 use seahash::SeaHasher;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::convert::identity;
 use std::hash::Hasher;
 use std::time::{Duration, SystemTime};
 use walkdir::WalkDir;
@@ -37,40 +38,38 @@ impl ResourcesState {
         ))
     }
 
-    pub async fn eq_current_state(&self, paths: &[PathBuf]) -> Result<bool> {
+    pub async fn eq_current_state(&self, paths: &[PathBuf]) -> bool {
         let files = list_files_in_paths(paths).await;
 
         if files.len() != self.0.len() {
-            return Ok(false);
+            return false;
         }
 
-        // TODO Here was rayon
-        Ok(files.into_iter().all(|file_path| {
-            task::block_on(async {
-                let std_path: &std::path::Path = file_path.as_path().into();
-                match self.0.get(std_path) {
-                    None => false,
-                    Some(&(saved_modified, saved_hash)) => {
-                        match get_file_modified(&file_path).await {
-                            Err(e) => {
-                                log::error!("{:?}", e);
-                                false
-                            }
-                            Ok(modified) => {
-                                modified == saved_modified
-                                    || match compute_file_hash(&file_path).await {
-                                        Err(e) => {
-                                            log::error!("{:?}", e);
-                                            false
-                                        }
-                                        Ok(hash) => hash == saved_hash,
-                                    }
-                            }
-                        }
+        // TODO Resolve at the first negative result
+        let futures = files.into_iter().map(|file_path| async move {
+            let std_path: &std::path::Path = file_path.as_path().into();
+            match self.0.get(std_path) {
+                None => false,
+                Some(&(saved_modified, saved_hash)) => match get_file_modified(&file_path).await {
+                    Err(e) => {
+                        log::error!("{:?}", e);
+                        false
                     }
-                }
-            })
-        }))
+                    Ok(modified) => {
+                        modified == saved_modified
+                            || match compute_file_hash(&file_path).await {
+                                Err(e) => {
+                                    log::error!("{:?}", e);
+                                    false
+                                }
+                                Ok(hash) => hash == saved_hash,
+                            }
+                    }
+                },
+            }
+        });
+
+        future::join_all(futures).await.into_iter().all(identity)
     }
 }
 
