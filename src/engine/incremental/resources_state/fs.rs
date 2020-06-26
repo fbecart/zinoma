@@ -19,21 +19,21 @@ pub struct ResourcesState(HashMap<std::path::PathBuf, (Duration, u64)>);
 
 impl ResourcesState {
     pub async fn current(paths: &[PathBuf]) -> Result<Self> {
-        // TODO Here was rayon
+        let futures = list_files_in_paths(paths)
+            .await
+            .into_iter()
+            .map(|file| async move {
+                let modified = get_file_modified(&file)
+                    .await
+                    .with_context(|| "toto".to_string())?;
+                let file_hash = compute_file_hash(&file)
+                    .await
+                    .with_context(|| format!("Failed to compute hash of {}", file.display()))?;
+                Ok((file.into(), (modified, file_hash))) as Result<(std::path::PathBuf, _)>
+            });
+
         Ok(Self(
-            list_files_in_paths(paths)
-                .await
-                .into_iter()
-                .map(|file| {
-                    task::block_on(async {
-                        let modified = get_file_modified(&file).await?;
-                        let file_hash = compute_file_hash(&file).await.with_context(|| {
-                            format!("Failed to compute hash of {}", file.display())
-                        })?;
-                        Ok((file.into(), (modified, file_hash)))
-                    })
-                })
-                .collect::<Result<HashMap<_, _>>>()?,
+            future::try_join_all(futures).await?.into_iter().collect(),
         ))
     }
 
