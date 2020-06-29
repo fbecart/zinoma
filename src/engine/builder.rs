@@ -1,9 +1,9 @@
 use super::BuildCancellationMessage;
 use crate::domain::BuildTarget;
 use crate::run_script;
+use crate::stream::ExponentialBackoff;
 use anyhow::{anyhow, Context, Result};
 use async_std::prelude::*;
-use async_std::stream;
 use async_std::sync::Receiver;
 use async_std::task;
 use futures::FutureExt;
@@ -24,8 +24,8 @@ pub async fn build_target(
         .await
         .with_context(|| format!("Failed to spawn build command for {}", target))?;
 
-    // TODO Set up exponential backoff
-    let mut ticks = stream::interval(Duration::from_millis(10));
+    let mut ticks =
+        ExponentialBackoff::new(Duration::from_millis(1), Duration::from_millis(100), 2.0);
 
     loop {
         futures::select! {

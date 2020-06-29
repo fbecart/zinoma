@@ -6,6 +6,7 @@ mod config;
 mod domain;
 mod engine;
 mod run_script;
+mod stream;
 mod work_dir;
 
 use anyhow::{Context, Result};
