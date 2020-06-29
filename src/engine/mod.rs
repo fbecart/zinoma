@@ -70,6 +70,11 @@ impl Engine {
             }
 
             futures::select! {
+                _ = termination_events.next().fuse() => {
+                    target_build_states.join_all_build_threads().await;
+                    services_runner.terminate_all_services().await;
+                    return Ok(());
+                },
                 target_id = target_invalidated_events.next().fuse() => {
                     target_build_states.set_build_invalidated(&target_id.unwrap());
                 },
@@ -85,11 +90,6 @@ impl Engine {
                         services_runner.restart_service(target).await?;
                     }
                 },
-                _ = termination_events.next().fuse() => {
-                    target_build_states.join_all_build_threads().await;
-                    services_runner.terminate_all_services().await;
-                    return Ok(());
-                }
             }
         }
     }
@@ -118,9 +118,15 @@ impl Engine {
             }
 
             futures::select! {
+                _ = termination_events.next().fuse() => {
+                    target_build_states.join_all_build_threads().await;
+                    services_runner.terminate_all_services().await;
+                    return Ok(());
+                }
                 build_report = build_report_events.next().fuse() => {
                     let BuildReport { target_id, result } = build_report.unwrap();
 
+                    log::debug!("{} - Build report received", target_id);
                     target_build_states.set_build_finished(&target_id, &result).await;
 
                     if let IncrementalRunResult::Run(Err(e)) = result {
@@ -134,11 +140,6 @@ impl Engine {
                     if let Target::Service(target) = target {
                         services_runner.start_service(target).await?;
                     }
-                }
-                _ = termination_events.next().fuse() => {
-                    target_build_states.join_all_build_threads().await;
-                    services_runner.terminate_all_services().await;
-                    return Ok(());
                 }
             }
         }
