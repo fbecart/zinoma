@@ -28,8 +28,7 @@ use jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
-// TODO Adjust more specifically
-pub static DEFAULT_CHANNEL_CAP: usize = 100;
+pub static DEFAULT_CHANNEL_CAP: usize = 64;
 
 fn main() -> Result<()> {
     let arg_matches = cli::get_app().get_matches();
@@ -89,7 +88,7 @@ fn main() -> Result<()> {
 
         if requested_targets.is_some() {
             let engine = Engine::new(targets, root_target_ids);
-            let (termination_sender, termination_events) = sync::channel(DEFAULT_CHANNEL_CAP);
+            let (termination_sender, termination_events) = sync::channel(1);
             terminate_on_ctrlc(termination_sender.clone())?;
 
             if arg_matches.is_present(cli::arg::WATCH) {
@@ -99,7 +98,7 @@ fn main() -> Result<()> {
                     .with_context(|| "Watch error")?;
             } else {
                 engine
-                    .build(termination_sender, termination_events)
+                    .build(termination_events)
                     .await
                     .with_context(|| "Build error")?;
             };
@@ -109,14 +108,18 @@ fn main() -> Result<()> {
     })
 }
 
-fn terminate_on_ctrlc(termination_sender: Sender<()>) -> Result<()> {
+fn terminate_on_ctrlc(termination_sender: Sender<TerminationMessage>) -> Result<()> {
     let ctrlc = CtrlC::new().with_context(|| "Failed to set Ctrl-C handler")?;
 
     task::spawn(async move {
         ctrlc.await;
         log::debug!("Ctrl-C received");
-        termination_sender.send(()).await;
+        termination_sender.send(TerminationMessage::Terminate).await;
     });
 
     Ok(())
+}
+
+pub enum TerminationMessage {
+    Terminate,
 }

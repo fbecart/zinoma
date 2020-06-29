@@ -5,6 +5,7 @@ mod service;
 mod watcher;
 
 use crate::domain::{Target, TargetId};
+use crate::TerminationMessage;
 use anyhow::{Context, Result};
 use async_std::prelude::*;
 use async_std::sync::{self, Receiver, Sender};
@@ -30,7 +31,7 @@ impl Engine {
         }
     }
 
-    pub async fn watch(self, mut termination_events: Receiver<()>) -> Result<()> {
+    pub async fn watch(self, mut termination_events: Receiver<TerminationMessage>) -> Result<()> {
         let (target_invalidated_sender, mut target_invalidated_events) =
             sync::channel(crate::DEFAULT_CHANNEL_CAP);
         let _target_watchers =
@@ -60,18 +61,26 @@ impl Engine {
         loop {
             for target_id in target_build_states.get_ready_to_build_targets() {
                 let target = self.targets[&target_id].clone();
-                let termination_events = termination_events.clone();
                 let build_report_sender = build_report_sender.clone();
+                let (build_cancellation_sender, build_cancellation_events) = sync::channel(1);
                 let build_thread = task::spawn(async move {
-                    build_target_incrementally(&target, &termination_events, &build_report_sender)
-                        .await
+                    build_target_incrementally(
+                        &target,
+                        &build_cancellation_events,
+                        &build_report_sender,
+                    )
+                    .await
                 });
-                target_build_states.set_build_started(&target_id, build_thread);
+                target_build_states.set_build_started(
+                    &target_id,
+                    build_thread,
+                    build_cancellation_sender,
+                );
             }
 
             futures::select! {
                 _ = termination_events.next().fuse() => {
-                    target_build_states.join_all_build_threads().await;
+                    target_build_states.cancel_all_builds().await;
                     services_runner.terminate_all_services().await;
                     return Ok(());
                 },
@@ -94,11 +103,7 @@ impl Engine {
         }
     }
 
-    pub async fn build(
-        self,
-        termination_sender: Sender<()>,
-        mut termination_events: Receiver<()>,
-    ) -> Result<()> {
+    pub async fn build(self, mut termination_events: Receiver<TerminationMessage>) -> Result<()> {
         let mut services_runner = ServicesRunner::new();
         let (build_report_sender, mut build_report_events) =
             sync::channel(crate::DEFAULT_CHANNEL_CAP);
@@ -108,18 +113,26 @@ impl Engine {
         while !target_build_states.all_are_built() {
             for target_id in target_build_states.get_ready_to_build_targets() {
                 let target = self.targets[&target_id].clone();
-                let termination_events = termination_events.clone();
                 let build_report_sender = build_report_sender.clone();
+                let (build_cancellation_sender, build_cancellation_events) = sync::channel(1);
                 let build_thread = task::spawn(async move {
-                    build_target_incrementally(&target, &termination_events, &build_report_sender)
-                        .await
+                    build_target_incrementally(
+                        &target,
+                        &build_cancellation_events,
+                        &build_report_sender,
+                    )
+                    .await
                 });
-                target_build_states.set_build_started(&target_id, build_thread);
+                target_build_states.set_build_started(
+                    &target_id,
+                    build_thread,
+                    build_cancellation_sender,
+                );
             }
 
             futures::select! {
                 _ = termination_events.next().fuse() => {
-                    target_build_states.join_all_build_threads().await;
+                    target_build_states.cancel_all_builds().await;
                     services_runner.terminate_all_services().await;
                     return Ok(());
                 }
@@ -130,8 +143,7 @@ impl Engine {
                     target_build_states.set_build_finished(&target_id, &result).await;
 
                     if let IncrementalRunResult::Run(Err(e)) = result {
-                        termination_sender.send(()).await;
-                        target_build_states.join_all_build_threads().await;
+                        target_build_states.cancel_all_builds().await;
                         services_runner.terminate_all_services().await;
                         return Err(e);
                     }
@@ -176,12 +188,12 @@ impl Engine {
 
 async fn build_target_incrementally(
     target: &Target,
-    termination_events: &Receiver<()>,
+    build_cancellation_events: &Receiver<BuildCancellationMessage>,
     build_report_sender: &Sender<BuildReport>,
 ) {
     let result = incremental::run(&target, || async {
         if let Target::Build(target) = target {
-            build_target(&target, termination_events.clone()).await?;
+            build_target(&target, build_cancellation_events.clone()).await?;
         }
 
         Ok(())
@@ -208,4 +220,8 @@ impl BuildReport {
     pub fn new(target_id: TargetId, result: IncrementalRunResult<Result<()>>) -> Self {
         Self { target_id, result }
     }
+}
+
+pub enum BuildCancellationMessage {
+    CancelBuild,
 }
