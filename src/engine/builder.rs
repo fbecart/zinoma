@@ -1,7 +1,7 @@
 use super::BuildCancellationMessage;
+use crate::async_utils::ExponentialBackoff;
 use crate::domain::BuildTarget;
 use crate::run_script;
-use crate::stream::ExponentialBackoff;
 use anyhow::{anyhow, Context, Result};
 use async_std::prelude::*;
 use async_std::sync::Receiver;

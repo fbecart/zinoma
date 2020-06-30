@@ -1,9 +1,10 @@
 mod resources_state;
 pub mod storage;
 
-use crate::domain::{Resources, Target, TargetId};
+use crate::async_utils::all;
+use crate::domain::{Resources, Target};
 use anyhow::{Context, Result};
-use futures::{future, Future};
+use futures::Future;
 use resources_state::ResourcesState;
 use serde::{Deserialize, Serialize};
 
@@ -80,21 +81,10 @@ impl TargetEnvState {
     }
 
     pub async fn eq_current_state(&self, target: &Target) -> bool {
-        // TODO Resolve at the first negative result
-        async fn eq(
-            env_state: &Option<&ResourcesState>,
-            resources: &Option<&Resources>,
-            target_id: &TargetId,
-        ) -> bool {
+        async fn eq(env_state: &Option<&ResourcesState>, resources: &Option<&Resources>) -> bool {
             if let Some(resources) = resources {
                 if let Some(env_state) = env_state {
-                    env_state
-                        .eq_current_state(resources)
-                        .await
-                        .unwrap_or_else(|e| {
-                            log::error!("Failed to run {} incrementally: {}", target_id, e);
-                            false
-                        })
+                    env_state.eq_current_state(resources).await
                 } else {
                     false
                 }
@@ -103,12 +93,10 @@ impl TargetEnvState {
             }
         };
 
-        let (input, output) = future::join(
-            eq(&Some(&self.input), &target.input(), target.id()),
-            eq(&self.output.as_ref(), &target.output(), target.id()),
+        all(
+            eq(&Some(&self.input), &target.input()),
+            eq(&self.output.as_ref(), &target.output()),
         )
-        .await;
-
-        input && output
+        .await
     }
 }

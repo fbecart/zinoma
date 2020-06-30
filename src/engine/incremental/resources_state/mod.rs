@@ -1,7 +1,7 @@
 mod cmd_stdout;
 mod fs;
 
-use crate::domain::Resources;
+use crate::{async_utils::all, domain::Resources};
 use anyhow::Result;
 use futures::future;
 use serde::{Deserialize, Serialize};
@@ -26,14 +26,11 @@ impl ResourcesState {
         })
     }
 
-    pub async fn eq_current_state(&self, resources: &Resources) -> Result<bool> {
-        // TODO Resolve at the first negative result
-        let (fs, cmd_stdout) = future::join(
+    pub async fn eq_current_state(&self, resources: &Resources) -> bool {
+        all(
             self.fs.eq_current_state(&resources.paths),
             self.cmd_stdout.eq_current_state(&resources.cmds),
         )
-        .await;
-
-        Ok(fs && cmd_stdout)
+        .await
     }
 }
