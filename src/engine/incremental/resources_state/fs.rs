@@ -1,4 +1,4 @@
-use crate::work_dir;
+use crate::{async_utils::all, work_dir};
 use anyhow::{Context, Result};
 use async_std::fs::File;
 use async_std::io::BufReader;
@@ -9,7 +9,6 @@ use futures::future;
 use seahash::SeaHasher;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::convert::identity;
 use std::hash::Hasher;
 use std::time::{Duration, SystemTime};
 use walkdir::WalkDir;
@@ -44,7 +43,6 @@ impl ResourcesState {
             return false;
         }
 
-        // TODO Resolve at the first negative result
         let futures = files.into_iter().map(|file_path| async move {
             let std_path: &std::path::Path = file_path.as_path().into();
             match self.0.get(std_path) {
@@ -68,7 +66,7 @@ impl ResourcesState {
             }
         });
 
-        future::join_all(futures).await.into_iter().all(identity)
+        all(futures).await
     }
 }
 

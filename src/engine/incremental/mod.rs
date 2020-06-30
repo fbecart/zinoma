@@ -1,7 +1,7 @@
 mod resources_state;
 pub mod storage;
 
-use crate::async_utils::all;
+use crate::async_utils::both;
 use crate::domain::{Resources, Target};
 use anyhow::{Context, Result};
 use futures::Future;
@@ -93,7 +93,7 @@ impl TargetEnvState {
             }
         };
 
-        all(
+        both(
             eq(&Some(&self.input), &target.input()),
             eq(&self.output.as_ref(), &target.output()),
         )

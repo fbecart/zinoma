@@ -1,7 +1,7 @@
 mod cmd_stdout;
 mod fs;
 
-use crate::{async_utils::all, domain::Resources};
+use crate::{async_utils::both, domain::Resources};
 use anyhow::Result;
 use futures::future;
 use serde::{Deserialize, Serialize};
@@ -27,7 +27,7 @@ impl ResourcesState {
     }
 
     pub async fn eq_current_state(&self, resources: &Resources) -> bool {
-        all(
+        both(
             self.fs.eq_current_state(&resources.paths),
             self.cmd_stdout.eq_current_state(&resources.cmds),
         )

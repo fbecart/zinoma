@@ -1,3 +1,4 @@
+use crate::async_utils;
 use crate::run_script;
 use anyhow::{anyhow, Context, Result};
 use async_std::path::{Path, PathBuf};
@@ -22,7 +23,6 @@ impl ResourcesState {
     }
 
     pub async fn eq_current_state(&self, cmds: &[(String, PathBuf)]) -> bool {
-        // TODO Resolve at the first negative result
         let futures = cmds.iter().map(|(cmd, dir)| async move {
             match get_cmd_stdout(cmd, dir).await {
                 Ok(stdout) => self.0.get(&cmd.to_string()) == Some(&stdout),
@@ -33,7 +33,7 @@ impl ResourcesState {
             }
         });
 
-        future::join_all(futures).await.into_iter().all(|r| r)
+        async_utils::all(futures).await
     }
 }
 

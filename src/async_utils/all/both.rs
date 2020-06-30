@@ -1,21 +1,23 @@
+use super::maybe_done::MaybeDone;
 use crate::task::{Context, Poll};
 use pin_project_lite::pin_project;
 use std::future::Future;
 use std::pin::Pin;
 
-pub fn all<L, R>(left: L, right: R) -> impl Future<Output = bool>
+pub fn both<L, R>(left: L, right: R) -> impl Future<Output = bool>
 where
     L: Future<Output = bool> + Sized,
     R: Future<Output = bool> + Sized,
 {
-    All {
+    Both {
         left: MaybeDone::Future(left),
         right: MaybeDone::Future(right),
     }
 }
 
 pin_project! {
-    pub struct All<L, R>
+    #[must_use = "futures do nothing unless you `.await` or poll them"]
+    pub struct Both<L, R>
     where
         L: Future<Output = bool>,
         R: Future<Output = bool>,
@@ -25,7 +27,7 @@ pin_project! {
     }
 }
 
-impl<L, R> Future for All<L, R>
+impl<L, R> Future for Both<L, R>
 where
     L: Future<Output = bool>,
     R: Future<Output = bool>,
@@ -46,60 +48,37 @@ where
     }
 }
 
-enum MaybeDone<F: Future<Output = bool>> {
-    Future(F),
-    Done(bool),
-}
-
-impl<F: Future<Output = bool>> Future for MaybeDone<F> {
-    type Output = bool;
-
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let res = unsafe {
-            match Pin::as_mut(&mut self).get_unchecked_mut() {
-                MaybeDone::Future(future) => match Pin::new_unchecked(future).poll(cx) {
-                    Poll::Ready(res) => res,
-                    Poll::Pending => return Poll::Pending,
-                },
-                MaybeDone::Done(res) => return Poll::Ready(*res),
-            }
-        };
-        self.set(MaybeDone::Done(res));
-        Poll::Ready(res)
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::all;
+    use super::both;
     use async_std::task;
     use futures::future;
 
     #[test]
     fn both_are_true() {
         assert!(task::block_on(async {
-            all(future::ready(true), future::ready(true)).await
+            both(future::ready(true), future::ready(true)).await
         }))
     }
 
     #[test]
     fn left_is_false() {
         assert!(!task::block_on(async {
-            all(future::ready(false), future::ready(true)).await
+            both(future::ready(false), future::ready(true)).await
         }))
     }
 
     #[test]
     fn right_is_false() {
         assert!(!task::block_on(async {
-            all(future::ready(true), future::ready(false)).await
+            both(future::ready(true), future::ready(false)).await
         }))
     }
 
     #[test]
     fn both_are_false() {
         assert!(!task::block_on(async {
-            all(future::ready(false), future::ready(false)).await
+            both(future::ready(false), future::ready(false)).await
         }))
     }
 }
