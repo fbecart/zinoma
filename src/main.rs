@@ -12,7 +12,7 @@ mod work_dir;
 use anyhow::{Context, Result};
 use async_ctrlc::CtrlC;
 use async_std::path::PathBuf;
-use async_std::sync::{self, Sender};
+use async_std::sync::{self, Receiver};
 use async_std::task;
 use clean::clean_target_output_paths;
 use config::{ir, yaml};
@@ -89,8 +89,7 @@ fn main() -> Result<()> {
 
         if requested_targets.is_some() {
             let engine = Engine::new(targets, root_target_ids);
-            let (termination_sender, termination_events) = sync::channel(1);
-            terminate_on_ctrlc(termination_sender.clone())?;
+            let termination_events = terminate_on_ctrlc()?;
 
             if arg_matches.is_present(cli::arg::WATCH) {
                 engine
@@ -109,7 +108,8 @@ fn main() -> Result<()> {
     })
 }
 
-fn terminate_on_ctrlc(termination_sender: Sender<TerminationMessage>) -> Result<()> {
+fn terminate_on_ctrlc() -> Result<Receiver<TerminationMessage>> {
+    let (termination_sender, termination_events) = sync::channel(1);
     let ctrlc = CtrlC::new().with_context(|| "Failed to set Ctrl-C handler")?;
 
     task::spawn(async move {
@@ -118,7 +118,7 @@ fn terminate_on_ctrlc(termination_sender: Sender<TerminationMessage>) -> Result<
         termination_sender.send(TerminationMessage::Terminate).await;
     });
 
-    Ok(())
+    Ok(termination_events)
 }
 
 pub enum TerminationMessage {
