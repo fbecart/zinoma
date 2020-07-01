@@ -2,6 +2,11 @@
 
 ## TBD
 
+## 0.17.0 (2020-07-01)
+
+This release does not bring any new feature. However, it brings a large design overall,
+transitioning from a multi-threaded implementation to a single-threaded event loop.
+
 Performance improvements:
 
 - [PERF #56](https://github.com/fbecart/zinoma/pull/56) Switch from `crossbeam` to `async-std`.
