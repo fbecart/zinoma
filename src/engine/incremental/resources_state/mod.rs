@@ -1,8 +1,9 @@
 mod cmd_stdout;
 mod fs;
 
-use crate::domain::Resources;
+use crate::{async_utils::both, domain::Resources};
 use anyhow::Result;
+use futures::future;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -12,16 +13,24 @@ pub struct ResourcesState {
 }
 
 impl ResourcesState {
-    pub fn current(resources: &Resources) -> Result<Self> {
+    pub async fn current(resources: &Resources) -> Result<Self> {
+        let (fs, cmd_stdout) = future::join(
+            fs::ResourcesState::current(&resources.paths),
+            cmd_stdout::ResourcesState::current(&resources.cmds),
+        )
+        .await;
+
         Ok(Self {
-            fs: fs::ResourcesState::current(&resources.paths)?,
-            cmd_stdout: cmd_stdout::ResourcesState::current(&resources.cmds)?,
+            fs: fs?,
+            cmd_stdout: cmd_stdout?,
         })
     }
 
-    pub fn eq_current_state(&self, resources: &Resources) -> Result<bool> {
-        // TODO Parallelize this computation
-        Ok((&self.fs).eq_current_state(&resources.paths)?
-            && (&self.cmd_stdout).eq_current_state(&resources.cmds))
+    pub async fn eq_current_state(&self, resources: &Resources) -> bool {
+        both(
+            self.fs.eq_current_state(&resources.paths),
+            self.cmd_stdout.eq_current_state(&resources.cmds),
+        )
+        .await
     }
 }

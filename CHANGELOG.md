@@ -2,6 +2,10 @@
 
 ## TBD
 
+Performance improvements:
+
+- [PERF #56](https://github.com/fbecart/zinoma/pull/56) Switch from `crossbeam` to `async-std`.
+
 ## 0.16.0 (2020-06-18)
 
 ### BREAKING CHANGES

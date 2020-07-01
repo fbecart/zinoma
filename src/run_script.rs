@@ -1,4 +1,4 @@
-use std::path::Path;
+use async_std::path::Path;
 use std::process::Command;
 
 pub fn build_command(script: &str, dir: &Path) -> Command {

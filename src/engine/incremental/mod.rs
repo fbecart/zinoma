@@ -1,9 +1,10 @@
 mod resources_state;
 pub mod storage;
 
-use crate::domain::Target;
+use crate::async_utils::both;
+use crate::domain::{Resources, Target};
 use anyhow::{Context, Result};
-use rayon::prelude::*;
+use futures::Future;
 use resources_state::ResourcesState;
 use serde::{Deserialize, Serialize};
 
@@ -13,21 +14,24 @@ pub enum IncrementalRunResult<T> {
     Run(T),
 }
 
-pub fn run<T, F>(target: &Target, function: F) -> Result<IncrementalRunResult<Result<T>>>
+pub async fn run<T, F>(
+    target: &Target,
+    function: impl Fn() -> F,
+) -> Result<IncrementalRunResult<F::Output>>
 where
-    F: Fn() -> Result<T>,
+    F: Future<Output = Result<T>>,
 {
-    if env_state_has_not_changed_since_last_successful_execution(target)? {
+    if env_state_has_not_changed_since_last_successful_execution(target).await? {
         return Ok(IncrementalRunResult::Skipped);
     }
 
-    storage::delete_saved_env_state(&target)?;
+    storage::delete_saved_env_state(&target).await?;
 
-    let result = function();
+    let result = function().await;
 
     if result.is_ok() {
-        match TargetEnvState::current(target) {
-            Ok(Some(env_state)) => storage::save_env_state(&target, &env_state)?,
+        match TargetEnvState::current(target).await {
+            Ok(Some(env_state)) => storage::save_env_state(&target, env_state).await?,
             Ok(None) => {}
             Err(e) => log::error!(
                 "{} - Failed to compute state of inputs and outputs: {}",
@@ -40,13 +44,18 @@ where
     Ok(IncrementalRunResult::Run(result))
 }
 
-fn env_state_has_not_changed_since_last_successful_execution(target: &Target) -> Result<bool> {
+async fn env_state_has_not_changed_since_last_successful_execution(
+    target: &Target,
+) -> Result<bool> {
     let saved_state = storage::read_saved_target_env_state(target)
+        .await
         .with_context(|| format!("Failed to read saved env state for {}", target))?;
 
-    Ok(saved_state
-        .map(|saved_state| saved_state.eq_current_state(target))
-        .unwrap_or(false))
+    if let Some(saved_state) = saved_state {
+        Ok(saved_state.eq_current_state(target).await)
+    } else {
+        Ok(false)
+    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -56,14 +65,14 @@ pub struct TargetEnvState {
 }
 
 impl TargetEnvState {
-    pub fn current(target: &Target) -> Result<Option<Self>> {
+    pub async fn current(target: &Target) -> Result<Option<Self>> {
         match target.input() {
             Some(target_input) if !target_input.is_empty() => {
-                let input = ResourcesState::current(target_input)?;
-                let output = target
-                    .output()
-                    .map(|target_output| ResourcesState::current(target_output))
-                    .transpose()?;
+                let input = ResourcesState::current(target_input).await?;
+                let output = match target.output() {
+                    Some(target_output) => Some(ResourcesState::current(target_output).await?),
+                    None => None,
+                };
 
                 Ok(Some(TargetEnvState { input, output }))
             }
@@ -71,21 +80,23 @@ impl TargetEnvState {
         }
     }
 
-    pub fn eq_current_state(&self, target: &Target) -> bool {
-        [
-            (Some(&self.input), &target.input()),
-            (self.output.as_ref(), &target.output()),
-        ]
-        .par_iter()
-        .all(|(env_state, resources)| {
-            resources.map_or(true, |resources| {
-                env_state.as_ref().map_or(false, |env_state| {
-                    env_state.eq_current_state(resources).unwrap_or_else(|e| {
-                        log::error!("Failed to run {} incrementally: {}", target, e);
-                        false
-                    })
-                })
-            })
-        })
+    pub async fn eq_current_state(&self, target: &Target) -> bool {
+        async fn eq(env_state: &Option<&ResourcesState>, resources: &Option<&Resources>) -> bool {
+            if let Some(resources) = resources {
+                if let Some(env_state) = env_state {
+                    env_state.eq_current_state(resources).await
+                } else {
+                    false
+                }
+            } else {
+                true
+            }
+        };
+
+        both(
+            eq(&Some(&self.input), &target.input()),
+            eq(&self.output.as_ref(), &target.output()),
+        )
+        .await
     }
 }

@@ -1,48 +1,55 @@
-use crate::domain::{Target, TargetId};
+use crate::domain::{Resources, TargetId};
 use crate::work_dir;
 use anyhow::{Context, Error, Result};
-use crossbeam::channel::Sender;
+use async_std::path::{Path, PathBuf};
+use async_std::sync::Sender;
+use async_std::task;
 use notify::{ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
-use std::path::Path;
 
 pub struct TargetWatcher {
     _watcher: RecommendedWatcher,
 }
 
 impl TargetWatcher {
-    pub fn new(
-        target: &Target,
+    pub async fn new(
+        target_id: TargetId,
+        target_input: Option<Resources>,
         target_invalidated_sender: Sender<TargetId>,
     ) -> Result<Option<Self>> {
-        if let Some(target_input) = target.input() {
+        if let Some(target_input) = target_input {
             if !target_input.paths.is_empty() {
-                let mut watcher =
-                    Self::build_immediate_watcher(target.id().clone(), target_invalidated_sender)?;
+                return task::spawn_blocking(move || {
+                    let mut watcher = Self::build_immediate_watcher(
+                        target_id.clone(),
+                        target_invalidated_sender,
+                    )?;
 
-                for path in &target_input.paths {
-                    match watcher.watch(path, RecursiveMode::Recursive) {
-                        Ok(_) => {}
-                        Err(notify::Error {
-                            kind: ErrorKind::PathNotFound,
-                            ..
-                        }) => {
-                            log::warn!(
-                                "{} - Skipping watch on non-existing path: {}",
-                                target,
-                                path.display(),
-                            );
-                        }
-                        Err(e) => {
-                            return Err(Error::new(e).context(format!(
-                                "Error watching path {} for target {}",
-                                path.display(),
-                                target,
-                            )));
+                    for path in &target_input.paths {
+                        match watcher.watch(path, RecursiveMode::Recursive) {
+                            Ok(_) => {}
+                            Err(notify::Error {
+                                kind: ErrorKind::PathNotFound,
+                                ..
+                            }) => {
+                                log::warn!(
+                                    "{} - Skipping watch on non-existing path: {}",
+                                    target_id,
+                                    path.display(),
+                                );
+                            }
+                            Err(e) => {
+                                return Err(Error::new(e).context(format!(
+                                    "Error watching path {} for target {}",
+                                    path.display(),
+                                    target_id,
+                                )));
+                            }
                         }
                     }
-                }
 
-                return Ok(Some(Self { _watcher: watcher }));
+                    Ok(Some(Self { _watcher: watcher }))
+                })
+                .await;
             }
         }
 
@@ -54,16 +61,13 @@ impl TargetWatcher {
         target_invalidated_sender: Sender<TargetId>,
     ) -> Result<RecommendedWatcher> {
         Watcher::new_immediate(move |result: notify::Result<notify::Event>| {
-            if result
-                .unwrap()
-                .paths
-                .iter()
-                .any(|path| !is_tmp_editor_file(path) && !work_dir::is_in_work_dir(path))
-            {
-                target_invalidated_sender
-                    .send(target_id.clone())
-                    .with_context(|| "Sender error")
-                    .unwrap();
+            let some_paths_are_relevant = result.unwrap().paths.into_iter().any(|path| {
+                let path: PathBuf = path.into();
+                !is_tmp_editor_file(&path) && !work_dir::is_in_work_dir(&path)
+            });
+
+            if some_paths_are_relevant {
+                task::block_on(target_invalidated_sender.send(target_id.clone()))
             }
         })
         .with_context(|| "Error creating watcher")
@@ -88,7 +92,7 @@ fn is_tmp_editor_file(file_path: &Path) -> bool {
 #[cfg(test)]
 mod is_tmp_editor_file_tests {
     use super::is_tmp_editor_file;
-    use std::path::Path;
+    use async_std::path::Path;
 
     #[test]
     fn src_file_should_not_be_tmp_editor_file() {

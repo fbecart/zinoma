@@ -1,53 +1,60 @@
-use crate::work_dir;
+use crate::{async_utils::all, work_dir};
 use anyhow::{Context, Result};
-use rayon::prelude::*;
+use async_std::fs::File;
+use async_std::io::BufReader;
+use async_std::path::{Path, PathBuf};
+use async_std::prelude::*;
+use async_std::task;
+use futures::future;
 use seahash::SeaHasher;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::fs;
 use std::hash::Hasher;
-use std::io::{BufReader, Read};
-use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 use walkdir::WalkDir;
+use work_dir::is_work_dir;
 
 #[derive(Serialize, Deserialize, PartialEq)]
-pub struct ResourcesState(HashMap<PathBuf, (Duration, u64)>);
+pub struct ResourcesState(HashMap<std::path::PathBuf, (Duration, u64)>);
 
 impl ResourcesState {
-    pub fn current(paths: &[PathBuf]) -> Result<Self> {
-        Ok(Self(
-            list_files(paths)
-                .into_par_iter()
-                .map(|file| {
-                    let modified = get_file_modified(&file)?;
-                    let file_hash = compute_file_hash(&file)
-                        .with_context(|| format!("Failed to compute hash of {}", file.display()))?;
-                    Ok((file, (modified, file_hash)))
-                })
-                .collect::<Result<HashMap<_, _>>>()?,
-        ))
-    }
+    pub async fn current(paths: &[PathBuf]) -> Result<Self> {
+        let files = list_files_in_paths(paths).await;
 
-    pub fn eq_current_state(&self, paths: &[PathBuf]) -> Result<bool> {
-        let files = list_files(paths);
+        let mut state = HashMap::with_capacity(files.len());
 
-        if files.len() != self.0.len() {
-            return Ok(false);
+        for file in files {
+            let modified = get_file_modified(&file).await.with_context(|| {
+                format!("Failed to obtain file modified date: {}", file.display())
+            })?;
+            let file_hash = compute_file_hash(&file)
+                .await
+                .with_context(|| format!("Failed to compute hash of {}", file.display()))?;
+            state.insert(file.into(), (modified, file_hash));
         }
 
-        Ok(files
-            .par_iter()
-            .all(|file_path| match self.0.get(file_path) {
+        Ok(Self(state))
+    }
+
+    pub async fn eq_current_state(&self, paths: &[PathBuf]) -> bool {
+        let files = list_files_in_paths(paths).await;
+
+        if files.len() != self.0.len() {
+            return false;
+        }
+
+        let futures = files.into_iter().map(|file_path| async move {
+            let std_path: &std::path::Path = file_path.as_path().into();
+            match self.0.get(std_path) {
                 None => false,
-                Some(&(saved_modified, saved_hash)) => match get_file_modified(&file_path) {
+                Some(&(saved_modified, saved_hash)) => match get_file_modified(&file_path).await {
                     Err(e) => {
                         log::error!("{:?}", e);
                         false
                     }
                     Ok(modified) => {
                         modified == saved_modified
-                            || match compute_file_hash(file_path) {
+                            || match compute_file_hash(&file_path).await {
                                 Err(e) => {
                                     log::error!("{:?}", e);
                                     false
@@ -56,33 +63,49 @@ impl ResourcesState {
                             }
                     }
                 },
-            }))
+            }
+        });
+
+        all(futures).await
     }
 }
 
-fn list_files(paths: &[PathBuf]) -> HashSet<PathBuf> {
-    let mut files = HashSet::new();
+async fn list_files_in_paths(paths: &[PathBuf]) -> HashSet<PathBuf> {
+    future::join_all(paths.iter().map(|path| list_files_in_path(path)))
+        .await
+        .into_iter()
+        .flatten()
+        .collect()
+}
 
-    for path in paths {
-        for entry in WalkDir::new(path).into_iter() {
-            match entry {
-                Err(e) => log::debug!("Failed to walk dir {}: {}", path.display(), e),
+async fn list_files_in_path(path: &Path) -> Vec<PathBuf> {
+    let walkdir = WalkDir::new(path);
+
+    task::spawn_blocking(|| {
+        walkdir
+            .into_iter()
+            .filter_entry(|e| !is_work_dir(e))
+            .filter_map(|entry| match entry {
+                Err(e) => {
+                    log::debug!("Failed to walk dir: {}", e);
+                    None
+                }
                 Ok(entry) => {
                     let path = entry.into_path();
-                    if path.is_file() && !work_dir::is_in_work_dir(&path) {
-                        files.insert(path);
-                    }
+                    Some(path)
+                        .filter(|path| path.is_file())
+                        .map(|path| path.into())
                 }
-            }
-        }
-    }
-
-    files
+            })
+            .collect()
+    })
+    .await
 }
 
-fn get_file_modified(file: &Path) -> Result<Duration> {
+async fn get_file_modified(file: &Path) -> Result<Duration> {
     let metadata = file
         .metadata()
+        .await
         .with_context(|| format!("Failed to obtain metadata of file {}", file.display()))?;
     let modified = metadata.modified().with_context(|| {
         format!(
@@ -100,9 +123,10 @@ fn get_file_modified(file: &Path) -> Result<Duration> {
         })
 }
 
-fn compute_file_hash(file_path: &Path) -> Result<u64> {
+async fn compute_file_hash(file_path: &Path) -> Result<u64> {
     let mut hasher = SeaHasher::default();
-    let file = fs::File::open(file_path)
+    let file = File::open(file_path)
+        .await
         .with_context(|| format!("Failed to open file {}", file_path.display()))?;
     let mut reader = BufReader::new(file);
 
@@ -110,6 +134,7 @@ fn compute_file_hash(file_path: &Path) -> Result<u64> {
     loop {
         let count = reader
             .read(&mut buffer)
+            .await
             .with_context(|| format!("Failed to read file {}", file_path.display()))?;
         if count == 0 {
             break;

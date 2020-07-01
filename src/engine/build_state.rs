@@ -1,15 +1,17 @@
-use super::incremental::IncrementalRunResult;
+use super::{incremental::IncrementalRunResult, BuildCancellationMessage};
 use crate::domain::{Target, TargetId};
 use anyhow::Result;
-use crossbeam::thread::ScopedJoinHandle;
+use async_std::sync::Sender;
+use async_std::task::JoinHandle;
+use futures::future;
 use std::collections::HashMap;
 
-pub struct TargetBuildStates<'a: 's, 's> {
+pub struct TargetBuildStates<'a> {
     targets: &'a HashMap<TargetId, Target>,
-    build_states: HashMap<TargetId, TargetBuildState<'s>>,
+    build_states: HashMap<TargetId, TargetBuildState>,
 }
 
-impl<'a, 's> TargetBuildStates<'a, 's> {
+impl<'a> TargetBuildStates<'a> {
     pub fn new(targets: &'a HashMap<TargetId, Target>) -> Self {
         Self {
             targets,
@@ -31,24 +33,25 @@ impl<'a, 's> TargetBuildStates<'a, 's> {
     pub fn set_build_started(
         &mut self,
         target_id: &TargetId,
-        build_thread: ScopedJoinHandle<'s, ()>,
+        build_thread: JoinHandle<()>,
+        build_cancellation_sender: Sender<BuildCancellationMessage>,
     ) {
         self.build_states
             .get_mut(target_id)
             .unwrap()
-            .build_started(build_thread);
+            .build_started(build_thread, build_cancellation_sender);
     }
 
-    pub fn set_build_finished(
+    pub async fn set_build_finished(
         &mut self,
         target_id: &TargetId,
         result: &IncrementalRunResult<Result<()>>,
     ) {
         let target_build_state = self.build_states.get_mut(target_id).unwrap();
         if let IncrementalRunResult::Run(Err(_)) = result {
-            target_build_state.build_failed();
+            target_build_state.build_failed().await;
         } else {
-            target_build_state.build_succeeded();
+            target_build_state.build_succeeded().await;
         }
     }
 
@@ -56,7 +59,7 @@ impl<'a, 's> TargetBuildStates<'a, 's> {
         self.build_states
             .iter()
             .filter(|(_target_id, build_state)| {
-                build_state.to_build && build_state.build_thread.is_none()
+                build_state.to_build && build_state.build_handles.is_none()
             })
             .map(|(target_id, _build_state)| target_id)
             .filter(|&target_id| self.has_all_dependencies_built(target_id))
@@ -78,26 +81,32 @@ impl<'a, 's> TargetBuildStates<'a, 's> {
             .all(|build_state| build_state.built)
     }
 
-    pub fn join_all_build_threads(&mut self) {
-        for build_state in self.build_states.values_mut() {
-            if build_state.build_thread.is_some() {
-                build_state.join_build_thread();
-            }
-        }
+    pub async fn cancel_all_builds(&mut self) {
+        let cancellation_futures = self
+            .build_states
+            .iter_mut()
+            .filter(|(_target_id, build_state)| build_state.build_handles.is_some())
+            .map(|(target_id, build_state)| async move {
+                log::debug!("{} - Cancelling build", target_id);
+                build_state.cancel_build().await;
+            });
+
+        future::join_all(cancellation_futures).await;
+        log::debug!("All build processes successfully cancelled");
     }
 }
 
-struct TargetBuildState<'a> {
+struct TargetBuildState {
     to_build: bool,
-    build_thread: Option<ScopedJoinHandle<'a, ()>>,
+    build_handles: Option<(JoinHandle<()>, Sender<BuildCancellationMessage>)>,
     built: bool,
 }
 
-impl<'a> TargetBuildState<'a> {
+impl TargetBuildState {
     pub fn new() -> Self {
         Self {
             to_build: true,
-            build_thread: None,
+            build_handles: None,
             built: false,
         }
     }
@@ -107,27 +116,38 @@ impl<'a> TargetBuildState<'a> {
         self.built = false;
     }
 
-    pub fn build_started(&mut self, build_thread: ScopedJoinHandle<'a, ()>) {
+    pub fn build_started(
+        &mut self,
+        build_thread: JoinHandle<()>,
+        build_cancellation_sender: Sender<BuildCancellationMessage>,
+    ) {
         self.to_build = false;
-        self.build_thread = Some(build_thread);
+        self.build_handles = Some((build_thread, build_cancellation_sender));
         self.built = false;
     }
 
-    pub fn build_succeeded(&mut self) {
-        self.join_build_thread();
+    pub async fn build_succeeded(&mut self) {
+        self.join_build_thread().await;
         self.built = !self.to_build;
     }
 
-    pub fn build_failed(&mut self) {
-        self.join_build_thread();
+    pub async fn build_failed(&mut self) {
+        self.join_build_thread().await;
         self.built = false;
     }
 
-    fn join_build_thread(&mut self) {
-        let build_thread = std::mem::replace(&mut self.build_thread, None);
-        build_thread
-            .unwrap()
-            .join()
-            .unwrap_or_else(|_| log::error!("Failed to join build thread"));
+    async fn cancel_build(&mut self) {
+        let (build_thread, build_cancellation_sender) =
+            std::mem::replace(&mut self.build_handles, None).unwrap();
+        build_cancellation_sender
+            .send(BuildCancellationMessage::CancelBuild)
+            .await;
+        build_thread.await;
+    }
+
+    async fn join_build_thread(&mut self) {
+        let (build_thread, _build_cancellation_sender) =
+            std::mem::replace(&mut self.build_handles, None).unwrap();
+        build_thread.await;
     }
 }
