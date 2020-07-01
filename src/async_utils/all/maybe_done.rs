@@ -1,4 +1,4 @@
-use crate::task::{Context, Poll};
+use async_std::task::{Context, Poll};
 use std::future::Future;
 use std::pin::Pin;
 

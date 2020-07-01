@@ -5,6 +5,7 @@ use core::task::{Context, Poll};
 
 use super::maybe_done::MaybeDone;
 
+/// Resolve as true unless any future in the iterator resolves as false.
 pub fn all<I>(i: I) -> All<I::Item>
 where
     I: IntoIterator,
@@ -59,4 +60,42 @@ fn iter_pin_mut<T>(slice: Pin<&mut [T]>) -> impl Iterator<Item = Pin<&mut T>> {
     unsafe { slice.get_unchecked_mut() }
         .iter_mut()
         .map(|t| unsafe { Pin::new_unchecked(t) })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::all;
+    use async_std::task;
+    use future::Ready;
+    use futures::future;
+
+    #[test]
+    fn true_for_empty() {
+        task::block_on(async {
+            let futures = Vec::<Ready<bool>>::new();
+            assert_eq!(true, all(futures).await);
+        })
+    }
+
+    #[test]
+    fn true_if_all_true() {
+        task::block_on(async {
+            let futures = vec![future::ready(true), future::ready(true)];
+            assert_eq!(true, all(futures).await);
+        })
+    }
+
+    #[test]
+    fn false_if_any_false() {
+        task::block_on(async {
+            assert_eq!(
+                false,
+                all(vec![future::ready(false), future::ready(true)]).await
+            );
+            assert_eq!(
+                false,
+                all(vec![future::ready(true), future::ready(false)]).await
+            );
+        })
+    }
 }
