@@ -56,29 +56,32 @@ mod tests {
 
     #[test]
     fn both_are_true() {
-        assert!(task::block_on(async {
-            both(future::ready(true), future::ready(true)).await
-        }))
+        task::block_on(async {
+            assert_eq!(true, both(future::ready(true), future::ready(true)).await)
+        })
     }
 
     #[test]
     fn left_is_false() {
-        assert!(!task::block_on(async {
-            both(future::ready(false), future::ready(true)).await
-        }))
+        task::block_on(async {
+            assert_eq!(false, both(future::ready(false), future::ready(true)).await)
+        })
     }
 
     #[test]
     fn right_is_false() {
-        assert!(!task::block_on(async {
-            both(future::ready(true), future::ready(false)).await
-        }))
+        task::block_on(async {
+            assert_eq!(false, both(future::ready(true), future::ready(false)).await)
+        })
     }
 
     #[test]
     fn both_are_false() {
-        assert!(!task::block_on(async {
-            both(future::ready(false), future::ready(false)).await
-        }))
+        task::block_on(async {
+            assert_eq!(
+                false,
+                both(future::ready(false), future::ready(false)).await
+            )
+        })
     }
 }
