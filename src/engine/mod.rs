@@ -1,6 +1,6 @@
-mod build_state;
 mod builder;
 pub mod incremental;
+mod run_state;
 mod service;
 mod watcher;
 
@@ -8,12 +8,11 @@ use crate::domain::{Target, TargetId};
 use crate::TerminationMessage;
 use anyhow::{Context, Result};
 use async_std::prelude::*;
-use async_std::sync::{self, Receiver, Sender};
+use async_std::sync::{self, Receiver};
 use async_std::task;
-use build_state::TargetBuildStates;
-use builder::build_target;
 use futures::{future, FutureExt};
 use incremental::IncrementalRunResult;
+use run_state::TargetRunStates;
 use service::ServicesRunner;
 use std::collections::HashMap;
 use watcher::TargetWatcher;
@@ -56,47 +55,83 @@ impl Engine {
         let (build_report_sender, mut build_report_events) =
             sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
-        let mut target_build_states = TargetBuildStates::new(&self.targets);
+        let mut target_run_states = TargetRunStates::new(&self.targets);
 
         loop {
-            for target_id in target_build_states.get_ready_to_build_targets() {
+            for target_id in target_run_states.list_ready_to_run_targets() {
                 let target = self.targets[&target_id].clone();
-                let build_report_sender = build_report_sender.clone();
-                let (build_cancellation_sender, build_cancellation_events) = sync::channel(1);
-                let build_thread = task::spawn(async move {
-                    build_target_incrementally(
-                        &target,
-                        &build_cancellation_events,
-                        &build_report_sender,
-                    )
-                    .await
-                });
-                target_build_states.set_build_started(
-                    &target_id,
-                    build_thread,
-                    build_cancellation_sender,
-                );
+
+                match target.clone() {
+                    Target::Build(build_target) => {
+                        let build_report_sender = build_report_sender.clone();
+                        let (build_cancellation_sender, build_cancellation_events) =
+                            sync::channel(1);
+                        let build_thread = task::spawn(async move {
+                            let result = incremental::run(&target, || async {
+                                builder::build_target(
+                                    &build_target,
+                                    build_cancellation_events.clone(),
+                                )
+                                .await?;
+
+                                Ok(())
+                            })
+                            .await
+                            .with_context(|| format!("{} - Build failed", target))
+                            .unwrap();
+
+                            if let IncrementalRunResult::Skipped = result {
+                                log::info!("{} - Build skipped (Not Modified)", target);
+                            }
+
+                            build_report_sender
+                                .send(BuildReport::new(target.id().clone(), result))
+                                .await;
+                        });
+                        target_run_states.set_build_started(
+                            &target_id,
+                            build_thread,
+                            build_cancellation_sender,
+                        );
+                    }
+                    Target::Service(service_target) => {
+                        target_run_states.set_run_started(&target_id);
+                        build_report_sender
+                            .send(BuildReport::new(
+                                target.id().clone(),
+                                IncrementalRunResult::Run(Ok(())),
+                            ))
+                            .await;
+                        services_runner.restart_service(&service_target).await?;
+                    }
+                    Target::Aggregate(_) => {
+                        target_run_states.set_run_started(&target_id);
+                        build_report_sender
+                            .send(BuildReport::new(
+                                target.id().clone(),
+                                IncrementalRunResult::Run(Ok(())),
+                            ))
+                            .await;
+                    }
+                }
             }
 
             futures::select! {
                 _ = termination_events.next().fuse() => {
-                    target_build_states.cancel_all_builds().await;
+                    target_run_states.cancel_all_builds().await;
                     services_runner.terminate_all_services().await;
                     return Ok(());
                 },
                 target_id = target_invalidated_events.next().fuse() => {
-                    target_build_states.set_build_invalidated(&target_id.unwrap());
+                    target_run_states.set_invalidated(&target_id.unwrap());
                 },
                 build_report = build_report_events.next().fuse() => {
                     let BuildReport { target_id, result } = build_report.unwrap();
-                    let target = &self.targets[&target_id];
 
-                    target_build_states.set_build_finished(&target_id, &result).await;
+                    target_run_states.set_finished(&target_id, &result).await;
 
                     if let IncrementalRunResult::Run(Err(e)) = result {
-                        log::warn!("{} - {}", target, e);
-                    } else if let Target::Service(target) = target {
-                        services_runner.restart_service(target).await?;
+                        log::warn!("{} - {}", target_id, e);
                     }
                 },
             }
@@ -108,49 +143,82 @@ impl Engine {
         let (build_report_sender, mut build_report_events) =
             sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
-        let mut target_build_states = TargetBuildStates::new(&self.targets);
+        let mut target_run_states = TargetRunStates::new(&self.targets);
 
-        while !target_build_states.all_are_built() {
-            for target_id in target_build_states.get_ready_to_build_targets() {
+        while !target_run_states.all_are_built() {
+            for target_id in target_run_states.list_ready_to_run_targets() {
                 let target = self.targets[&target_id].clone();
-                let build_report_sender = build_report_sender.clone();
-                let (build_cancellation_sender, build_cancellation_events) = sync::channel(1);
-                let build_thread = task::spawn(async move {
-                    build_target_incrementally(
-                        &target,
-                        &build_cancellation_events,
-                        &build_report_sender,
-                    )
-                    .await
-                });
-                target_build_states.set_build_started(
-                    &target_id,
-                    build_thread,
-                    build_cancellation_sender,
-                );
+
+                match target.clone() {
+                    Target::Build(build_target) => {
+                        let build_report_sender = build_report_sender.clone();
+                        let (build_cancellation_sender, build_cancellation_events) =
+                            sync::channel(1);
+                        let build_thread = task::spawn(async move {
+                            let result = incremental::run(&target, || async {
+                                builder::build_target(
+                                    &build_target,
+                                    build_cancellation_events.clone(),
+                                )
+                                .await?;
+
+                                Ok(())
+                            })
+                            .await
+                            .with_context(|| format!("{} - Build failed", target))
+                            .unwrap();
+
+                            if let IncrementalRunResult::Skipped = result {
+                                log::info!("{} - Build skipped (Not Modified)", target);
+                            }
+
+                            build_report_sender
+                                .send(BuildReport::new(target.id().clone(), result))
+                                .await;
+                        });
+                        target_run_states.set_build_started(
+                            &target_id,
+                            build_thread,
+                            build_cancellation_sender,
+                        );
+                    }
+                    Target::Service(service_target) => {
+                        target_run_states.set_run_started(&target_id);
+                        build_report_sender
+                            .send(BuildReport::new(
+                                target.id().clone(),
+                                IncrementalRunResult::Run(Ok(())),
+                            ))
+                            .await;
+                        services_runner.start_service(&service_target).await?;
+                    }
+                    Target::Aggregate(_) => {
+                        target_run_states.set_run_started(&target_id);
+                        build_report_sender
+                            .send(BuildReport::new(
+                                target.id().clone(),
+                                IncrementalRunResult::Run(Ok(())),
+                            ))
+                            .await;
+                    }
+                }
             }
 
             futures::select! {
                 _ = termination_events.next().fuse() => {
-                    target_build_states.cancel_all_builds().await;
+                    target_run_states.cancel_all_builds().await;
                     services_runner.terminate_all_services().await;
                     return Ok(());
                 }
                 build_report = build_report_events.next().fuse() => {
                     let BuildReport { target_id, result } = build_report.unwrap();
 
-                    log::debug!("{} - Build report received", target_id);
-                    target_build_states.set_build_finished(&target_id, &result).await;
+                    target_run_states.set_finished(&target_id, &result).await;
 
                     if let IncrementalRunResult::Run(Err(e)) = result {
-                        target_build_states.cancel_all_builds().await;
+                        target_run_states.cancel_all_builds().await;
                         services_runner.terminate_all_services().await;
                         return Err(e);
-                    }
-
-                    let target = &self.targets[&target_id];
-                    if let Target::Service(target) = target {
-                        services_runner.start_service(target).await?;
                     }
                 }
             }
@@ -184,31 +252,6 @@ impl Engine {
 
         Ok(())
     }
-}
-
-async fn build_target_incrementally(
-    target: &Target,
-    build_cancellation_events: &Receiver<BuildCancellationMessage>,
-    build_report_sender: &Sender<BuildReport>,
-) {
-    let result = incremental::run(&target, || async {
-        if let Target::Build(target) = target {
-            build_target(&target, build_cancellation_events.clone()).await?;
-        }
-
-        Ok(())
-    })
-    .await
-    .with_context(|| format!("{} - Build failed", target))
-    .unwrap();
-
-    if let IncrementalRunResult::Skipped = result {
-        log::info!("{} - Build skipped (Not Modified)", target);
-    }
-
-    build_report_sender
-        .send(BuildReport::new(target.id().clone(), result))
-        .await;
 }
 
 pub struct BuildReport {
