@@ -12,11 +12,9 @@ use async_std::sync::{self, Receiver, Sender};
 use async_std::task;
 use futures::{future, FutureExt};
 use std::collections::{HashMap, HashSet};
-use target_actor::{
-    TargetActor, TargetActorInputMessage, TargetExecutionReportMessage, TargetInvalidatedMessage,
-};
+use target_actor::{TargetActor, TargetActorInputMessage, TargetExecutionReportMessage};
 use task::JoinHandle;
-use watcher::TargetWatcher;
+use watcher::{TargetInvalidatedMessage, TargetWatcher};
 
 pub struct Engine {
     targets: HashMap<TargetId, Target>,
@@ -32,16 +30,17 @@ impl Engine {
     }
 
     pub async fn watch(self, mut termination_events: Receiver<TerminationMessage>) -> Result<()> {
-        let (target_invalidated_sender, mut target_invalidated_events) =
-            sync::channel(crate::DEFAULT_CHANNEL_CAP);
+        let (target_actor_handles, mut target_execution_report_events) =
+            Self::launch_target_actors(&self.targets);
+
         let _target_watchers =
             future::try_join_all(self.targets.iter().map(|(target_id, target)| {
-                let target_invalidated_sender = target_invalidated_sender.clone();
+                let handles = &target_actor_handles[target_id];
                 async move {
                     TargetWatcher::new(
                         target.id().clone(),
                         target.input().cloned(),
-                        target_invalidated_sender,
+                        handles.target_invalidated_sender.clone(),
                     )
                     .await
                     .map(|watcher| (target_id, watcher))
@@ -52,19 +51,9 @@ impl Engine {
             .into_iter()
             .collect::<HashMap<_, _>>();
 
-        let (target_actor_handles, mut target_execution_report_events) =
-            Self::launch_target_actors(&self.targets);
-
         loop {
             futures::select! {
                 _ = termination_events.next().fuse() => break,
-                target_id = target_invalidated_events.next().fuse() => {
-                    let target_id = target_id.unwrap();
-                    let handles = &target_actor_handles[&target_id];
-                    if handles.target_invalidated_sender.try_send(TargetInvalidatedMessage).is_err() {
-                        log::trace!("{} - Target already invalidated. Discarding message.", target_id);
-                    }
-                },
                 target_execution_report = target_execution_report_events.next().fuse() => {
                     match target_execution_report.unwrap() {
                         TargetExecutionReportMessage::TargetOutputAvailable(target_id) => {

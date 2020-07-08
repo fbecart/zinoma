@@ -10,6 +10,7 @@ use incremental::IncrementalRunResult;
 use std::collections::HashSet;
 use std::mem;
 use std::process::{Child, Stdio};
+use super::watcher::TargetInvalidatedMessage;
 
 pub struct TargetActor {
     target: Target,
@@ -202,6 +203,3 @@ enum MaybeInterrupted {
     Interrupted,
     NotInterrupted,
 }
-
-#[derive(Debug)]
-pub struct TargetInvalidatedMessage;

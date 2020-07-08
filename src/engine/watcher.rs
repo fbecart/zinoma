@@ -14,7 +14,7 @@ impl TargetWatcher {
     pub async fn new(
         target_id: TargetId,
         target_input: Option<Resources>,
-        target_invalidated_sender: Sender<TargetId>,
+        target_invalidated_sender: Sender<TargetInvalidatedMessage>,
     ) -> Result<Option<Self>> {
         if let Some(target_input) = target_input {
             if !target_input.paths.is_empty() {
@@ -58,7 +58,7 @@ impl TargetWatcher {
 
     fn build_immediate_watcher(
         target_id: TargetId,
-        target_invalidated_sender: Sender<TargetId>,
+        target_invalidated_sender: Sender<TargetInvalidatedMessage>,
     ) -> Result<RecommendedWatcher> {
         Watcher::new_immediate(move |result: notify::Result<notify::Event>| {
             let relevant_paths = result
@@ -78,7 +78,12 @@ impl TargetWatcher {
                     &target_id,
                     itertools::join(relevant_paths.iter().flat_map(|path| path.to_str()), ", ")
                 );
-                task::block_on(target_invalidated_sender.send(target_id))
+                if target_invalidated_sender
+                    .try_send(TargetInvalidatedMessage)
+                    .is_err()
+                {
+                    log::trace!("{} - Target already invalidated. Skipping.", &target_id);
+                }
             }
         })
         .with_context(|| "Error creating watcher")
@@ -99,6 +104,8 @@ fn is_tmp_editor_file(file_path: &Path) -> bool {
 
     false
 }
+
+pub struct TargetInvalidatedMessage;
 
 #[cfg(test)]
 mod is_tmp_editor_file_tests {
