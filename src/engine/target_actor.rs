@@ -1,7 +1,7 @@
 use crate::domain::{Target, TargetId};
 use crate::engine::{builder, incremental, BuildCancellationMessage};
 use crate::{run_script, TerminationMessage};
-use anyhow::{Context, Result};
+use anyhow::{Context, Error, Result};
 use async_std::prelude::*;
 use async_std::sync::{self, Receiver, Sender};
 use async_std::task;
@@ -14,6 +14,7 @@ use std::process::{Child, Stdio};
 pub struct TargetActor {
     target: Target,
     termination_events: Receiver<TerminationMessage>,
+    target_invalidated_events: Receiver<TargetInvalidatedMessage>,
     receiver: Receiver<TargetActorInputMessage>,
     target_execution_report_sender: Sender<TargetExecutionReportMessage>,
     to_execute: bool,
@@ -26,6 +27,7 @@ impl TargetActor {
     pub fn new(
         target: Target,
         termination_events: Receiver<TerminationMessage>,
+        target_invalidated_events: Receiver<TargetInvalidatedMessage>,
         receiver: Receiver<TargetActorInputMessage>,
         target_execution_report_sender: Sender<TargetExecutionReportMessage>,
     ) -> Self {
@@ -38,6 +40,7 @@ impl TargetActor {
         Self {
             target,
             termination_events,
+            target_invalidated_events,
             receiver,
             target_execution_report_sender,
             to_execute: true,
@@ -49,31 +52,28 @@ impl TargetActor {
 
     pub async fn run(mut self) {
         loop {
-            if let Some(Ok(TargetExecutionResult::InterruptedByTermination)) =
-                self.maybe_execute_target().await
-            {
+            if let MaybeInterrupted::Interrupted = self.maybe_execute_target().await {
                 break;
             }
 
             futures::select! {
-                _ = self.termination_events.next().fuse() => {
-                    self.stop_service().await;
-                    break;
-                },
+                _ = self.termination_events.next().fuse() => break,
+                _ = self.target_invalidated_events.next().fuse() => {
+                    // TODO Should cascade to targets which depend on this one
+                    self.to_execute = true;
+                    self.executed = false;
+                }
                 message = self.receiver.next().fuse() => {
                     match message.unwrap() {
                         TargetActorInputMessage::TargetOutputAvailable(target_id) => {
                             self.unavailable_dependencies.remove(&target_id);
                         },
-                        TargetActorInputMessage::TargetInvalidated => {
-                            // TODO Should cascade to targets which depend on this one
-                            self.to_execute = true;
-                            self.executed = false;
-                        },
                     }
                 }
             }
         }
+
+        self.stop_service().await;
     }
 
     async fn stop_service(&mut self) {
@@ -90,34 +90,37 @@ impl TargetActor {
         }
     }
 
-    async fn maybe_execute_target(&mut self) -> Option<Result<TargetExecutionResult>> {
+    async fn maybe_execute_target(&mut self) -> MaybeInterrupted {
         if self.to_execute && self.unavailable_dependencies.is_empty() {
             self.to_execute = false;
             self.executed = false;
 
             let target_execution_result = self.execute_target().await;
-            match &target_execution_result {
+            match target_execution_result {
                 Ok(TargetExecutionResult::Success) => {
                     self.executed = !self.to_execute;
                     let msg = TargetExecutionReportMessage::TargetOutputAvailable(
                         self.target.id().clone(),
                     );
                     self.target_execution_report_sender.send(msg).await;
+                    MaybeInterrupted::NotInterrupted
                 }
                 Err(e) => {
                     self.executed = false;
                     let msg = TargetExecutionReportMessage::TargetExecutionError(
                         self.target.id().clone(),
+                        e,
                     );
                     self.target_execution_report_sender.send(msg).await;
+                    MaybeInterrupted::NotInterrupted
                 }
-                Ok(TargetExecutionResult::InterruptedByTermination) => {}
-            };
-
-            return Some(target_execution_result);
+                Ok(TargetExecutionResult::InterruptedByTermination) => {
+                    MaybeInterrupted::Interrupted
+                }
+            }
+        } else {
+            MaybeInterrupted::NotInterrupted
         }
-
-        return None;
     }
 
     async fn execute_target(&mut self) -> Result<TargetExecutionResult> {
@@ -181,12 +184,11 @@ impl TargetActor {
 }
 
 pub enum TargetActorInputMessage {
-    TargetInvalidated,
     TargetOutputAvailable(TargetId),
 }
 
 pub enum TargetExecutionReportMessage {
-    TargetExecutionError(TargetId),
+    TargetExecutionError(TargetId, Error),
     TargetOutputAvailable(TargetId),
 }
 
@@ -194,3 +196,11 @@ enum TargetExecutionResult {
     InterruptedByTermination,
     Success,
 }
+
+enum MaybeInterrupted {
+    Interrupted,
+    NotInterrupted,
+}
+
+#[derive(Debug)]
+pub struct TargetInvalidatedMessage;

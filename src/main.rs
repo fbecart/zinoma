@@ -115,12 +115,10 @@ fn terminate_on_ctrlc() -> Result<Receiver<TerminationMessage>> {
     task::spawn(async move {
         ctrlc.await;
         log::debug!("Ctrl-C received");
-        termination_sender.send(TerminationMessage::Terminate).await;
+        termination_sender.send(TerminationMessage).await;
     });
 
     Ok(termination_events)
 }
 
-pub enum TerminationMessage {
-    Terminate,
-}
+pub struct TerminationMessage;
