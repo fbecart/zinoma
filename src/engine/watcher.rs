@@ -3,7 +3,6 @@ use crate::work_dir;
 use anyhow::{Context, Error, Result};
 use async_std::path::{Path, PathBuf};
 use async_std::sync::Sender;
-use async_std::task;
 use notify::{ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
 
 pub struct TargetWatcher {
@@ -11,45 +10,40 @@ pub struct TargetWatcher {
 }
 
 impl TargetWatcher {
-    pub async fn new(
+    pub fn new(
         target_id: TargetId,
         target_input: Option<Resources>,
         target_invalidated_sender: Sender<TargetInvalidatedMessage>,
     ) -> Result<Option<Self>> {
         if let Some(target_input) = target_input {
             if !target_input.paths.is_empty() {
-                return task::spawn_blocking(move || {
-                    let mut watcher = Self::build_immediate_watcher(
-                        target_id.clone(),
-                        target_invalidated_sender,
-                    )?;
+                let mut watcher =
+                    Self::build_immediate_watcher(target_id.clone(), target_invalidated_sender)?;
 
-                    for path in &target_input.paths {
-                        match watcher.watch(path, RecursiveMode::Recursive) {
-                            Ok(_) => {}
-                            Err(notify::Error {
-                                kind: ErrorKind::PathNotFound,
-                                ..
-                            }) => {
-                                log::warn!(
-                                    "{} - Skipping watch on non-existing path: {}",
-                                    target_id,
-                                    path.display(),
-                                );
-                            }
-                            Err(e) => {
-                                return Err(Error::new(e).context(format!(
-                                    "Error watching path {} for target {}",
-                                    path.display(),
-                                    target_id,
-                                )));
-                            }
+                for path in &target_input.paths {
+                    match watcher.watch(path, RecursiveMode::Recursive) {
+                        Ok(_) => {}
+                        Err(notify::Error {
+                            kind: ErrorKind::PathNotFound,
+                            ..
+                        }) => {
+                            log::warn!(
+                                "{} - Skipping watch on non-existing path: {}",
+                                target_id,
+                                path.display(),
+                            );
+                        }
+                        Err(e) => {
+                            return Err(Error::new(e).context(format!(
+                                "Error watching path {} for target {}",
+                                path.display(),
+                                target_id,
+                            )));
                         }
                     }
+                }
 
-                    Ok(Some(Self { _watcher: watcher }))
-                })
-                .await;
+                return Ok(Some(Self { _watcher: watcher }));
             }
         }
 
