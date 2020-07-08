@@ -134,7 +134,7 @@ impl TargetActor {
 
                 futures::select! {
                     _ = self.termination_events.next().fuse() => {
-                        build_cancellation_sender.send(BuildCancellationMessage::CancelBuild).await;
+                        build_cancellation_sender.send(BuildCancellationMessage).await;
                         // TODO Uncomment
                         // incremental_build.await;
                         return Ok(TargetExecutionResult::InterruptedByTermination);
