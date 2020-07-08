@@ -61,13 +61,24 @@ impl TargetWatcher {
         target_invalidated_sender: Sender<TargetId>,
     ) -> Result<RecommendedWatcher> {
         Watcher::new_immediate(move |result: notify::Result<notify::Event>| {
-            let some_paths_are_relevant = result.unwrap().paths.into_iter().any(|path| {
-                let path: PathBuf = path.into();
-                !is_tmp_editor_file(&path) && !work_dir::is_in_work_dir(&path)
-            });
+            let relevant_paths = result
+                .unwrap()
+                .paths
+                .into_iter()
+                .filter(|path| {
+                    let path: PathBuf = path.into();
+                    !is_tmp_editor_file(&path) && !work_dir::is_in_work_dir(&path)
+                })
+                .collect::<Vec<_>>();
 
-            if some_paths_are_relevant {
-                task::block_on(target_invalidated_sender.send(target_id.clone()))
+            if !relevant_paths.is_empty() {
+                let target_id = target_id.clone();
+                log::trace!(
+                    "{} - Invalidated by {}",
+                    &target_id,
+                    itertools::join(relevant_paths.iter().flat_map(|path| path.to_str()), ", ")
+                );
+                task::block_on(target_invalidated_sender.send(target_id))
             }
         })
         .with_context(|| "Error creating watcher")
