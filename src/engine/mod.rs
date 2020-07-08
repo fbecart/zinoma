@@ -8,13 +8,14 @@ use crate::domain::{Target, TargetId};
 use crate::TerminationMessage;
 use anyhow::{Context, Result};
 use async_std::prelude::*;
-use async_std::sync::{self, Receiver};
+use async_std::sync::{self, Receiver, Sender};
 use async_std::task;
 use futures::{future, FutureExt};
 use std::collections::{HashMap, HashSet};
 use target_actor::{
     TargetActor, TargetActorInputMessage, TargetExecutionReportMessage, TargetInvalidatedMessage,
 };
+use task::JoinHandle;
 use watcher::TargetWatcher;
 
 pub struct Engine {
@@ -51,53 +52,24 @@ impl Engine {
             .into_iter()
             .collect::<HashMap<_, _>>();
 
-        // TODO Remove duplication
-        let (target_execution_report_sender, mut target_execution_report_events) =
-            sync::channel(crate::DEFAULT_CHANNEL_CAP);
-
-        // TODO Instead, consume targets
-        let mut target_actor_handles = self
-            .targets
-            .iter()
-            .map(|(target_id, target)| {
-                let (termination_sender, termination_events) = sync::channel(1);
-                let (target_invalidated_sender, target_invalidated_events) = sync::channel(1);
-                let (sender, receiver) = sync::channel(crate::DEFAULT_CHANNEL_CAP);
-                let target_actor = TargetActor::new(
-                    target.clone(),
-                    termination_events,
-                    target_invalidated_events,
-                    receiver,
-                    target_execution_report_sender.clone(),
-                );
-                let handle = task::spawn(target_actor.run());
-                (
-                    target_id.clone(),
-                    (
-                        handle,
-                        termination_sender,
-                        target_invalidated_sender,
-                        sender,
-                    ),
-                )
-            })
-            .collect::<HashMap<_, _>>();
+        let (target_actor_handles, mut target_execution_report_events) =
+            Self::launch_target_actors(&self.targets);
 
         loop {
             futures::select! {
                 _ = termination_events.next().fuse() => break,
                 target_id = target_invalidated_events.next().fuse() => {
                     let target_id = target_id.unwrap();
-                    let (_, _, target_invalidated_sender, _) = &target_actor_handles[&target_id];
-                    if target_invalidated_sender.try_send(TargetInvalidatedMessage).is_err() {
+                    let handles = &target_actor_handles[&target_id];
+                    if handles.target_invalidated_sender.try_send(TargetInvalidatedMessage).is_err() {
                         log::trace!("{} - Target already invalidated. Discarding message.", target_id);
                     }
                 },
                 target_execution_report = target_execution_report_events.next().fuse() => {
                     match target_execution_report.unwrap() {
                         TargetExecutionReportMessage::TargetOutputAvailable(target_id) => {
-                            for (_, _, _, sender) in target_actor_handles.values() {
-                                sender.send(TargetActorInputMessage::TargetOutputAvailable(target_id.clone())).await;
+                            for handles in target_actor_handles.values() {
+                                handles.sender.send(TargetActorInputMessage::TargetOutputAvailable(target_id.clone())).await;
                             }
                         }
                         TargetExecutionReportMessage::TargetExecutionError(target_id, e) => {
@@ -108,11 +80,11 @@ impl Engine {
             }
         }
 
-        for (_, termination_sender, _, _) in target_actor_handles.values() {
-            termination_sender.send(TerminationMessage).await;
+        for handles in target_actor_handles.values() {
+            handles.termination_sender.send(TerminationMessage).await;
         }
-        for (join_handle, _, _, _) in target_actor_handles.values_mut() {
-            join_handle.await;
+        for (_target_id, handles) in target_actor_handles.into_iter() {
+            handles.join_handle.await;
         }
 
         Ok(())
@@ -122,36 +94,8 @@ impl Engine {
         let mut unavailable_root_targets =
             self.root_target_ids.iter().cloned().collect::<HashSet<_>>();
 
-        let (target_execution_report_sender, mut target_execution_report_events) =
-            sync::channel(crate::DEFAULT_CHANNEL_CAP);
-
-        // TODO Instead, consume targets
-        let mut target_actor_handles = self
-            .targets
-            .iter()
-            .map(|(target_id, target)| {
-                let (termination_sender, termination_events) = sync::channel(1);
-                let (target_invalidated_sender, target_invalidated_events) = sync::channel(1);
-                let (sender, receiver) = sync::channel(crate::DEFAULT_CHANNEL_CAP);
-                let target_actor = TargetActor::new(
-                    target.clone(),
-                    termination_events,
-                    target_invalidated_events,
-                    receiver,
-                    target_execution_report_sender.clone(),
-                );
-                let handle = task::spawn(target_actor.run());
-                (
-                    target_id.clone(),
-                    (
-                        handle,
-                        termination_sender,
-                        sender,
-                        target_invalidated_sender,
-                    ),
-                )
-            })
-            .collect::<HashMap<_, _>>();
+        let (target_actor_handles, mut target_execution_report_events) =
+            Self::launch_target_actors(&self.targets);
 
         let mut terminating = false;
 
@@ -164,8 +108,8 @@ impl Engine {
                     match target_execution_report.unwrap() {
                         TargetExecutionReportMessage::TargetOutputAvailable(target_id) => {
                             unavailable_root_targets.remove(&target_id);
-                            for (_, _, sender, _) in target_actor_handles.values() {
-                                sender.send(TargetActorInputMessage::TargetOutputAvailable(target_id.clone())).await;
+                            for handles in target_actor_handles.values() {
+                                handles.sender.send(TargetActorInputMessage::TargetOutputAvailable(target_id.clone())).await;
                             }
                         }
                         TargetExecutionReportMessage::TargetExecutionError(target_id, e) => {
@@ -182,11 +126,11 @@ impl Engine {
                 service::get_service_graph_targets(&self.targets, &self.root_target_ids);
 
             if !necessary_services.is_empty() {
-                for (_, (_, termination_sender, _, _)) in target_actor_handles
+                for (_, handles) in target_actor_handles
                     .iter()
                     .filter(|(target_id, _)| !necessary_services.contains(target_id))
                 {
-                    termination_sender.send(TerminationMessage).await;
+                    handles.termination_sender.send(TerminationMessage).await;
                 }
 
                 // Wait for termination event to terminate all services
@@ -198,15 +142,78 @@ impl Engine {
         }
 
         log::debug!("Terminating all services");
-        for (_, termination_sender, _, _) in target_actor_handles.values() {
-            termination_sender.send(TerminationMessage).await;
+        for handles in target_actor_handles.values() {
+            handles.termination_sender.send(TerminationMessage).await;
         }
-        for (join_handle, _, _, _) in target_actor_handles.values_mut() {
-            join_handle.await;
+        for (_target_id, handles) in target_actor_handles.into_iter() {
+            handles.join_handle.await;
         }
 
         Ok(())
     }
+
+    fn launch_target_actors(
+        targets: &HashMap<TargetId, Target>,
+    ) -> (
+        HashMap<TargetId, TargetActorHandleSet>,
+        Receiver<TargetExecutionReportMessage>,
+    ) {
+        let (target_execution_report_sender, target_execution_report_events) =
+            sync::channel(crate::DEFAULT_CHANNEL_CAP);
+
+        // TODO Instead, consume targets
+        let target_actor_handles = targets
+            .iter()
+            .map(|(target_id, target)| {
+                let (termination_sender, termination_events) = sync::channel(1);
+                let (target_invalidated_sender, target_invalidated_events) = sync::channel(1);
+                let (sender, receiver) = sync::channel(crate::DEFAULT_CHANNEL_CAP);
+                let target_actor = TargetActor::new(
+                    target.clone(),
+                    termination_events,
+                    target_invalidated_events,
+                    receiver,
+                    target_execution_report_sender.clone(),
+                );
+                let handle = task::spawn(target_actor.run());
+                (
+                    target_id.clone(),
+                    TargetActorHandleSet::new(
+                        handle,
+                        termination_sender,
+                        target_invalidated_sender,
+                        sender,
+                    ),
+                )
+            })
+            .collect::<HashMap<_, _>>();
+
+        (target_actor_handles, target_execution_report_events)
+    }
 }
 
 pub struct BuildCancellationMessage;
+
+pub struct TargetActorHandleSet {
+    join_handle: JoinHandle<()>,
+    termination_sender: Sender<TerminationMessage>,
+    target_invalidated_sender: Sender<TargetInvalidatedMessage>,
+    // TODO Rename
+    sender: Sender<TargetActorInputMessage>,
+}
+
+impl TargetActorHandleSet {
+    pub fn new(
+        join_handle: JoinHandle<()>,
+        termination_sender: Sender<TerminationMessage>,
+        target_invalidated_sender: Sender<TargetInvalidatedMessage>,
+        sender: Sender<TargetActorInputMessage>,
+    ) -> Self {
+        Self {
+            join_handle,
+            termination_sender,
+            target_invalidated_sender,
+            sender,
+        }
+    }
+}

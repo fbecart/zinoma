@@ -183,6 +183,7 @@ impl TargetActor {
     }
 }
 
+// TODO Rename
 pub enum TargetActorInputMessage {
     TargetOutputAvailable(TargetId),
 }
