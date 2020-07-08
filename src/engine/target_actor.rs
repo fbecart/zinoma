@@ -49,6 +49,10 @@ impl TargetActor {
 
     pub async fn run(mut self) {
         loop {
+            if let Some(Ok(TargetExecutionResult::InterruptedByTermination)) = self.maybe_execute_target().await {
+                break;
+            }
+
             futures::select! {
                 _ = self.termination_events.next().fuse() => {
                     if self.service_process.is_some() {
@@ -67,55 +71,47 @@ impl TargetActor {
                 message = self.receiver.next().fuse() => {
                     match message.unwrap() {
                         TargetActorInputMessage::TargetOutputAvailable(target_id) => {
-                            let removed = self.unavailable_dependencies.remove(&target_id);
-
-                            if removed && self.unavailable_dependencies.is_empty() && self.to_execute {
-                                self.to_execute = false;
-                                self.executed = false;
-                                
-                                let msg = match self.execute_target().await {
-                                    Ok(TargetExecutionResult::InterruptedByTermination) => break,
-                                    Ok(TargetExecutionResult::Success) => {
-                                        self.executed = !self.to_execute;
-                                        TargetExecutionStatusMessage::TargetOutputAvailable(self.target.id().clone())
-                                        
-                                    },
-                                    Err(e) => {
-                                        self.executed = false;
-                                        TargetExecutionStatusMessage::TargetExecutionError(self.target.id().clone())
-                                    },
-                                };
-
-                                self.target_execution_status_sender.send(msg).await;
-                            }
+                            self.unavailable_dependencies.remove(&target_id);
                         },
                         TargetActorInputMessage::TargetInvalidated => {
                             // TODO Should cascade to targets which depend on this one
                             self.to_execute = true;
                             self.executed = false;
-
-                            if self.unavailable_dependencies.is_empty() {
-                                self.to_execute = false;
-                                
-                                let msg = match self.execute_target().await {
-                                    Ok(TargetExecutionResult::InterruptedByTermination) => break,
-                                    Ok(TargetExecutionResult::Success) => {
-                                        self.executed = !self.to_execute;
-                                        TargetExecutionStatusMessage::TargetOutputAvailable(self.target.id().clone())
-                                    },
-                                    Err(e) => {
-                                        self.executed = false;
-                                        TargetExecutionStatusMessage::TargetExecutionError(self.target.id().clone())
-                                    },
-                                };
-
-                                self.target_execution_status_sender.send(msg).await;
-                            }
                         },
                     }
                 }
             }
         }
+    }
+
+    async fn maybe_execute_target(&mut self) -> Option<Result<TargetExecutionResult>> {
+        if self.to_execute && self.unavailable_dependencies.is_empty() {
+            self.to_execute = false;
+            self.executed = false;
+
+            let target_execution_result = self.execute_target().await;
+            match &target_execution_result {
+                Ok(TargetExecutionResult::Success) => {
+                    self.executed = !self.to_execute;
+                    let msg = TargetExecutionStatusMessage::TargetOutputAvailable(
+                        self.target.id().clone(),
+                    );
+                    self.target_execution_status_sender.send(msg).await;
+                }
+                Err(e) => {
+                    self.executed = false;
+                    let msg = TargetExecutionStatusMessage::TargetExecutionError(
+                        self.target.id().clone(),
+                    );
+                    self.target_execution_status_sender.send(msg).await;
+                }
+                Ok(TargetExecutionResult::InterruptedByTermination) => {}
+            };
+
+            return Some(target_execution_result);
+        }
+
+        return None;
     }
 
     async fn execute_target(&mut self) -> Result<TargetExecutionResult> {
