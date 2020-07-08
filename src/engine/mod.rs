@@ -1,4 +1,4 @@
-mod builder;
+pub mod builder;
 pub mod incremental;
 mod run_state;
 mod service;
@@ -16,6 +16,7 @@ use run_state::TargetRunStates;
 use service::ServicesRunner;
 use std::collections::HashMap;
 use watcher::TargetWatcher;
+mod target_actor;
 
 pub struct Engine {
     targets: HashMap<TargetId, Target>,
