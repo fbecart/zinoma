@@ -15,7 +15,7 @@ pub struct TargetActor {
     target: Target,
     termination_events: Receiver<TerminationMessage>,
     receiver: Receiver<TargetActorInputMessage>,
-    target_execution_status_sender: Sender<TargetExecutionStatusMessage>,
+    target_execution_report_sender: Sender<TargetExecutionReportMessage>,
     to_execute: bool,
     executed: bool,
     unavailable_dependencies: HashSet<TargetId>,
@@ -27,7 +27,7 @@ impl TargetActor {
         target: Target,
         termination_events: Receiver<TerminationMessage>,
         receiver: Receiver<TargetActorInputMessage>,
-        target_execution_status_sender: Sender<TargetExecutionStatusMessage>,
+        target_execution_report_sender: Sender<TargetExecutionReportMessage>,
     ) -> Self {
         let unavailable_dependencies = target
             .dependencies()
@@ -39,7 +39,7 @@ impl TargetActor {
             target,
             termination_events,
             receiver,
-            target_execution_status_sender: target_execution_status_sender,
+            target_execution_report_sender,
             to_execute: true,
             executed: false,
             unavailable_dependencies,
@@ -99,17 +99,17 @@ impl TargetActor {
             match &target_execution_result {
                 Ok(TargetExecutionResult::Success) => {
                     self.executed = !self.to_execute;
-                    let msg = TargetExecutionStatusMessage::TargetOutputAvailable(
+                    let msg = TargetExecutionReportMessage::TargetOutputAvailable(
                         self.target.id().clone(),
                     );
-                    self.target_execution_status_sender.send(msg).await;
+                    self.target_execution_report_sender.send(msg).await;
                 }
                 Err(e) => {
                     self.executed = false;
-                    let msg = TargetExecutionStatusMessage::TargetExecutionError(
+                    let msg = TargetExecutionReportMessage::TargetExecutionError(
                         self.target.id().clone(),
                     );
-                    self.target_execution_status_sender.send(msg).await;
+                    self.target_execution_report_sender.send(msg).await;
                 }
                 Ok(TargetExecutionResult::InterruptedByTermination) => {}
             };
@@ -139,6 +139,15 @@ impl TargetActor {
                     result = incremental_build.fuse() => {
                         // Why unwrap?
                         let result = result.with_context(|| format!("{} - Failed to evaluate target input/output", self.target)).unwrap();
+                        match result {
+                            IncrementalRunResult::Run(Err(e)) => return Err(e),
+                            IncrementalRunResult::Skipped => {
+                                log::info!("{} - Build skipped (Not Modified)", self.target);
+                            },
+                            IncrementalRunResult::Run(Ok(_)) => {
+                                // TODO Why spreading logs between here and builder?
+                            },
+                        }
                         if let IncrementalRunResult::Run(Err(e)) = result {
                             return Err(e);
                         }
@@ -147,6 +156,8 @@ impl TargetActor {
             }
             Target::Service(service_target) => {
                 self.stop_service().await;
+
+                log::info!("{} - Starting service", service_target.metadata.id);
 
                 let mut command = run_script::build_command(
                     &service_target.run_script,
@@ -174,7 +185,7 @@ pub enum TargetActorInputMessage {
     TargetOutputAvailable(TargetId),
 }
 
-pub enum TargetExecutionStatusMessage {
+pub enum TargetExecutionReportMessage {
     TargetExecutionError(TargetId),
     TargetOutputAvailable(TargetId),
 }

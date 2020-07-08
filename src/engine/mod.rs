@@ -2,6 +2,7 @@ pub mod builder;
 pub mod incremental;
 mod run_state;
 mod service;
+mod target_actor;
 mod watcher;
 
 use crate::domain::{Target, TargetId};
@@ -14,9 +15,9 @@ use futures::{future, FutureExt};
 use incremental::IncrementalRunResult;
 use run_state::TargetRunStates;
 use service::ServicesRunner;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use target_actor::{TargetActor, TargetActorInputMessage, TargetExecutionReportMessage};
 use watcher::TargetWatcher;
-mod target_actor;
 
 pub struct Engine {
     targets: HashMap<TargetId, Target>,
@@ -140,6 +141,58 @@ impl Engine {
     }
 
     pub async fn build(self, mut termination_events: Receiver<TerminationMessage>) -> Result<()> {
+        let mut unavailable_root_targets =
+            self.root_target_ids.iter().cloned().collect::<HashSet<_>>();
+
+        let (target_execution_report_sender, mut target_execution_report_events) =
+            sync::channel(crate::DEFAULT_CHANNEL_CAP);
+
+        // TODO Instead, consume targets
+        let mut target_actor_handles = self
+            .targets
+            .iter()
+            .map(|(target_id, target)| {
+                let (termination_sender, termination_events) = sync::channel(1);
+                let (sender, receiver) = sync::channel(crate::DEFAULT_CHANNEL_CAP);
+                let target_actor = TargetActor::new(
+                    target.clone(),
+                    termination_events,
+                    receiver,
+                    target_execution_report_sender.clone(),
+                );
+                let handle = task::spawn(target_actor.run());
+                (target_id.clone(), (handle, termination_sender, sender))
+            })
+            .collect::<HashMap<_, _>>();
+
+        while !unavailable_root_targets.is_empty() {
+            futures::select! {
+                _ = termination_events.next().fuse() => break,
+                target_execution_report = target_execution_report_events.next().fuse() => {
+                    match target_execution_report.unwrap() {
+                        TargetExecutionReportMessage::TargetOutputAvailable(target_id) => {
+                            unavailable_root_targets.remove(&target_id);
+                            for (_, _, sender) in target_actor_handles.values() {
+                                sender.send(TargetActorInputMessage::TargetOutputAvailable(target_id.clone())).await;
+                            }
+                        }
+                        TargetExecutionReportMessage::TargetExecutionError(target_id) => break,
+                    }
+                }
+            }
+        }
+
+        for (_, termination_sender, _) in target_actor_handles.values() {
+            termination_sender.send(TerminationMessage::Terminate).await;
+        }
+        for (join_handle, _, _) in target_actor_handles.values_mut() {
+            join_handle.await;
+        }
+
+        Ok(())
+    }
+
+    pub async fn build_old(self, mut termination_events: Receiver<TerminationMessage>) -> Result<()> {
         let mut services_runner = ServicesRunner::new();
         let (build_report_sender, mut build_report_events) =
             sync::channel(crate::DEFAULT_CHANNEL_CAP);
