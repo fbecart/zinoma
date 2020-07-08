@@ -49,23 +49,15 @@ impl TargetActor {
 
     pub async fn run(mut self) {
         loop {
-            if let Some(Ok(TargetExecutionResult::InterruptedByTermination)) = self.maybe_execute_target().await {
+            if let Some(Ok(TargetExecutionResult::InterruptedByTermination)) =
+                self.maybe_execute_target().await
+            {
                 break;
             }
 
             futures::select! {
                 _ = self.termination_events.next().fuse() => {
-                    if self.service_process.is_some() {
-                        let mut running_service = mem::replace(&mut self.service_process, None).unwrap();
-                        log::trace!("{} - Stopping service", self.target);
-                        task::spawn_blocking(move || {
-                            if let Err(e) = running_service.kill().and_then(|_| running_service.wait()) {
-                                log::warn!("{} - Failed to stop service: {}", self.target, e);
-                            }
-                        })
-                        .await;
-                    }
-
+                    self.stop_service().await;
                     break;
                 },
                 message = self.receiver.next().fuse() => {
@@ -81,6 +73,20 @@ impl TargetActor {
                     }
                 }
             }
+        }
+    }
+
+    async fn stop_service(&mut self) {
+        if self.service_process.is_some() {
+            let target_id = self.target.id().clone();
+            let mut running_service = mem::replace(&mut self.service_process, None).unwrap();
+            log::trace!("{} - Stopping service", target_id);
+            task::spawn_blocking(move || {
+                if let Err(e) = running_service.kill().and_then(|_| running_service.wait()) {
+                    log::warn!("{} - Failed to stop service: {}", target_id, e);
+                }
+            })
+            .await;
         }
     }
 
@@ -115,7 +121,8 @@ impl TargetActor {
     }
 
     async fn execute_target(&mut self) -> Result<TargetExecutionResult> {
-        match &self.target {
+        match &self.target.clone() {
+            // TODO Remove clone
             Target::Build(build_target) => {
                 let (build_cancellation_sender, build_cancellation_events) = sync::channel(1);
                 let incremental_build = incremental::run(&self.target, || async {
@@ -139,18 +146,7 @@ impl TargetActor {
                 }
             }
             Target::Service(service_target) => {
-                if self.service_process.is_some() {
-                    let mut running_service =
-                        mem::replace(&mut self.service_process, None).unwrap();
-                    log::trace!("{} - Stopping service", service_target.metadata.id);
-                    task::spawn_blocking(move || {
-                        running_service.kill().and_then(|_| running_service.wait())
-                    })
-                    .await
-                    .with_context(|| {
-                        format!("{} - Failed to stop service", &service_target.metadata.id)
-                    })?;
-                }
+                self.stop_service().await;
 
                 let mut command = run_script::build_command(
                     &service_target.run_script,
