@@ -10,6 +10,7 @@ use builder::BuildCompletionReport;
 use futures::FutureExt;
 use incremental::IncrementalRunResult;
 use std::collections::HashSet;
+use std::iter::FromIterator;
 use std::mem;
 use std::process::{Child, Stdio};
 
@@ -34,11 +35,7 @@ impl TargetActor {
         target_actor_input_receiver: Receiver<TargetActorInputMessage>,
         target_actor_output_sender: Sender<TargetActorOutputMessage>,
     ) -> Self {
-        let dependencies = target
-            .dependencies()
-            .iter()
-            .cloned()
-            .collect::<HashSet<_>>();
+        let dependencies = HashSet::from_iter(target.dependencies().iter().cloned());
         let unavailable_dependencies = dependencies.clone();
 
         Self {
