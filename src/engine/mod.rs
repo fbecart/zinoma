@@ -12,7 +12,7 @@ use async_std::sync::{self, Receiver, Sender};
 use async_std::task;
 use futures::FutureExt;
 use std::collections::{HashMap, HashSet};
-use target_actor::{TargetActor, TargetActorInputMessage, TargetExecutionReportMessage};
+use target_actor::{TargetActor, TargetActorInputMessage, TargetActorOutputMessage};
 use task::JoinHandle;
 use watcher::{TargetInvalidatedMessage, TargetWatcher};
 
@@ -30,22 +30,27 @@ impl Engine {
     }
 
     pub async fn watch(self, mut termination_events: Receiver<TerminationMessage>) -> Result<()> {
-        let (target_actor_handles, mut target_execution_report_events) =
+        let (target_actor_handles, mut target_actor_output_events) =
             Self::launch_target_actors(&self.targets, TargetWatcherOption::Enabled)?;
 
         loop {
             futures::select! {
                 _ = termination_events.next().fuse() => break,
-                target_execution_report = target_execution_report_events.next().fuse() => {
-                    match target_execution_report.unwrap() {
-                        TargetExecutionReportMessage::TargetOutputAvailable(target_id) => {
+                target_actor_output = target_actor_output_events.next().fuse() => {
+                    match target_actor_output.unwrap() {
+                        TargetActorOutputMessage::TargetAvailable(target_id) => {
                             for handles in target_actor_handles.values() {
-                                handles.sender.send(TargetActorInputMessage::TargetOutputAvailable(target_id.clone())).await;
+                                handles.sender.send(TargetActorInputMessage::TargetAvailable(target_id.clone())).await;
                             }
                         }
-                        TargetExecutionReportMessage::TargetExecutionError(target_id, e) => {
-                            log::warn!("{} - {}", target_id, e);
+                        TargetActorOutputMessage::TargetExecutionError(target_id, e) => {
+                            log::warn!("{} - {}", target_id, e); // FIXME Better logs at least?
                         },
+                        TargetActorOutputMessage::TargetInvalidated(target_id) => {
+                            for handles in target_actor_handles.values() {
+                                handles.sender.send(TargetActorInputMessage::TargetInvalidated(target_id.clone())).await;
+                            }
+                        }
                     }
                 }
             }
@@ -57,7 +62,7 @@ impl Engine {
     }
 
     pub async fn build(self, mut termination_events: Receiver<TerminationMessage>) -> Result<()> {
-        let (target_actor_handles, mut target_execution_report_events) =
+        let (target_actor_handles, mut target_actor_output_events) =
             Self::launch_target_actors(&self.targets, TargetWatcherOption::Disabled)?;
 
         let mut unavailable_root_targets =
@@ -69,18 +74,19 @@ impl Engine {
                 _ = termination_events.next().fuse() => {
                     terminating = true
                 },
-                target_execution_report = target_execution_report_events.next().fuse() => {
-                    match target_execution_report.unwrap() {
-                        TargetExecutionReportMessage::TargetOutputAvailable(target_id) => {
+                target_actor_output = target_actor_output_events.next().fuse() => {
+                    match target_actor_output.unwrap() {
+                        TargetActorOutputMessage::TargetAvailable(target_id) => {
                             unavailable_root_targets.remove(&target_id);
                             for handles in target_actor_handles.values() {
-                                handles.sender.send(TargetActorInputMessage::TargetOutputAvailable(target_id.clone())).await;
+                                handles.sender.send(TargetActorInputMessage::TargetAvailable(target_id.clone())).await;
                             }
                         }
-                        TargetExecutionReportMessage::TargetExecutionError(target_id, e) => {
+                        TargetActorOutputMessage::TargetExecutionError(target_id, e) => {
                             // TODO Log here? Or already done?
                             terminating = true
                         },
+                        TargetActorOutputMessage::TargetInvalidated(_) => unreachable!("Watcher is disabled in build mode"),
                     }
                 }
             }
@@ -116,9 +122,9 @@ impl Engine {
         target_watcher_option: TargetWatcherOption,
     ) -> Result<(
         HashMap<TargetId, TargetActorHandleSet>,
-        Receiver<TargetExecutionReportMessage>,
+        Receiver<TargetActorOutputMessage>,
     )> {
-        let (target_execution_report_sender, target_execution_report_events) =
+        let (target_actor_output_sender, target_actor_output_events) =
             sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
         // TODO Instead, consume targets
@@ -132,7 +138,7 @@ impl Engine {
                 termination_events,
                 target_invalidated_events,
                 receiver,
-                target_execution_report_sender.clone(),
+                target_actor_output_sender.clone(),
             );
             let join_handle = task::spawn(target_actor.run());
 
@@ -155,7 +161,7 @@ impl Engine {
             target_actor_handles.insert(target_id.clone(), handles);
         }
 
-        Ok((target_actor_handles, target_execution_report_events))
+        Ok((target_actor_handles, target_actor_output_events))
     }
 
     async fn terminate_target_actors(
