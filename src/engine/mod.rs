@@ -40,7 +40,7 @@ impl Engine {
                     match target_actor_output.unwrap() {
                         TargetActorOutputMessage::TargetAvailable(target_id) => {
                             for handles in target_actor_handles.values() {
-                                handles.sender.send(TargetActorInputMessage::TargetAvailable(target_id.clone())).await;
+                                handles.target_actor_input_sender.send(TargetActorInputMessage::TargetAvailable(target_id.clone())).await;
                             }
                         }
                         TargetActorOutputMessage::TargetExecutionError(target_id, e) => {
@@ -48,7 +48,7 @@ impl Engine {
                         },
                         TargetActorOutputMessage::TargetInvalidated(target_id) => {
                             for handles in target_actor_handles.values() {
-                                handles.sender.send(TargetActorInputMessage::TargetInvalidated(target_id.clone())).await;
+                                handles.target_actor_input_sender.send(TargetActorInputMessage::TargetInvalidated(target_id.clone())).await;
                             }
                         }
                     }
@@ -79,7 +79,7 @@ impl Engine {
                         TargetActorOutputMessage::TargetAvailable(target_id) => {
                             unavailable_root_targets.remove(&target_id);
                             for handles in target_actor_handles.values() {
-                                handles.sender.send(TargetActorInputMessage::TargetAvailable(target_id.clone())).await;
+                                handles.target_actor_input_sender.send(TargetActorInputMessage::TargetAvailable(target_id.clone())).await;
                             }
                         }
                         TargetActorOutputMessage::TargetExecutionError(target_id, e) => {
@@ -132,12 +132,13 @@ impl Engine {
         for (target_id, target) in targets {
             let (termination_sender, termination_events) = sync::channel(1);
             let (target_invalidated_sender, target_invalidated_events) = sync::channel(1);
-            let (sender, receiver) = sync::channel(crate::DEFAULT_CHANNEL_CAP);
+            let (target_actor_input_sender, target_actor_input_receiver) =
+                sync::channel(crate::DEFAULT_CHANNEL_CAP);
             let target_actor = TargetActor::new(
                 target.clone(),
                 termination_events,
                 target_invalidated_events,
-                receiver,
+                target_actor_input_receiver,
                 target_actor_output_sender.clone(),
             );
             let join_handle = task::spawn(target_actor.run());
@@ -154,7 +155,7 @@ impl Engine {
             let handles = TargetActorHandleSet::new(
                 join_handle,
                 termination_sender,
-                sender,
+                target_actor_input_sender,
                 target_invalidated_sender,
                 watcher,
             );
@@ -185,8 +186,7 @@ enum TargetWatcherOption {
 pub struct TargetActorHandleSet {
     join_handle: JoinHandle<()>,
     termination_sender: Sender<TerminationMessage>,
-    // TODO Rename
-    sender: Sender<TargetActorInputMessage>,
+    target_actor_input_sender: Sender<TargetActorInputMessage>,
     _target_invalidated_sender: Sender<TargetInvalidatedMessage>,
     _watcher: Option<TargetWatcher>,
 }
@@ -195,14 +195,14 @@ impl TargetActorHandleSet {
     pub fn new(
         join_handle: JoinHandle<()>,
         termination_sender: Sender<TerminationMessage>,
-        sender: Sender<TargetActorInputMessage>,
+        target_actor_input_sender: Sender<TargetActorInputMessage>,
         target_invalidated_sender: Sender<TargetInvalidatedMessage>,
         watcher: Option<TargetWatcher>,
     ) -> Self {
         Self {
             join_handle,
             termination_sender,
-            sender,
+            target_actor_input_sender,
             _target_invalidated_sender: target_invalidated_sender,
             _watcher: watcher,
         }
