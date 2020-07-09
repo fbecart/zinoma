@@ -5,10 +5,13 @@ mod service_target_actor;
 use super::watcher::{TargetInvalidatedMessage, TargetWatcher};
 use crate::domain::{Target, TargetId};
 use crate::TerminationMessage;
+use aggregate_target_actor::AggregateTargetActor;
 use anyhow::{Error, Result};
 use async_std::sync::{self, Sender};
 use async_std::task;
 use async_std::task::JoinHandle;
+use build_target_actor::BuildTargetActor;
+use service_target_actor::ServiceTargetActor;
 
 pub enum TargetActorInputMessage {
     TargetAvailable(TargetId),
@@ -19,11 +22,6 @@ pub enum TargetActorOutputMessage {
     TargetExecutionError(TargetId, Error),
     TargetAvailable(TargetId),
     TargetInvalidated(TargetId),
-}
-
-enum TargetExecutionResult {
-    InterruptedByTermination,
-    Success,
 }
 
 pub fn launch_target_actor(
@@ -46,9 +44,9 @@ pub fn launch_target_actor(
     };
 
     let join_handle = match target {
-        Target::Build(_) => {
-            let target_actor = build_target_actor::TargetActor::new(
-                target,
+        Target::Build(build_target) => {
+            let target_actor = BuildTargetActor::new(
+                build_target,
                 termination_events,
                 target_invalidated_events,
                 target_actor_input_receiver,
@@ -56,9 +54,9 @@ pub fn launch_target_actor(
             );
             task::spawn(target_actor.run())
         }
-        Target::Service(_) => {
-            let target_actor = service_target_actor::TargetActor::new(
-                target,
+        Target::Service(service_target) => {
+            let target_actor = ServiceTargetActor::new(
+                service_target,
                 termination_events,
                 target_invalidated_events,
                 target_actor_input_receiver,
@@ -66,11 +64,10 @@ pub fn launch_target_actor(
             );
             task::spawn(target_actor.run())
         }
-        Target::Aggregate(_) => {
-            let target_actor = aggregate_target_actor::TargetActor::new(
-                target,
+        Target::Aggregate(aggregate_target) => {
+            let target_actor = AggregateTargetActor::new(
+                aggregate_target,
                 termination_events,
-                target_invalidated_events,
                 target_actor_input_receiver,
                 target_actor_output_sender,
             );

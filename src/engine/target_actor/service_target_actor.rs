@@ -1,23 +1,17 @@
-use super::{
-    TargetActorInputMessage, TargetActorOutputMessage, TargetExecutionResult,
-    TargetInvalidatedMessage,
-};
-use crate::domain::{Target, TargetId};
-use crate::engine::{builder, incremental};
+use super::{TargetActorInputMessage, TargetActorOutputMessage, TargetInvalidatedMessage};
+use crate::domain::{ServiceTarget, TargetId};
 use crate::{run_script, TerminationMessage};
 use anyhow::{Context, Result};
 use async_std::prelude::*;
 use async_std::sync::{Receiver, Sender};
 use async_std::task;
-use builder::BuildCompletionReport;
 use futures::FutureExt;
-use incremental::IncrementalRunResult;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::mem;
 use std::process::{Child, Stdio};
-pub struct TargetActor {
-    target: Target,
+pub struct ServiceTargetActor {
+    target: ServiceTarget,
     termination_events: Receiver<TerminationMessage>,
     target_invalidated_events: Receiver<TargetInvalidatedMessage>,
     target_actor_input_receiver: Receiver<TargetActorInputMessage>,
@@ -29,15 +23,15 @@ pub struct TargetActor {
     service_process: Option<Child>,
 }
 
-impl TargetActor {
+impl ServiceTargetActor {
     pub fn new(
-        target: Target,
+        target: ServiceTarget,
         termination_events: Receiver<TerminationMessage>,
         target_invalidated_events: Receiver<TargetInvalidatedMessage>,
         target_actor_input_receiver: Receiver<TargetActorInputMessage>,
         target_actor_output_sender: Sender<TargetActorOutputMessage>,
     ) -> Self {
-        let dependencies = HashSet::from_iter(target.dependencies().iter().cloned());
+        let dependencies = HashSet::from_iter(target.metadata.dependencies.iter().cloned());
         let unavailable_dependencies = dependencies.clone();
 
         Self {
@@ -60,13 +54,12 @@ impl TargetActor {
                 self.to_execute = false;
                 self.executed = false;
 
-                match self.execute_target().await {
-                    Ok(TargetExecutionResult::InterruptedByTermination) => break,
-                    Ok(TargetExecutionResult::Success) => {
+                match self.restart_service().await {
+                    Ok(()) => {
                         self.executed = !self.to_execute;
 
                         if self.executed {
-                            let target_id = self.target.id().clone();
+                            let target_id = self.target.metadata.id.clone();
                             let msg = TargetActorOutputMessage::TargetAvailable(target_id);
                             self.target_actor_output_sender.send(msg).await;
                         }
@@ -74,7 +67,7 @@ impl TargetActor {
                     Err(e) => {
                         self.executed = false;
 
-                        let target_id = self.target.id().clone();
+                        let target_id = self.target.metadata.id.clone();
                         let msg = TargetActorOutputMessage::TargetExecutionError(target_id, e);
                         self.target_actor_output_sender.send(msg).await;
                     }
@@ -108,7 +101,7 @@ impl TargetActor {
             self.to_execute = true;
             self.executed = false;
 
-            let target_id = self.target.id().clone();
+            let target_id = self.target.metadata.id.clone();
             let msg = TargetActorOutputMessage::TargetInvalidated(target_id);
             self.target_actor_output_sender.send(msg).await;
         }
@@ -116,7 +109,7 @@ impl TargetActor {
 
     async fn stop_service(&mut self) {
         if self.service_process.is_some() {
-            let target_id = self.target.id().clone();
+            let target_id = self.target.metadata.id.clone();
             let mut running_service = mem::replace(&mut self.service_process, None).unwrap();
             log::trace!("{} - Stopping service", target_id);
             task::spawn_blocking(move || {
@@ -128,56 +121,21 @@ impl TargetActor {
         }
     }
 
-    async fn execute_target(&mut self) -> Result<TargetExecutionResult> {
-        // TODO Remove clone
-        match self.target.clone() {
-            Target::Build(build_target) => {
-                let result = incremental::run(&self.target, || async {
-                    builder::build_target(&build_target, self.termination_events.clone()).await
-                })
-                .await;
+    async fn restart_service(&mut self) -> Result<()> {
+        self.stop_service().await;
 
-                // Why unwrap?
-                let result = result
-                    .with_context(|| {
-                        format!("{} - Failed to evaluate target input/output", self.target)
-                    })
-                    .unwrap();
-                match result {
-                    IncrementalRunResult::Run(Err(e)) => return Err(e),
-                    IncrementalRunResult::Skipped => {
-                        log::info!("{} - Build skipped (Not Modified)", self.target);
-                    }
-                    IncrementalRunResult::Run(Ok(BuildCompletionReport::Completed)) => {
-                        // TODO Why spreading logs between here and builder?
-                    }
-                    IncrementalRunResult::Run(Ok(BuildCompletionReport::Aborted)) => {
-                        return Ok(TargetExecutionResult::InterruptedByTermination);
-                    }
-                }
-            }
-            Target::Service(service_target) => {
-                self.stop_service().await;
+        log::info!("{} - Starting service", self.target.metadata.id);
 
-                log::info!("{} - Starting service", service_target.metadata.id);
+        let mut command =
+            run_script::build_command(&self.target.run_script, &self.target.metadata.project_dir);
+        command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
 
-                let mut command = run_script::build_command(
-                    &service_target.run_script,
-                    &service_target.metadata.project_dir,
-                );
-                command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
+        let service_process = task::spawn_blocking(move || command.spawn())
+            .await
+            .with_context(|| format!("{} - Failed to start service", &self.target.metadata.id))?;
 
-                let service_process = task::spawn_blocking(move || command.spawn())
-                    .await
-                    .with_context(|| {
-                        format!("{} - Failed to start service", &service_target.metadata.id)
-                    })?;
+        self.service_process = Some(service_process);
 
-                self.service_process = Some(service_process);
-            }
-            Target::Aggregate(_) => {}
-        }
-
-        Ok(TargetExecutionResult::Success)
+        Ok(())
     }
 }
