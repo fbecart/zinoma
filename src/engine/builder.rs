@@ -1,7 +1,6 @@
-use super::BuildCancellationMessage;
 use crate::async_utils::ExponentialBackoff;
 use crate::domain::BuildTarget;
-use crate::run_script;
+use crate::{run_script, TerminationMessage};
 use anyhow::{anyhow, Context, Result};
 use async_std::prelude::*;
 use async_std::sync::Receiver;
@@ -12,8 +11,8 @@ use std::time::{Duration, Instant};
 
 pub async fn build_target(
     target: &BuildTarget,
-    mut build_cancellation_events: Receiver<BuildCancellationMessage>,
-) -> Result<()> {
+    mut termination_events: Receiver<TerminationMessage>,
+) -> Result<BuildCompletionReport> {
     let target_start = Instant::now();
     log::info!("{} - Building", target);
 
@@ -29,12 +28,12 @@ pub async fn build_target(
 
     loop {
         futures::select! {
-            _ = build_cancellation_events.next().fuse() => {
+            _ = termination_events.next().fuse() => {
                 log::debug!("{} - Build cancelled", target);
                 if let Err(e) = task::spawn_blocking(move || build_process.kill().and_then(|_| build_process.wait())).await {
                     log::error!("{} - Failed to kill build process: {}", target, e)
                 }
-                break Ok(());
+                break Ok(BuildCompletionReport::Aborted);
             },
             _ = ticks.next().fuse() => {
                 if let Some(exit_status) = build_process.try_wait()? {
@@ -47,9 +46,14 @@ pub async fn build_target(
                         target,
                         target_build_duration.as_millis()
                     );
-                    break Ok(());
+                    break Ok(BuildCompletionReport::Completed);
                 }
             },
         }
     }
+}
+
+pub enum BuildCompletionReport {
+    Completed,
+    Aborted,
 }

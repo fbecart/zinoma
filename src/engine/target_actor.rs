@@ -1,16 +1,17 @@
+use super::watcher::TargetInvalidatedMessage;
 use crate::domain::{Target, TargetId};
-use crate::engine::{builder, incremental, BuildCancellationMessage};
+use crate::engine::{builder, incremental};
 use crate::{run_script, TerminationMessage};
 use anyhow::{Context, Error, Result};
 use async_std::prelude::*;
-use async_std::sync::{self, Receiver, Sender};
+use async_std::sync::{Receiver, Sender};
 use async_std::task;
+use builder::BuildCompletionReport;
 use futures::FutureExt;
 use incremental::IncrementalRunResult;
 use std::collections::HashSet;
 use std::mem;
 use std::process::{Child, Stdio};
-use super::watcher::TargetInvalidatedMessage;
 
 pub struct TargetActor {
     target: Target,
@@ -125,36 +126,30 @@ impl TargetActor {
     }
 
     async fn execute_target(&mut self) -> Result<TargetExecutionResult> {
+        // TODO Remove clone
         match &self.target.clone() {
-            // TODO Remove clone
             Target::Build(build_target) => {
-                let (build_cancellation_sender, build_cancellation_events) = sync::channel(1);
-                let incremental_build = incremental::run(&self.target, || async {
-                    builder::build_target(&build_target, build_cancellation_events.clone()).await
-                });
+                let result = incremental::run(&self.target, || async {
+                    builder::build_target(&build_target, self.termination_events.clone()).await
+                })
+                .await;
 
-                futures::select! {
-                    _ = self.termination_events.next().fuse() => {
-                        build_cancellation_sender.send(BuildCancellationMessage).await;
-                        // TODO Uncomment
-                        // incremental_build.await;
+                // Why unwrap?
+                let result = result
+                    .with_context(|| {
+                        format!("{} - Failed to evaluate target input/output", self.target)
+                    })
+                    .unwrap();
+                match result {
+                    IncrementalRunResult::Run(Err(e)) => return Err(e),
+                    IncrementalRunResult::Skipped => {
+                        log::info!("{} - Build skipped (Not Modified)", self.target);
+                    }
+                    IncrementalRunResult::Run(Ok(BuildCompletionReport::Completed)) => {
+                        // TODO Why spreading logs between here and builder?
+                    }
+                    IncrementalRunResult::Run(Ok(BuildCompletionReport::Aborted)) => {
                         return Ok(TargetExecutionResult::InterruptedByTermination);
-                    },
-                    result = incremental_build.fuse() => {
-                        // Why unwrap?
-                        let result = result.with_context(|| format!("{} - Failed to evaluate target input/output", self.target)).unwrap();
-                        match result {
-                            IncrementalRunResult::Run(Err(e)) => return Err(e),
-                            IncrementalRunResult::Skipped => {
-                                log::info!("{} - Build skipped (Not Modified)", self.target);
-                            },
-                            IncrementalRunResult::Run(Ok(_)) => {
-                                // TODO Why spreading logs between here and builder?
-                            },
-                        }
-                        if let IncrementalRunResult::Run(Err(e)) = result {
-                            return Err(e);
-                        }
                     }
                 }
             }

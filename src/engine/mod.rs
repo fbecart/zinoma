@@ -98,7 +98,7 @@ impl Engine {
                     handles.termination_sender.send(TerminationMessage).await;
                 }
 
-                // Wait for termination event to terminate all services
+                // Wait for termination event
                 termination_events
                     .recv()
                     .await
@@ -175,8 +175,6 @@ enum TargetWatcherOption {
     Enabled,
     Disabled,
 }
-
-pub struct BuildCancellationMessage;
 
 pub struct TargetActorHandleSet {
     join_handle: JoinHandle<()>,
