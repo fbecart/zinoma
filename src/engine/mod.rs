@@ -8,13 +8,12 @@ use crate::domain::{Target, TargetId};
 use crate::TerminationMessage;
 use anyhow::{Context, Result};
 use async_std::prelude::*;
-use async_std::sync::{self, Receiver, Sender};
-use async_std::task;
+use async_std::sync::{self, Receiver};
 use futures::FutureExt;
 use std::collections::{HashMap, HashSet};
-use target_actor::{TargetActor, TargetActorInputMessage, TargetActorOutputMessage};
-use task::JoinHandle;
-use watcher::{TargetInvalidatedMessage, TargetWatcher};
+use target_actor::{
+    TargetActorHandleSet, TargetActorInputMessage, TargetActorOutputMessage, TargetWatcherOption,
+};
 
 pub struct Engine {
     targets: HashMap<TargetId, Target>,
@@ -130,36 +129,14 @@ impl Engine {
         // TODO Instead, consume targets
         let mut target_actor_handles = HashMap::with_capacity(targets.len());
         for (target_id, target) in targets {
-            let (termination_sender, termination_events) = sync::channel(1);
-            let (target_invalidated_sender, target_invalidated_events) = sync::channel(1);
-            let (target_actor_input_sender, target_actor_input_receiver) =
-                sync::channel(crate::DEFAULT_CHANNEL_CAP);
-            let target_actor = TargetActor::new(
-                target.clone(),
-                termination_events,
-                target_invalidated_events,
-                target_actor_input_receiver,
-                target_actor_output_sender.clone(),
-            );
-            let join_handle = task::spawn(target_actor.run());
-
-            let watcher = match target_watcher_option {
-                TargetWatcherOption::Enabled => TargetWatcher::new(
-                    target.id().clone(),
-                    target.input().cloned(),
-                    target_invalidated_sender.clone(),
+            target_actor_handles.insert(
+                target_id.clone(),
+                target_actor::launch_target_actor(
+                    target.clone(), // TODO Remove clone
+                    &target_watcher_option,
+                    target_actor_output_sender.clone(),
                 )?,
-                TargetWatcherOption::Disabled => None,
-            };
-
-            let handles = TargetActorHandleSet::new(
-                join_handle,
-                termination_sender,
-                target_actor_input_sender,
-                target_invalidated_sender,
-                watcher,
             );
-            target_actor_handles.insert(target_id.clone(), handles);
         }
 
         Ok((target_actor_handles, target_actor_output_events))
@@ -174,37 +151,6 @@ impl Engine {
         }
         for (_target_id, handles) in target_actor_handles.into_iter() {
             handles.join_handle.await;
-        }
-    }
-}
-
-enum TargetWatcherOption {
-    Enabled,
-    Disabled,
-}
-
-pub struct TargetActorHandleSet {
-    join_handle: JoinHandle<()>,
-    termination_sender: Sender<TerminationMessage>,
-    target_actor_input_sender: Sender<TargetActorInputMessage>,
-    _target_invalidated_sender: Sender<TargetInvalidatedMessage>,
-    _watcher: Option<TargetWatcher>,
-}
-
-impl TargetActorHandleSet {
-    pub fn new(
-        join_handle: JoinHandle<()>,
-        termination_sender: Sender<TerminationMessage>,
-        target_actor_input_sender: Sender<TargetActorInputMessage>,
-        target_invalidated_sender: Sender<TargetInvalidatedMessage>,
-        watcher: Option<TargetWatcher>,
-    ) -> Self {
-        Self {
-            join_handle,
-            termination_sender,
-            target_actor_input_sender,
-            _target_invalidated_sender: target_invalidated_sender,
-            _watcher: watcher,
         }
     }
 }
