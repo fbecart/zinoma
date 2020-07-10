@@ -1,5 +1,5 @@
 use super::{TargetActorHelper, TargetActorInputMessage};
-use crate::domain::{BuildTarget, Target};
+use crate::domain::BuildTarget;
 use crate::engine::{builder, incremental};
 use anyhow::{Context, Result};
 use async_std::prelude::*;
@@ -56,11 +56,14 @@ impl BuildTargetActor {
     }
 
     async fn build_target(&mut self) -> Result<TargetExecutionResult> {
-        // TODO Remove clone
-        let target = Target::Build(self.target.clone());
-        let result = incremental::run(&target, || async {
-            builder::build_target(&self.target, self.helper.termination_events.clone()).await
-        })
+        let result = incremental::run(
+            &self.target.metadata,
+            &self.target.input,
+            Some(&self.target.output),
+            || async {
+                builder::build_target(&self.target, self.helper.termination_events.clone()).await
+            },
+        )
         .await;
 
         // TODO Why unwrap?

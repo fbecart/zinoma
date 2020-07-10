@@ -73,7 +73,7 @@ fn main() -> Result<()> {
         if arg_matches.is_present(cli::arg::CLEAN) {
             if requested_targets.is_some() {
                 for target in targets.values() {
-                    delete_saved_env_state(target).await?;
+                    delete_saved_env_state(target.metadata()).await?;
                 }
             } else {
                 for project_dir in project_dirs {

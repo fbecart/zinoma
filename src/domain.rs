@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use async_std::path::{Path, PathBuf};
+use async_std::path::PathBuf;
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -7,6 +7,12 @@ pub struct TargetMetadata {
     pub id: TargetId,
     pub project_dir: PathBuf,
     pub dependencies: Vec<TargetId>,
+}
+
+impl fmt::Display for TargetMetadata {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "{}", self.id)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -59,10 +65,6 @@ impl Target {
 
     pub fn id(&self) -> &TargetId {
         &self.metadata().id
-    }
-
-    pub fn project_dir(&self) -> &Path {
-        &self.metadata().project_dir
     }
 
     pub fn dependencies(&self) -> &Vec<TargetId> {
