@@ -1,10 +1,10 @@
 use super::{TargetActorHelper, TargetActorInputMessage};
 use crate::domain::BuildTarget;
 use crate::engine::{builder, incremental};
-use anyhow::{Context, Result};
+use anyhow::Context;
 use async_std::prelude::*;
 use builder::BuildCompletionReport;
-use futures::FutureExt;
+use futures::{future::Fuse, pin_mut, FutureExt};
 use incremental::IncrementalRunResult;
 pub struct BuildTargetActor {
     target: BuildTarget,
@@ -20,17 +20,22 @@ impl BuildTargetActor {
     }
 
     pub async fn run(mut self) {
+        let ongoing_build = Fuse::terminated();
+        pin_mut!(ongoing_build);
+
         loop {
             if self.helper.is_ready_to_execute() {
                 self.helper.set_execution_started();
 
-                match self.build_target().await {
-                    Ok(TargetExecutionResult::InterruptedByTermination) => break,
-                    Ok(TargetExecutionResult::Success) => {
-                        self.helper.notify_execution_succeeded().await
-                    }
-                    Err(e) => self.helper.notify_execution_failed(e).await,
-                }
+                ongoing_build.set(
+                    incremental::run(
+                        &self.target.metadata,
+                        &self.target.input,
+                        Some(&self.target.output),
+                        builder::build_target(&self.target, self.helper.termination_events.clone()),
+                    )
+                    .fuse(),
+                );
             }
 
             futures::select! {
@@ -51,43 +56,25 @@ impl BuildTargetActor {
                         }
                     }
                 }
+                build_result = ongoing_build => {
+                    // TODO Why unwrap?
+                    let build_result = build_result
+                        .with_context(|| format!("{} - Failed to evaluate target input/output", self.target))
+                        .unwrap();
+                    match build_result {
+                        IncrementalRunResult::Run(Err(e)) => self.helper.notify_execution_failed(e).await,
+                        IncrementalRunResult::Skipped => {
+                            log::info!("{} - Build skipped (Not Modified)", self.target);
+                            self.helper.notify_execution_succeeded().await
+                        }
+                        IncrementalRunResult::Run(Ok(BuildCompletionReport::Completed)) => {
+                            // TODO Why spreading logs between here and builder?
+                            self.helper.notify_execution_succeeded().await
+                        }
+                        IncrementalRunResult::Run(Ok(BuildCompletionReport::Aborted)) => break,
+                    }
+                },
             }
         }
     }
-
-    async fn build_target(&mut self) -> Result<TargetExecutionResult> {
-        let result = incremental::run(
-            &self.target.metadata,
-            &self.target.input,
-            Some(&self.target.output),
-            || async {
-                builder::build_target(&self.target, self.helper.termination_events.clone()).await
-            },
-        )
-        .await;
-
-        // TODO Why unwrap?
-        let result = result
-            .with_context(|| format!("{} - Failed to evaluate target input/output", self.target))
-            .unwrap();
-        match result {
-            IncrementalRunResult::Run(Err(e)) => return Err(e),
-            IncrementalRunResult::Skipped => {
-                log::info!("{} - Build skipped (Not Modified)", self.target);
-            }
-            IncrementalRunResult::Run(Ok(BuildCompletionReport::Completed)) => {
-                // TODO Why spreading logs between here and builder?
-            }
-            IncrementalRunResult::Run(Ok(BuildCompletionReport::Aborted)) => {
-                return Ok(TargetExecutionResult::InterruptedByTermination);
-            }
-        }
-
-        Ok(TargetExecutionResult::Success)
-    }
-}
-
-enum TargetExecutionResult {
-    InterruptedByTermination,
-    Success,
 }

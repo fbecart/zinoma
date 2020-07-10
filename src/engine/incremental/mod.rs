@@ -18,7 +18,7 @@ pub async fn run<T, F>(
     target: &TargetMetadata,
     target_input: &Resources,
     target_output: Option<&Resources>,
-    function: impl Fn() -> F,
+    f: F,
 ) -> Result<IncrementalRunResult<F::Output>>
 where
     F: Future<Output = Result<T>>,
@@ -35,7 +35,7 @@ where
 
     storage::delete_saved_env_state(target).await?;
 
-    let result = function().await;
+    let result = f.await;
 
     if result.is_ok() {
         match TargetEnvState::current(target_input, target_output).await {
