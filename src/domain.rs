@@ -49,7 +49,7 @@ pub enum Target {
 }
 
 impl Target {
-    fn metadata(&self) -> &TargetMetadata {
+    pub fn metadata(&self) -> &TargetMetadata {
         match self {
             Target::Build(target) => &target.metadata,
             Target::Service(target) => &target.metadata,
