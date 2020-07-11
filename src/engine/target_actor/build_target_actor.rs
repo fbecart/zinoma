@@ -2,8 +2,8 @@ use super::{TargetActorHelper, TargetActorInputMessage};
 use crate::domain::BuildTarget;
 use crate::engine::{builder, incremental};
 use anyhow::Context;
-use async_std::prelude::*;
-use builder::BuildCompletionReport;
+use async_std::{prelude::*, sync};
+use builder::{BuildCancellationMessage, BuildCompletionReport};
 use futures::{future::Fuse, pin_mut, FutureExt};
 use incremental::IncrementalRunResult;
 pub struct BuildTargetActor {
@@ -20,26 +20,38 @@ impl BuildTargetActor {
     }
 
     pub async fn run(mut self) {
-        let ongoing_build = Fuse::terminated();
-        pin_mut!(ongoing_build);
+        let ongoing_build_fuse = Fuse::terminated();
+        pin_mut!(ongoing_build_fuse);
+        let mut ongoing_build_cancellation_sender = None;
 
         loop {
             if self.helper.is_ready_to_execute() {
-                self.helper.set_execution_started();
-
-                ongoing_build.set(
+                let (build_cancellation_sender, build_cancellation_events) = sync::channel(1);
+                ongoing_build_cancellation_sender = Some(build_cancellation_sender);
+                let build_future = builder::build_target(&self.target, build_cancellation_events);
+                ongoing_build_fuse.set(
                     incremental::run(
                         &self.target.metadata,
                         &self.target.input,
                         Some(&self.target.output),
-                        builder::build_target(&self.target, self.helper.termination_events.clone()),
+                        build_future,
                     )
                     .fuse(),
                 );
+
+                self.helper.set_execution_started();
             }
 
             futures::select! {
-                _ = self.helper.termination_events.next().fuse() => break,
+                _ = self.helper.termination_events.next().fuse() => {
+                    if let Some(ongoing_build_cancellation_sender) = &mut ongoing_build_cancellation_sender {
+                        if ongoing_build_cancellation_sender.try_send(BuildCancellationMessage).is_err() {
+                            log::trace!("{} - Build already cancelled. Skipping.", self.target);
+                        }
+                    } else {
+                        break;
+                    }
+                },
                 _ = self.helper.target_invalidated_events.next().fuse() => {
                     self.helper.notify_target_invalidated().await
                 }
@@ -56,7 +68,8 @@ impl BuildTargetActor {
                         }
                     }
                 }
-                build_result = ongoing_build => {
+                build_result = ongoing_build_fuse => {
+                    ongoing_build_cancellation_sender = None;
                     // TODO Why unwrap?
                     let build_result = build_result
                         .with_context(|| format!("{} - Failed to evaluate target input/output", self.target))

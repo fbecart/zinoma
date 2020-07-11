@@ -1,6 +1,6 @@
 use crate::async_utils::ExponentialBackoff;
 use crate::domain::BuildTarget;
-use crate::{run_script, TerminationMessage};
+use crate::run_script;
 use anyhow::{anyhow, Context, Result};
 use async_std::prelude::*;
 use async_std::sync::Receiver;
@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 
 pub async fn build_target(
     target: &BuildTarget,
-    mut termination_events: Receiver<TerminationMessage>,
+    mut build_cancellation_events: Receiver<BuildCancellationMessage>,
 ) -> Result<BuildCompletionReport> {
     let target_start = Instant::now();
     log::info!("{} - Building", target);
@@ -28,7 +28,7 @@ pub async fn build_target(
 
     loop {
         futures::select! {
-            _ = termination_events.next().fuse() => {
+            _ = build_cancellation_events.next().fuse() => {
                 log::debug!("{} - Build cancelled", target);
                 if let Err(e) = task::spawn_blocking(move || build_process.kill().and_then(|_| build_process.wait())).await {
                     log::error!("{} - Failed to kill build process: {}", target, e)
@@ -57,3 +57,5 @@ pub enum BuildCompletionReport {
     Completed,
     Aborted,
 }
+
+pub struct BuildCancellationMessage;
