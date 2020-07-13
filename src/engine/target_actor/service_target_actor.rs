@@ -37,7 +37,10 @@ impl ServiceTargetActor {
                         self.helper.executed = !self.helper.to_execute;
 
                         if self.helper.executed {
-                            let msg = ActorInputMessage::ServiceOk(self.helper.target_id.clone());
+                            let msg = ActorInputMessage::ServiceOk {
+                                target_id: self.helper.target_id.clone(),
+                                has_service: true,
+                            };
                             self.helper.send_to_service_requesters(msg).await;
                         }
                     }
@@ -58,7 +61,7 @@ impl ServiceTargetActor {
                         ActorInputMessage::BuildOk(target_id) => {
                             self.helper.unavailable_dependency_builds.remove(&target_id);
                         },
-                        ActorInputMessage::ServiceOk(target_id) => {
+                        ActorInputMessage::ServiceOk { target_id, .. } => {
                             self.helper.unavailable_dependency_services.remove(&target_id);
                         },
                         ActorInputMessage::BuildInvalidated(target_id) => {

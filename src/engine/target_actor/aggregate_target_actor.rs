@@ -2,6 +2,7 @@ use super::{ActorId, ActorInputMessage, TargetActorHelper};
 use crate::domain::AggregateTarget;
 use async_std::prelude::*;
 use futures::FutureExt;
+use std::collections::HashSet;
 pub struct AggregateTargetActor {
     _target: AggregateTarget,
     helper: TargetActorHelper,
@@ -16,6 +17,8 @@ impl AggregateTargetActor {
     }
 
     pub async fn run(mut self) {
+        let mut service_dependencies = HashSet::new();
+
         loop {
             futures::select! {
                 _ = self.helper.termination_events.next().fuse() => break,
@@ -29,11 +32,18 @@ impl AggregateTargetActor {
                                 self.helper.send_to_build_requesters(msg).await
                             }
                         },
-                        ActorInputMessage::ServiceOk(target_id) => {
+                        ActorInputMessage::ServiceOk { target_id, has_service } => {
                             let removed = self.helper.unavailable_dependency_services.remove(&target_id);
 
+                            if has_service {
+                                service_dependencies.insert(target_id);
+                            }
+
                             if removed && self.helper.unavailable_dependency_services.is_empty() {
-                                let msg = ActorInputMessage::ServiceOk(self.helper.target_id.clone());
+                                let msg = ActorInputMessage::ServiceOk {
+                                    target_id: self.helper.target_id.clone(),
+                                    has_service: !service_dependencies.is_empty(),
+                                };
                                 self.helper.send_to_service_requesters(msg).await
                             }
                         },
@@ -89,7 +99,10 @@ impl AggregateTargetActor {
                                 }
 
                                 if self.helper.unavailable_dependency_services.is_empty() {
-                                    let msg = ActorInputMessage::ServiceOk(self.helper.target_id.clone());
+                                    let msg = ActorInputMessage::ServiceOk {
+                                        target_id: self.helper.target_id.clone(),
+                                        has_service: !service_dependencies.is_empty(),
+                                    };
                                     self.helper.send_to_actor(requester, msg).await
                                 }
                             }

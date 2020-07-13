@@ -65,7 +65,7 @@ impl BuildTargetActor {
                         ActorInputMessage::BuildOk(target_id) => {
                             self.helper.unavailable_dependency_builds.remove(&target_id);
                         },
-                        ActorInputMessage::ServiceOk(target_id) => {
+                        ActorInputMessage::ServiceOk { target_id, .. } => {
                             self.helper.unavailable_dependency_services.remove(&target_id);
                         },
                         ActorInputMessage::BuildInvalidated(target_id) => {
@@ -95,7 +95,11 @@ impl BuildTargetActor {
                             }
                         }
                         ActorInputMessage::ServiceRequested { requester } => {
-                            self.helper.send_to_actor(requester, ActorInputMessage::ServiceOk(self.helper.target_id.clone())).await
+                            let msg = ActorInputMessage::ServiceOk {
+                                target_id: self.helper.target_id.clone(),
+                                has_service: false,
+                            };
+                            self.helper.send_to_actor(requester, msg).await
                         }
                         ActorInputMessage::BuildUnrequested { requester } => {
                             let removed = self.helper.build_requesters.remove(&requester);

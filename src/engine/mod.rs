@@ -1,6 +1,5 @@
 pub mod builder;
 pub mod incremental;
-mod service;
 mod target_actor;
 mod watcher;
 
@@ -75,6 +74,7 @@ impl Engine {
         let unavailable_root_targets = root_target_ids.iter().cloned().collect::<HashSet<_>>();
         let mut unavailable_root_builds = unavailable_root_targets.clone();
         let mut unavailable_root_services = unavailable_root_targets;
+        let mut service_root_targets = HashSet::new();
         let mut terminating = false;
 
         while !(terminating
@@ -90,20 +90,22 @@ impl Engine {
                             // TODO Log here? Or already done?
                             terminating = true
                         },
-                        TargetActorOutputMessage::MessageActor { dest, msg } => {
-                            match dest {
-                                ActorId::Target(target_id) => {
-                                    target_actor_handles[&target_id].target_actor_input_sender.send(msg).await;
-                                }
-                                ActorId::Root => match msg {
-                                    ActorInputMessage::BuildOk(target_id) => {
-                                        unavailable_root_builds.remove(&target_id);
-                                    },
-                                    ActorInputMessage::ServiceOk(target_id) => {
-                                        unavailable_root_services.remove(&target_id);
-                                    },
-                                    _ => {},
-                                }
+                        TargetActorOutputMessage::MessageActor { dest, msg } => match dest {
+                            ActorId::Target(target_id) => {
+                                target_actor_handles[&target_id].target_actor_input_sender.send(msg).await;
+                            }
+                            ActorId::Root => match msg {
+                                ActorInputMessage::BuildOk(target_id) => {
+                                    unavailable_root_builds.remove(&target_id);
+                                },
+                                ActorInputMessage::ServiceOk { target_id, has_service } => {
+                                    unavailable_root_services.remove(&target_id);
+
+                                    if has_service {
+                                        service_root_targets.insert(target_id);
+                                    }
+                                },
+                                _ => {},
                             }
                         }
                     }
@@ -111,24 +113,12 @@ impl Engine {
             }
         }
 
-        if !terminating {
-            let necessary_services =
-                service::get_service_graph_targets(&self.targets, &root_target_ids);
-
-            if !necessary_services.is_empty() {
-                for (_, handles) in target_actor_handles
-                    .iter()
-                    .filter(|(target_id, _)| !necessary_services.contains(target_id))
-                {
-                    handles.termination_sender.send(TerminationMessage).await;
-                }
-
-                // Wait for termination event
-                self.termination_events
-                    .recv()
-                    .await
-                    .with_context(|| "Failed to listen to termination event".to_string())?;
-            }
+        if !terminating && !service_root_targets.is_empty() {
+            // Wait for termination event
+            self.termination_events
+                .recv()
+                .await
+                .with_context(|| "Failed to listen to termination event".to_string())?;
         }
 
         Self::send_termination_message(&target_actor_handles).await;
