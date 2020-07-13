@@ -57,18 +57,11 @@ impl ServiceTargetActor {
                 }
                 message = self.helper.target_actor_input_receiver.next().fuse() => {
                     match message.unwrap() {
-                        ActorInputMessage::Ok { kind: ExecutionKind::Build, target_id, .. } => {
-                            self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Build).unwrap().remove(&target_id);
+                        ActorInputMessage::Ok { kind, target_id, .. } => {
+                            self.helper.unavailable_dependencies.get_mut(&kind).unwrap().remove(&target_id);
                         },
-                        ActorInputMessage::Ok { kind: ExecutionKind::Service, target_id, .. } => {
-                            self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Service).unwrap().remove(&target_id);
-                        },
-                        ActorInputMessage::Invalidated { kind: ExecutionKind::Build, target_id } => {
-                            self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Build).unwrap().insert(target_id);
-                            self.helper.notify_invalidated(ExecutionKind::Service).await
-                        }
-                        ActorInputMessage::Invalidated { kind: ExecutionKind::Service, target_id } => {
-                            self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Service).unwrap().insert(target_id);
+                        ActorInputMessage::Invalidated { kind, target_id } => {
+                            self.helper.unavailable_dependencies.get_mut(&kind).unwrap().insert(target_id);
                             self.helper.notify_invalidated(ExecutionKind::Service).await
                         }
                         ActorInputMessage::Requested { kind: ExecutionKind::Build, requester } => {
