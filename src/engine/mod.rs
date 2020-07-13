@@ -12,7 +12,7 @@ use async_std::task::JoinHandle;
 use futures::{future, FutureExt};
 use std::collections::{HashMap, HashSet};
 use target_actor::{
-    ActorId, ActorInputMessage, TargetActorHandleSet, TargetActorOutputMessage, TargetWatcherOption,
+    ActorId, ActorInputMessage, TargetActorHandleSet, TargetActorOutputMessage, WatchOption,
 };
 
 pub struct Engine {
@@ -30,7 +30,7 @@ impl Engine {
         mut termination_events: Receiver<TerminationMessage>,
     ) -> Result<()> {
         let (target_actor_join_handles, target_actor_handles, mut target_actor_output_events) =
-            Self::launch_target_actors(self.targets, TargetWatcherOption::Enabled)?;
+            Self::launch_target_actors(self.targets, WatchOption::Enabled)?;
 
         for target_id in &root_target_ids {
             Self::request_target(&target_actor_handles[target_id]).await
@@ -66,7 +66,7 @@ impl Engine {
         mut termination_events: Receiver<TerminationMessage>,
     ) -> Result<()> {
         let (target_actor_join_handles, target_actor_handles, mut target_actor_output_events) =
-            Self::launch_target_actors(self.targets, TargetWatcherOption::Disabled)?;
+            Self::launch_target_actors(self.targets, WatchOption::Disabled)?;
 
         for target_id in &root_target_ids {
             Self::request_target(&target_actor_handles[target_id]).await
@@ -128,7 +128,7 @@ impl Engine {
 
     fn launch_target_actors(
         targets: HashMap<TargetId, Target>,
-        target_watcher_option: TargetWatcherOption,
+        watch_option: WatchOption,
     ) -> Result<(
         Vec<JoinHandle<()>>,
         HashMap<TargetId, TargetActorHandleSet>,
@@ -142,7 +142,7 @@ impl Engine {
         for (target_id, target) in targets.into_iter() {
             let (join_handle, handles) = target_actor::launch_target_actor(
                 target,
-                target_watcher_option,
+                watch_option,
                 target_actor_output_sender.clone(),
             )?;
             join_handles.push(join_handle);

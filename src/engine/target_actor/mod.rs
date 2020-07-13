@@ -81,7 +81,7 @@ pub enum ActorId {
 
 pub fn launch_target_actor(
     target: Target,
-    target_watcher_option: TargetWatcherOption,
+    watch_option: WatchOption,
     target_actor_output_sender: Sender<TargetActorOutputMessage>,
 ) -> Result<(JoinHandle<()>, TargetActorHandleSet)> {
     let (termination_sender, termination_events) = sync::channel(1);
@@ -89,13 +89,13 @@ pub fn launch_target_actor(
     let (target_actor_input_sender, target_actor_input_receiver) =
         sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
-    let watcher = match target_watcher_option {
-        TargetWatcherOption::Enabled => TargetWatcher::new(
+    let watcher = match watch_option {
+        WatchOption::Enabled => TargetWatcher::new(
             target.id().clone(),
             target.input().cloned(),
             target_invalidated_sender.clone(),
         )?,
-        TargetWatcherOption::Disabled => None,
+        WatchOption::Disabled => None,
     };
 
     let target_actor_helper = TargetActorHelper::new(
@@ -133,7 +133,7 @@ pub fn launch_target_actor(
 }
 
 #[derive(Copy, Clone)]
-pub enum TargetWatcherOption {
+pub enum WatchOption {
     Enabled,
     Disabled,
 }
