@@ -1,4 +1,4 @@
-#![recursion_limit = "512"]
+#![recursion_limit = "1024"]
 
 mod async_utils;
 mod clean;
@@ -88,17 +88,17 @@ fn main() -> Result<()> {
         }
 
         if requested_targets.is_some() {
-            let engine = Engine::new(targets, root_target_ids);
             let termination_events = terminate_on_ctrlc()?;
+            let engine = Engine::new(targets, termination_events);
 
             if arg_matches.is_present(cli::arg::WATCH) {
                 engine
-                    .watch(termination_events)
+                    .watch(root_target_ids)
                     .await
                     .with_context(|| "Watch error")?;
             } else {
                 engine
-                    .build(termination_events)
+                    .execute_once(root_target_ids)
                     .await
                     .with_context(|| "Build error")?;
             };

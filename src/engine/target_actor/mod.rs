@@ -14,22 +14,37 @@ use build_target_actor::BuildTargetActor;
 use service_target_actor::ServiceTargetActor;
 use target_actor_helper::TargetActorHelper;
 
-pub enum TargetActorInputMessage {
-    TargetAvailable(TargetId),
-    TargetInvalidated(TargetId),
+#[derive(Debug, Clone)]
+pub enum ActorInputMessage {
+    BuildOk(TargetId),
+    ServiceOk(TargetId),
+    BuildInvalidated(TargetId),
+    ServiceInvalidated(TargetId),
+    BuildRequested { requester: ActorId },
+    ServiceRequested { requester: ActorId },
+    BuildUnrequested { requester: ActorId },
+    ServiceUnrequested { requester: ActorId },
 }
 
 pub enum TargetActorOutputMessage {
     TargetExecutionError(TargetId, Error),
-    TargetAvailable(TargetId),
-    TargetInvalidated(TargetId),
+    MessageActor {
+        dest: ActorId,
+        msg: ActorInputMessage,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ActorId {
+    Root,
+    Target(TargetId),
 }
 
 pub fn launch_target_actor(
     target: Target,
     target_watcher_option: &TargetWatcherOption,
     target_actor_output_sender: Sender<TargetActorOutputMessage>,
-) -> Result<TargetActorHandleSet> {
+) -> Result<(JoinHandle<()>, TargetActorHandleSet)> {
     let (termination_sender, termination_events) = sync::channel(1);
     let (target_invalidated_sender, target_invalidated_events) = sync::channel(1);
     let (target_actor_input_sender, target_actor_input_receiver) =
@@ -67,13 +82,15 @@ pub fn launch_target_actor(
         }
     };
 
-    Ok(TargetActorHandleSet {
+    Ok((
         join_handle,
-        termination_sender,
-        target_actor_input_sender,
-        _target_invalidated_sender: target_invalidated_sender,
-        _watcher: watcher,
-    })
+        TargetActorHandleSet {
+            termination_sender,
+            target_actor_input_sender,
+            _target_invalidated_sender: target_invalidated_sender,
+            _watcher: watcher,
+        },
+    ))
 }
 
 pub enum TargetWatcherOption {
@@ -82,9 +99,8 @@ pub enum TargetWatcherOption {
 }
 
 pub struct TargetActorHandleSet {
-    pub join_handle: JoinHandle<()>,
     pub termination_sender: Sender<TerminationMessage>,
-    pub target_actor_input_sender: Sender<TargetActorInputMessage>,
+    pub target_actor_input_sender: Sender<ActorInputMessage>,
     _target_invalidated_sender: Sender<TargetInvalidatedMessage>,
     _watcher: Option<TargetWatcher>,
 }

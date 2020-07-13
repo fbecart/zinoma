@@ -1,4 +1,4 @@
-use super::{TargetActorHelper, TargetActorInputMessage};
+use super::{ActorId, ActorInputMessage, TargetActorHelper};
 use crate::domain::ServiceTarget;
 use crate::run_script;
 use anyhow::{Context, Result};
@@ -24,29 +24,84 @@ impl ServiceTargetActor {
 
     pub async fn run(mut self) {
         loop {
-            if self.helper.is_ready_to_execute() {
-                self.helper.set_execution_started();
+            if self.helper.to_execute
+                && !self.helper.service_requesters.is_empty()
+                && self.helper.unavailable_dependency_builds.is_empty()
+                && self.helper.unavailable_dependency_services.is_empty()
+            {
+                self.helper.to_execute = false;
+                self.helper.executed = false;
 
                 match self.restart_service().await {
-                    Ok(()) => self.helper.notify_execution_succeeded().await,
-                    Err(e) => self.helper.notify_execution_failed(e).await,
+                    Ok(()) => {
+                        self.helper.executed = !self.helper.to_execute;
+
+                        if self.helper.executed {
+                            let msg = ActorInputMessage::ServiceOk(self.helper.target_id.clone());
+                            self.helper.send_to_service_requesters(msg).await;
+                        }
+                    }
+                    Err(e) => {
+                        self.helper.executed = false;
+                        self.helper.send_target_execution_error(e).await;
+                    }
                 }
             }
 
             futures::select! {
                 _ = self.helper.termination_events.next().fuse() => break,
                 _ = self.helper.target_invalidated_events.next().fuse() => {
-                    self.helper.notify_target_invalidated().await
+                    self.helper.notify_service_invalidated().await
                 }
                 message = self.helper.target_actor_input_receiver.next().fuse() => {
                     match message.unwrap() {
-                        TargetActorInputMessage::TargetAvailable(target_id) => {
-                            self.helper.unavailable_dependencies.remove(&target_id);
+                        ActorInputMessage::BuildOk(target_id) => {
+                            self.helper.unavailable_dependency_builds.remove(&target_id);
                         },
-                        TargetActorInputMessage::TargetInvalidated(target_id) => {
+                        ActorInputMessage::ServiceOk(target_id) => {
+                            self.helper.unavailable_dependency_services.remove(&target_id);
+                        },
+                        ActorInputMessage::BuildInvalidated(target_id) => {
                             if self.helper.dependencies.contains(&target_id) {
-                                self.helper.unavailable_dependencies.insert(target_id);
-                                self.helper.notify_target_invalidated().await
+                                self.helper.unavailable_dependency_builds.insert(target_id);
+                                self.helper.notify_service_invalidated().await
+                            }
+                        }
+                        ActorInputMessage::ServiceInvalidated(target_id) => {
+                            if self.helper.dependencies.contains(&target_id) {
+                                self.helper.unavailable_dependency_services.insert(target_id);
+                                self.helper.notify_service_invalidated().await
+                            }
+                        }
+                        ActorInputMessage::BuildRequested { requester } => {
+                            let msg = ActorInputMessage::BuildOk(self.helper.target_id.clone());
+                            self.helper.send_to_actor(requester, msg).await
+                        }
+                        ActorInputMessage::ServiceRequested { requester } => {
+                            let inserted = self.helper.service_requesters.insert(requester);
+
+                            if inserted && self.helper.service_requesters.len() == 1 {
+                                self.helper.send_to_dependencies(ActorInputMessage::BuildRequested {
+                                    requester: ActorId::Target(self.helper.target_id.clone()),
+                                }).await;
+                                self.helper.send_to_dependencies(ActorInputMessage::ServiceRequested {
+                                    requester: ActorId::Target(self.helper.target_id.clone()),
+                                }).await;
+                            }
+                        }
+                        ActorInputMessage::BuildUnrequested { requester } => {}
+                        ActorInputMessage::ServiceUnrequested { requester } => {
+                            let removed = self.helper.service_requesters.remove(&requester);
+
+                            if removed && self.helper.service_requesters.is_empty() {
+                                self.helper.send_to_dependencies(ActorInputMessage::BuildUnrequested {
+                                    requester: ActorId::Target(self.helper.target_id.clone()),
+                                }).await;
+                                self.helper.send_to_dependencies(ActorInputMessage::ServiceUnrequested {
+                                    requester: ActorId::Target(self.helper.target_id.clone()),
+                                }).await;
+
+                                self.stop_service().await;
                             }
                         }
                     }

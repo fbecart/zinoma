@@ -1,4 +1,4 @@
-use super::{TargetActorHelper, TargetActorInputMessage};
+use super::{ActorId, ActorInputMessage, TargetActorHelper};
 use crate::domain::BuildTarget;
 use crate::engine::{builder, incremental};
 use anyhow::Context;
@@ -25,7 +25,12 @@ impl BuildTargetActor {
         let mut ongoing_build_cancellation_sender = None;
 
         loop {
-            if self.helper.is_ready_to_execute() {
+            if self.helper.to_execute
+                && ongoing_build_cancellation_sender.is_none()
+                && !self.helper.build_requesters.is_empty()
+                && self.helper.unavailable_dependency_builds.is_empty()
+                && self.helper.unavailable_dependency_services.is_empty()
+            {
                 let (build_cancellation_sender, build_cancellation_events) = sync::channel(1);
                 ongoing_build_cancellation_sender = Some(build_cancellation_sender);
                 let build_future = builder::build_target(&self.target, build_cancellation_events);
@@ -53,19 +58,60 @@ impl BuildTargetActor {
                     }
                 },
                 _ = self.helper.target_invalidated_events.next().fuse() => {
-                    self.helper.notify_target_invalidated().await
+                    self.helper.notify_build_invalidated().await
                 }
                 message = self.helper.target_actor_input_receiver.next().fuse() => {
                     match message.unwrap() {
-                        TargetActorInputMessage::TargetAvailable(target_id) => {
-                            self.helper.unavailable_dependencies.remove(&target_id);
+                        ActorInputMessage::BuildOk(target_id) => {
+                            self.helper.unavailable_dependency_builds.remove(&target_id);
                         },
-                        TargetActorInputMessage::TargetInvalidated(target_id) => {
+                        ActorInputMessage::ServiceOk(target_id) => {
+                            self.helper.unavailable_dependency_services.remove(&target_id);
+                        },
+                        ActorInputMessage::BuildInvalidated(target_id) => {
                             if self.helper.dependencies.contains(&target_id) {
-                                self.helper.unavailable_dependencies.insert(target_id);
-                                self.helper.notify_target_invalidated().await
+                                self.helper.unavailable_dependency_builds.insert(target_id);
+                                self.helper.notify_build_invalidated().await
                             }
                         }
+                        ActorInputMessage::ServiceInvalidated(target_id) => {
+                            if self.helper.dependencies.contains(&target_id) {
+                                self.helper.unavailable_dependency_services.insert(target_id);
+
+                                // TODO If ongoing build, cancel?
+                            }
+                        }
+                        ActorInputMessage::BuildRequested { requester } => {
+                            let inserted = self.helper.build_requesters.insert(requester);
+
+                            if inserted && self.helper.build_requesters.len() == 1 {
+                                // TODO Eventually, only request deps build (request services when build not skipped)
+                                self.helper.send_to_dependencies(ActorInputMessage::BuildRequested {
+                                    requester: ActorId::Target(self.helper.target_id.clone()),
+                                }).await;
+                                self.helper.send_to_dependencies(ActorInputMessage::ServiceRequested {
+                                    requester: ActorId::Target(self.helper.target_id.clone()),
+                                }).await;
+                            }
+                        }
+                        ActorInputMessage::ServiceRequested { requester } => {
+                            self.helper.send_to_actor(requester, ActorInputMessage::ServiceOk(self.helper.target_id.clone())).await
+                        }
+                        ActorInputMessage::BuildUnrequested { requester } => {
+                            let removed = self.helper.build_requesters.remove(&requester);
+
+                            if removed && self.helper.build_requesters.is_empty() {
+                                // TODO Interrupt ongoing build?
+
+                                self.helper.send_to_dependencies(ActorInputMessage::BuildUnrequested {
+                                    requester: ActorId::Target(self.helper.target_id.clone()),
+                                }).await;
+                                self.helper.send_to_dependencies(ActorInputMessage::ServiceUnrequested {
+                                    requester: ActorId::Target(self.helper.target_id.clone()),
+                                }).await;
+                            }
+                        }
+                        ActorInputMessage::ServiceUnrequested { requester } => {}
                     }
                 }
                 build_result = ongoing_build_fuse => {
@@ -78,11 +124,27 @@ impl BuildTargetActor {
                         IncrementalRunResult::Run(Err(e)) => self.helper.notify_execution_failed(e).await,
                         IncrementalRunResult::Skipped => {
                             log::info!("{} - Build skipped (Not Modified)", self.target);
-                            self.helper.notify_execution_succeeded().await
+
+                            // TODO Remove duplication (1)
+                            self.helper.executed = !self.helper.to_execute;
+
+                            if self.helper.executed {
+                                let msg = ActorInputMessage::BuildOk(self.helper.target_id.clone());
+                                self.helper.send_to_build_requesters(msg).await;
+                            }
                         }
                         IncrementalRunResult::Run(Ok(BuildCompletionReport::Completed)) => {
                             // TODO Why spreading logs between here and builder?
-                            self.helper.notify_execution_succeeded().await
+
+                            // TODO Remove duplication (1)
+                            self.helper.executed = !self.helper.to_execute;
+
+                            if self.helper.executed {
+                                let msg = ActorInputMessage::BuildOk(self.helper.target_id.clone());
+                                self.helper.send_to_build_requesters(msg).await;
+                            }
+
+                            // TODO Unrequest dependency services
                         }
                         IncrementalRunResult::Run(Ok(BuildCompletionReport::Aborted)) => break,
                     }

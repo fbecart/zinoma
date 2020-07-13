@@ -1,4 +1,4 @@
-use super::{TargetActorInputMessage, TargetActorOutputMessage};
+use super::{ActorId, ActorInputMessage, TargetActorOutputMessage};
 use crate::domain::{TargetId, TargetMetadata};
 use crate::engine::watcher::TargetInvalidatedMessage;
 use crate::TerminationMessage;
@@ -8,15 +8,18 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 
 pub struct TargetActorHelper {
-    target_id: TargetId,
+    pub target_id: TargetId,
     pub termination_events: Receiver<TerminationMessage>,
     pub target_invalidated_events: Receiver<TargetInvalidatedMessage>,
-    pub target_actor_input_receiver: Receiver<TargetActorInputMessage>,
-    target_actor_output_sender: Sender<TargetActorOutputMessage>,
-    to_execute: bool,
-    executed: bool,
+    pub target_actor_input_receiver: Receiver<ActorInputMessage>,
+    pub target_actor_output_sender: Sender<TargetActorOutputMessage>,
+    pub to_execute: bool,
+    pub executed: bool,
     pub dependencies: HashSet<TargetId>,
-    pub unavailable_dependencies: HashSet<TargetId>,
+    pub unavailable_dependency_builds: HashSet<TargetId>,
+    pub unavailable_dependency_services: HashSet<TargetId>,
+    pub build_requesters: HashSet<ActorId>,
+    pub service_requesters: HashSet<ActorId>,
 }
 
 impl TargetActorHelper {
@@ -24,11 +27,12 @@ impl TargetActorHelper {
         target_metadata: &TargetMetadata,
         termination_events: Receiver<TerminationMessage>,
         target_invalidated_events: Receiver<TargetInvalidatedMessage>,
-        target_actor_input_receiver: Receiver<TargetActorInputMessage>,
+        target_actor_input_receiver: Receiver<ActorInputMessage>,
         target_actor_output_sender: Sender<TargetActorOutputMessage>,
     ) -> Self {
         let dependencies = HashSet::from_iter(target_metadata.dependencies.iter().cloned());
-        let unavailable_dependencies = dependencies.clone();
+        let unavailable_dependency_builds = dependencies.clone();
+        let unavailable_dependency_services = dependencies.clone();
 
         Self {
             target_id: target_metadata.id.clone(),
@@ -39,32 +43,36 @@ impl TargetActorHelper {
             to_execute: true,
             executed: false,
             dependencies,
-            unavailable_dependencies,
+            unavailable_dependency_builds,
+            unavailable_dependency_services,
+            build_requesters: HashSet::new(),
+            service_requesters: HashSet::new(),
         }
     }
 
-    pub async fn notify_target_invalidated(&mut self) {
+    pub async fn notify_build_invalidated(&mut self) {
         if !self.to_execute {
             self.to_execute = true;
             self.executed = false;
 
-            let msg = TargetActorOutputMessage::TargetInvalidated(self.target_id.clone());
-            self.target_actor_output_sender.send(msg).await;
+            let msg = ActorInputMessage::BuildInvalidated(self.target_id.clone());
+            self.send_to_build_requesters(msg).await
         }
     }
 
-    async fn send_target_available(&self) {
-        let msg = TargetActorOutputMessage::TargetAvailable(self.target_id.clone());
-        self.target_actor_output_sender.send(msg).await;
+    pub async fn notify_service_invalidated(&mut self) {
+        if !self.to_execute {
+            self.to_execute = true;
+            self.executed = false;
+
+            let msg = ActorInputMessage::ServiceInvalidated(self.target_id.clone());
+            self.send_to_service_requesters(msg).await
+        }
     }
 
-    async fn send_target_execution_error(&self, e: Error) {
+    pub async fn send_target_execution_error(&self, e: Error) {
         let msg = TargetActorOutputMessage::TargetExecutionError(self.target_id.clone(), e);
         self.target_actor_output_sender.send(msg).await;
-    }
-
-    pub fn is_ready_to_execute(&self) -> bool {
-        self.to_execute && self.unavailable_dependencies.is_empty()
     }
 
     pub fn set_execution_started(&mut self) {
@@ -72,16 +80,41 @@ impl TargetActorHelper {
         self.executed = false;
     }
 
-    pub async fn notify_execution_succeeded(&mut self) {
-        self.executed = !self.to_execute;
-
-        if self.executed {
-            self.send_target_available().await;
-        }
-    }
-
     pub async fn notify_execution_failed(&mut self, e: Error) {
         self.executed = false;
         self.send_target_execution_error(e).await;
+    }
+
+    pub async fn send_to_actor(&self, dest: ActorId, msg: ActorInputMessage) {
+        self.target_actor_output_sender
+            .send(TargetActorOutputMessage::MessageActor { dest, msg })
+            .await
+    }
+
+    pub async fn send_to_target(&self, dest: TargetId, msg: ActorInputMessage) {
+        self.target_actor_output_sender
+            .send(TargetActorOutputMessage::MessageActor {
+                dest: ActorId::Target(dest),
+                msg,
+            })
+            .await
+    }
+
+    pub async fn send_to_dependencies(&self, msg: ActorInputMessage) {
+        for dependency in &self.dependencies {
+            self.send_to_target(dependency.clone(), msg.clone()).await
+        }
+    }
+
+    pub async fn send_to_build_requesters(&self, msg: ActorInputMessage) {
+        for requester in &self.build_requesters {
+            self.send_to_actor(requester.clone(), msg.clone()).await
+        }
+    }
+
+    pub async fn send_to_service_requesters(&self, msg: ActorInputMessage) {
+        for requester in &self.service_requesters {
+            self.send_to_actor(requester.clone(), msg.clone()).await
+        }
     }
 }
