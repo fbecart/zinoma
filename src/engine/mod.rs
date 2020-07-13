@@ -42,7 +42,7 @@ impl Engine {
                 target_actor_output = target_actor_output_events.next().fuse() => {
                     match target_actor_output.unwrap() {
                         TargetActorOutputMessage::TargetExecutionError(target_id, e) => {
-                            log::warn!("{} - {}", target_id, e); // FIXME Better logs at least?
+                            log::warn!("{} - {}", target_id, e); // FIXME Better logs
                         },
                         TargetActorOutputMessage::MessageActor { dest, msg } => {
                             if let ActorId::Target(target_id) = dest {
@@ -86,7 +86,7 @@ impl Engine {
                 target_actor_output = target_actor_output_events.next().fuse() => {
                     match target_actor_output.unwrap() {
                         TargetActorOutputMessage::TargetExecutionError(target_id, e) => {
-                            // TODO Log here? Or already done?
+                            // TODO Log (if not already done)
                             terminating = true
                         },
                         TargetActorOutputMessage::MessageActor { dest, msg } => match dest {
