@@ -65,16 +65,12 @@ impl ServiceTargetActor {
                             self.helper.unavailable_dependency_services.remove(&target_id);
                         },
                         ActorInputMessage::BuildInvalidated(target_id) => {
-                            if self.helper.dependencies.contains(&target_id) {
-                                self.helper.unavailable_dependency_builds.insert(target_id);
-                                self.helper.notify_service_invalidated().await
-                            }
+                            self.helper.unavailable_dependency_builds.insert(target_id);
+                            self.helper.notify_service_invalidated().await
                         }
                         ActorInputMessage::ServiceInvalidated(target_id) => {
-                            if self.helper.dependencies.contains(&target_id) {
-                                self.helper.unavailable_dependency_services.insert(target_id);
-                                self.helper.notify_service_invalidated().await
-                            }
+                            self.helper.unavailable_dependency_services.insert(target_id);
+                            self.helper.notify_service_invalidated().await
                         }
                         ActorInputMessage::BuildRequested { requester } => {
                             let msg = ActorInputMessage::BuildOk(self.helper.target_id.clone());

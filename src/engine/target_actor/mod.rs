@@ -16,24 +16,52 @@ use target_actor_helper::TargetActorHelper;
 
 #[derive(Debug, Clone)]
 pub enum ActorInputMessage {
-    BuildRequested {
-        requester: ActorId,
-    },
-    ServiceRequested {
-        requester: ActorId,
-    },
-    BuildUnrequested {
-        requester: ActorId,
-    },
-    ServiceUnrequested {
-        requester: ActorId,
-    },
+    /// Indicates the execution of the build scripts behind this target are requested.
+    ///
+    /// This message should only be sent to direct dependencies.
+    BuildRequested { requester: ActorId },
+    /// Indicates the execution of the services behind this target are requested.
+    ///
+    /// This message should only be sent to direct dependencies.
+    ServiceRequested { requester: ActorId },
+    /// Indicates the execution of the build scripts behind this target are no more requested by the provided requester.
+    ///
+    /// This message should only be sent to direct dependencies.
+    BuildUnrequested { requester: ActorId },
+    /// Indicates the execution of the services behind this target are no more requested by the provided requester.
+    ///
+    /// This message should only be sent to direct dependencies.
+    ServiceUnrequested { requester: ActorId },
+    /// Indicates the execution of the build scripts behind the provided target are OK.
+    ///
+    /// Here, OK means one of the following:
+    /// - There is no build script behind this target;
+    /// - All build scripts have been executed or skipped, and therefore, their output resources are available.
+    ///
+    /// This message should only be sent to build requesters.
     BuildOk(TargetId),
+    /// Indicates the execution of the services behind the provided target are OK.
+    ///
+    /// Here, OK means one of the following:
+    /// - There is no service behind this target;
+    /// - All services have been started and are currently running.
+    ///
+    /// This message should only be sent to service requesters.
     ServiceOk {
         target_id: TargetId,
         has_service: bool,
     },
+    /// Indicates the build scripts behind the target are not OK anymore.
+    ///
+    /// The requester should invalidate the previously sent [`BuildOk`].
+    ///
+    /// [`BuildOk`]: #variant.BuildOk
     BuildInvalidated(TargetId),
+    /// Indicates the services behind the target are not OK anymore.
+    ///
+    /// The requester should invalidate the previously sent [`ServiceOk`].
+    ///
+    /// [`ServiceOk`]: #variant.ServiceOk
     ServiceInvalidated(TargetId),
 }
 

@@ -15,7 +15,7 @@ pub struct TargetActorHelper {
     pub target_actor_output_sender: Sender<TargetActorOutputMessage>,
     pub to_execute: bool,
     pub executed: bool,
-    pub dependencies: HashSet<TargetId>,
+    pub dependencies: Vec<TargetId>,
     pub unavailable_dependency_builds: HashSet<TargetId>,
     pub unavailable_dependency_services: HashSet<TargetId>,
     pub build_requesters: HashSet<ActorId>,
@@ -30,9 +30,9 @@ impl TargetActorHelper {
         target_actor_input_receiver: Receiver<ActorInputMessage>,
         target_actor_output_sender: Sender<TargetActorOutputMessage>,
     ) -> Self {
-        let dependencies = HashSet::from_iter(target_metadata.dependencies.iter().cloned());
-        let unavailable_dependency_builds = dependencies.clone();
-        let unavailable_dependency_services = dependencies.clone();
+        let dependencies = target_metadata.dependencies.clone();
+        let unavailable_dependency_builds = HashSet::from_iter(dependencies.iter().cloned());
+        let unavailable_dependency_services = unavailable_dependency_builds.clone();
 
         Self {
             target_id: target_metadata.id.clone(),

@@ -48,24 +48,19 @@ impl AggregateTargetActor {
                             }
                         },
                         ActorInputMessage::BuildInvalidated(target_id) => {
-                            // TODO Remove if statement (+ similar cases)
-                            if self.helper.dependencies.contains(&target_id) {
-                                let inserted = self.helper.unavailable_dependency_builds.insert(target_id.clone());
+                            let inserted = self.helper.unavailable_dependency_builds.insert(target_id.clone());
 
-                                if inserted && self.helper.unavailable_dependency_builds.len() == 1 {
-                                    let msg = ActorInputMessage::BuildInvalidated(self.helper.target_id.clone());
-                                    self.helper.send_to_build_requesters(msg).await
-                                }
+                            if inserted && self.helper.unavailable_dependency_builds.len() == 1 {
+                                let msg = ActorInputMessage::BuildInvalidated(self.helper.target_id.clone());
+                                self.helper.send_to_build_requesters(msg).await
                             }
                         }
                         ActorInputMessage::ServiceInvalidated(target_id) => {
-                            if self.helper.dependencies.contains(&target_id) {
-                                let inserted = self.helper.unavailable_dependency_services.insert(target_id);
+                            let inserted = self.helper.unavailable_dependency_services.insert(target_id);
 
-                                if inserted && self.helper.unavailable_dependency_services.len() == 1 {
-                                    let msg = ActorInputMessage::ServiceInvalidated(self.helper.target_id.clone());
-                                    self.helper.send_to_service_requesters(msg).await
-                                }
+                            if inserted && self.helper.unavailable_dependency_services.len() == 1 {
+                                let msg = ActorInputMessage::ServiceInvalidated(self.helper.target_id.clone());
+                                self.helper.send_to_service_requesters(msg).await
                             }
                         }
                         ActorInputMessage::BuildRequested { requester } => {
