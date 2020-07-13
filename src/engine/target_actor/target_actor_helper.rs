@@ -53,6 +53,13 @@ impl TargetActorHelper {
         }
     }
 
+    pub fn should_execute(&self, kind: ExecutionKind) -> bool {
+        self.to_execute
+            && !self.requesters[&kind].is_empty()
+            && self.unavailable_dependencies[&ExecutionKind::Build].is_empty()
+            && self.unavailable_dependencies[&ExecutionKind::Service].is_empty()
+    }
+
     pub async fn notify_invalidated(&mut self, kind: ExecutionKind) {
         if !self.to_execute {
             self.to_execute = true;
@@ -91,6 +98,20 @@ impl TargetActorHelper {
     pub async fn send_to_requesters(&self, kind: ExecutionKind, msg: ActorInputMessage) {
         for requester in &self.requesters[&kind] {
             self.send_to_actor(requester.clone(), msg.clone()).await
+        }
+    }
+
+    pub async fn notify_success(&mut self, kind: ExecutionKind) {
+        self.executed = !self.to_execute;
+
+        if self.executed {
+            let target_id = self.target_id.clone();
+            let msg = ActorInputMessage::Ok {
+                kind,
+                target_id,
+                actual: true,
+            };
+            self.send_to_requesters(kind, msg).await
         }
     }
 }

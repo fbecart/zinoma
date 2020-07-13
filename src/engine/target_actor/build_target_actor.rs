@@ -25,11 +25,8 @@ impl BuildTargetActor {
         let mut ongoing_build_cancellation_sender = None;
 
         loop {
-            if self.helper.to_execute
+            if self.helper.should_execute(ExecutionKind::Build)
                 && ongoing_build_cancellation_sender.is_none()
-                && !self.helper.requesters[&ExecutionKind::Build].is_empty()
-                && self.helper.unavailable_dependencies[&ExecutionKind::Build].is_empty()
-                && self.helper.unavailable_dependencies[&ExecutionKind::Service].is_empty()
             {
                 let (build_cancellation_sender, build_cancellation_events) = sync::channel(1);
                 ongoing_build_cancellation_sender = Some(build_cancellation_sender);
@@ -122,11 +119,11 @@ impl BuildTargetActor {
                         IncrementalRunResult::Run(Err(e)) => self.helper.notify_execution_failed(e).await,
                         IncrementalRunResult::Skipped => {
                             log::info!("{} - Build skipped (Not Modified)", self.target);
-                            Self::on_success(&mut self.helper).await;
+                            self.helper.notify_success(ExecutionKind::Build).await;
                         }
                         IncrementalRunResult::Run(Ok(BuildCompletionReport::Completed)) => {
                             // TODO Why spreading logs between here and builder?
-                            Self::on_success(&mut self.helper).await;
+                            self.helper.notify_success(ExecutionKind::Build).await;
 
                             // TODO Eventually, unrequest dependency services
                         }
@@ -134,20 +131,6 @@ impl BuildTargetActor {
                     }
                 },
             }
-        }
-    }
-
-    async fn on_success(helper: &mut TargetActorHelper) {
-        helper.executed = !helper.to_execute;
-
-        if helper.executed {
-            let target_id = helper.target_id.clone();
-            let msg = ActorInputMessage::Ok {
-                kind: ExecutionKind::Build,
-                target_id,
-                actual: true,
-            };
-            helper.send_to_requesters(ExecutionKind::Build, msg).await
         }
     }
 }

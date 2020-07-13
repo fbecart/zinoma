@@ -24,28 +24,11 @@ impl ServiceTargetActor {
 
     pub async fn run(mut self) {
         loop {
-            if self.helper.to_execute
-                && !self.helper.requesters[&ExecutionKind::Service].is_empty()
-                && self.helper.unavailable_dependencies[&ExecutionKind::Build].is_empty()
-                && self.helper.unavailable_dependencies[&ExecutionKind::Service].is_empty()
-            {
+            if self.helper.should_execute(ExecutionKind::Service) {
                 self.helper.set_execution_started();
 
                 match self.restart_service().await {
-                    Ok(()) => {
-                        self.helper.executed = !self.helper.to_execute;
-
-                        if self.helper.executed {
-                            let msg = ActorInputMessage::Ok {
-                                kind: ExecutionKind::Service,
-                                target_id: self.helper.target_id.clone(),
-                                actual: true,
-                            };
-                            self.helper
-                                .send_to_requesters(ExecutionKind::Service, msg)
-                                .await;
-                        }
-                    }
+                    Ok(()) => self.helper.notify_success(ExecutionKind::Service).await,
                     Err(e) => self.helper.notify_execution_failed(e).await,
                 }
             }
