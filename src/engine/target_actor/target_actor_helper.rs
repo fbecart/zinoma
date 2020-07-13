@@ -114,4 +114,25 @@ impl TargetActorHelper {
             self.send_to_requesters(kind, msg).await
         }
     }
+
+    pub async fn request_dependencies(&self, kind: ExecutionKind) {
+        self.send_to_dependencies(ActorInputMessage::Requested {
+            kind,
+            requester: ActorId::Target(self.target_id.clone()),
+        })
+        .await;
+    }
+
+    pub fn handle_unrequested(&mut self, kind: ExecutionKind, requester: ActorId) -> bool {
+        let removed = self.requesters.get_mut(&kind).unwrap().remove(&requester);
+        removed && self.requesters[&kind].is_empty()
+    }
+
+    pub async fn unrequest_dependencies(&self, kind: ExecutionKind) {
+        self.send_to_dependencies(ActorInputMessage::Unrequested {
+            kind,
+            requester: ActorId::Target(self.target_id.clone()),
+        })
+        .await;
+    }
 }

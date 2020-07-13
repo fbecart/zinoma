@@ -1,4 +1,4 @@
-use super::{ActorId, ActorInputMessage, ExecutionKind, TargetActorHelper};
+use super::{ActorInputMessage, ExecutionKind, TargetActorHelper};
 use crate::domain::ServiceTarget;
 use crate::run_script;
 use anyhow::{Context, Result};
@@ -59,29 +59,16 @@ impl ServiceTargetActor {
                             let inserted = self.helper.requesters.get_mut(&ExecutionKind::Service).unwrap().insert(requester);
 
                             if inserted && self.helper.requesters[&ExecutionKind::Service].len() == 1 {
-                                self.helper.send_to_dependencies(ActorInputMessage::Requested {
-                                    kind: ExecutionKind::Build,
-                                    requester: ActorId::Target(self.helper.target_id.clone()),
-                                }).await;
-                                self.helper.send_to_dependencies(ActorInputMessage::Requested {
-                                    kind: ExecutionKind::Service,
-                                    requester: ActorId::Target(self.helper.target_id.clone()),
-                                }).await;
+                                self.helper.request_dependencies(ExecutionKind::Build).await;
+                                self.helper.request_dependencies(ExecutionKind::Service).await;
                             }
                         }
-                        ActorInputMessage::Unrequested { kind: ExecutionKind::Build, requester } => {}
-                        ActorInputMessage::Unrequested { kind: ExecutionKind::Service, requester } => {
-                            let removed = self.helper.requesters.get_mut(&ExecutionKind::Service).unwrap().remove(&requester);
+                        ActorInputMessage::Unrequested { kind, requester } => {
+                            let was_last_requester = self.helper.handle_unrequested(kind, requester);
 
-                            if removed && self.helper.requesters[&ExecutionKind::Service].is_empty() {
-                                self.helper.send_to_dependencies(ActorInputMessage::Unrequested {
-                                    kind: ExecutionKind::Build,
-                                    requester: ActorId::Target(self.helper.target_id.clone()),
-                                }).await;
-                                self.helper.send_to_dependencies(ActorInputMessage::Unrequested {
-                                    kind: ExecutionKind::Service,
-                                    requester: ActorId::Target(self.helper.target_id.clone()),
-                                }).await;
+                            if was_last_requester && kind == ExecutionKind::Service {
+                                self.helper.unrequest_dependencies(ExecutionKind::Build).await;
+                                self.helper.unrequest_dependencies(ExecutionKind::Service).await;
 
                                 self.stop_service().await;
                             }

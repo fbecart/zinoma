@@ -1,4 +1,4 @@
-use super::{ActorId, ActorInputMessage, ExecutionKind, TargetActorHelper};
+use super::{ActorInputMessage, ExecutionKind, TargetActorHelper};
 use crate::domain::AggregateTarget;
 use async_std::prelude::*;
 use futures::FutureExt;
@@ -56,11 +56,7 @@ impl AggregateTargetActor {
                             if inserted {
                                 let is_first_insertion = self.helper.requesters[&kind].len() == 1;
                                 if is_first_insertion {
-                                    let msg = ActorInputMessage::Requested {
-                                        kind,
-                                        requester: ActorId::Target(self.helper.target_id.clone()),
-                                    };
-                                    self.helper.send_to_dependencies(msg).await
+                                    self.helper.request_dependencies(kind).await;
                                 }
 
                                 if self.helper.unavailable_dependencies[&kind].is_empty() {
@@ -74,14 +70,10 @@ impl AggregateTargetActor {
                             }
                         }
                         ActorInputMessage::Unrequested { kind, requester } => {
-                            let removed = self.helper.requesters.get_mut(&kind).unwrap().remove(&requester);
+                            let was_last_requester = self.helper.handle_unrequested(kind, requester);
 
-                            if removed && self.helper.requesters[&kind].is_empty() {
-                                let msg = ActorInputMessage::Unrequested {
-                                    kind,
-                                    requester: ActorId::Target(self.helper.target_id.clone()),
-                                };
-                                self.helper.send_to_dependencies(msg).await
+                            if was_last_requester {
+                                self.helper.unrequest_dependencies(kind).await;
                             }
                         }
                     }
