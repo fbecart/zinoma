@@ -94,7 +94,7 @@ impl Engine {
                                 target_actor_handles[&target_id].target_actor_input_sender.send(msg).await;
                             }
                             ActorId::Root => match msg {
-                                ActorInputMessage::BuildOk(target_id) => {
+                                ActorInputMessage::BuildOk { target_id } => {
                                     unavailable_root_builds.remove(&target_id);
                                 },
                                 ActorInputMessage::ServiceOk { target_id, has_service } => {

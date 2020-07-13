@@ -58,22 +58,22 @@ impl ServiceTargetActor {
                 }
                 message = self.helper.target_actor_input_receiver.next().fuse() => {
                     match message.unwrap() {
-                        ActorInputMessage::BuildOk(target_id) => {
+                        ActorInputMessage::BuildOk { target_id } => {
                             self.helper.unavailable_dependency_builds.remove(&target_id);
                         },
                         ActorInputMessage::ServiceOk { target_id, .. } => {
                             self.helper.unavailable_dependency_services.remove(&target_id);
                         },
-                        ActorInputMessage::BuildInvalidated(target_id) => {
+                        ActorInputMessage::BuildInvalidated { target_id } => {
                             self.helper.unavailable_dependency_builds.insert(target_id);
                             self.helper.notify_service_invalidated().await
                         }
-                        ActorInputMessage::ServiceInvalidated(target_id) => {
+                        ActorInputMessage::ServiceInvalidated { target_id } => {
                             self.helper.unavailable_dependency_services.insert(target_id);
                             self.helper.notify_service_invalidated().await
                         }
                         ActorInputMessage::BuildRequested { requester } => {
-                            let msg = ActorInputMessage::BuildOk(self.helper.target_id.clone());
+                            let msg = ActorInputMessage::BuildOk { target_id: self.helper.target_id.clone() };
                             self.helper.send_to_actor(requester, msg).await
                         }
                         ActorInputMessage::ServiceRequested { requester } => {

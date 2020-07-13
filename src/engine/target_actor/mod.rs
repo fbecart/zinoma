@@ -39,7 +39,7 @@ pub enum ActorInputMessage {
     /// - All build scripts have been executed or skipped, and therefore, their output resources are available.
     ///
     /// This message should only be sent to build requesters.
-    BuildOk(TargetId),
+    BuildOk { target_id: TargetId },
     /// Indicates the execution of the services behind the provided target are OK.
     ///
     /// Here, OK means one of the following:
@@ -56,13 +56,13 @@ pub enum ActorInputMessage {
     /// The requester should invalidate the previously sent [`BuildOk`].
     ///
     /// [`BuildOk`]: #variant.BuildOk
-    BuildInvalidated(TargetId),
+    BuildInvalidated { target_id: TargetId },
     /// Indicates the services behind the target are not OK anymore.
     ///
     /// The requester should invalidate the previously sent [`ServiceOk`].
     ///
     /// [`ServiceOk`]: #variant.ServiceOk
-    ServiceInvalidated(TargetId),
+    ServiceInvalidated { target_id: TargetId },
 }
 
 pub enum TargetActorOutputMessage {

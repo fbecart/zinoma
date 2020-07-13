@@ -55,7 +55,9 @@ impl TargetActorHelper {
             self.to_execute = true;
             self.executed = false;
 
-            let msg = ActorInputMessage::BuildInvalidated(self.target_id.clone());
+            let msg = ActorInputMessage::BuildInvalidated {
+                target_id: self.target_id.clone(),
+            };
             self.send_to_build_requesters(msg).await
         }
     }
@@ -65,7 +67,9 @@ impl TargetActorHelper {
             self.to_execute = true;
             self.executed = false;
 
-            let msg = ActorInputMessage::ServiceInvalidated(self.target_id.clone());
+            let msg = ActorInputMessage::ServiceInvalidated {
+                target_id: self.target_id.clone(),
+            };
             self.send_to_service_requesters(msg).await
         }
     }

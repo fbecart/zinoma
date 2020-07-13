@@ -24,11 +24,11 @@ impl AggregateTargetActor {
                 _ = self.helper.termination_events.next().fuse() => break,
                 message = self.helper.target_actor_input_receiver.next().fuse() => {
                     match message.unwrap() {
-                        ActorInputMessage::BuildOk(target_id) => {
+                        ActorInputMessage::BuildOk { target_id } => {
                             let removed = self.helper.unavailable_dependency_builds.remove(&target_id);
 
                             if removed && self.helper.unavailable_dependency_builds.is_empty() {
-                                let msg = ActorInputMessage::BuildOk(self.helper.target_id.clone());
+                                let msg = ActorInputMessage::BuildOk { target_id: self.helper.target_id.clone() };
                                 self.helper.send_to_build_requesters(msg).await
                             }
                         },
@@ -47,19 +47,19 @@ impl AggregateTargetActor {
                                 self.helper.send_to_service_requesters(msg).await
                             }
                         },
-                        ActorInputMessage::BuildInvalidated(target_id) => {
+                        ActorInputMessage::BuildInvalidated { target_id } => {
                             let inserted = self.helper.unavailable_dependency_builds.insert(target_id.clone());
 
                             if inserted && self.helper.unavailable_dependency_builds.len() == 1 {
-                                let msg = ActorInputMessage::BuildInvalidated(self.helper.target_id.clone());
+                                let msg = ActorInputMessage::BuildInvalidated { target_id: self.helper.target_id.clone() };
                                 self.helper.send_to_build_requesters(msg).await
                             }
                         }
-                        ActorInputMessage::ServiceInvalidated(target_id) => {
+                        ActorInputMessage::ServiceInvalidated { target_id } => {
                             let inserted = self.helper.unavailable_dependency_services.insert(target_id);
 
                             if inserted && self.helper.unavailable_dependency_services.len() == 1 {
-                                let msg = ActorInputMessage::ServiceInvalidated(self.helper.target_id.clone());
+                                let msg = ActorInputMessage::ServiceInvalidated { target_id: self.helper.target_id.clone() };
                                 self.helper.send_to_service_requesters(msg).await
                             }
                         }
@@ -76,7 +76,7 @@ impl AggregateTargetActor {
                                 }
 
                                 if self.helper.unavailable_dependency_builds.is_empty() {
-                                    let msg = ActorInputMessage::BuildOk(self.helper.target_id.clone());
+                                    let msg = ActorInputMessage::BuildOk { target_id: self.helper.target_id.clone() };
                                     self.helper.send_to_actor(requester, msg).await
                                 }
                             }

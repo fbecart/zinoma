@@ -62,17 +62,17 @@ impl BuildTargetActor {
                 }
                 message = self.helper.target_actor_input_receiver.next().fuse() => {
                     match message.unwrap() {
-                        ActorInputMessage::BuildOk(target_id) => {
+                        ActorInputMessage::BuildOk { target_id } => {
                             self.helper.unavailable_dependency_builds.remove(&target_id);
                         },
                         ActorInputMessage::ServiceOk { target_id, .. } => {
                             self.helper.unavailable_dependency_services.remove(&target_id);
                         },
-                        ActorInputMessage::BuildInvalidated(target_id) => {
+                        ActorInputMessage::BuildInvalidated { target_id } => {
                             self.helper.unavailable_dependency_builds.insert(target_id);
                             self.helper.notify_build_invalidated().await
                         }
-                        ActorInputMessage::ServiceInvalidated(target_id) => {
+                        ActorInputMessage::ServiceInvalidated { target_id } => {
                             self.helper.unavailable_dependency_services.insert(target_id);
 
                             // TODO If ongoing build, cancel?
@@ -129,7 +129,7 @@ impl BuildTargetActor {
                             self.helper.executed = !self.helper.to_execute;
 
                             if self.helper.executed {
-                                let msg = ActorInputMessage::BuildOk(self.helper.target_id.clone());
+                                let msg = ActorInputMessage::BuildOk { target_id: self.helper.target_id.clone() };
                                 self.helper.send_to_build_requesters(msg).await;
                             }
                         }
@@ -140,7 +140,7 @@ impl BuildTargetActor {
                             self.helper.executed = !self.helper.to_execute;
 
                             if self.helper.executed {
-                                let msg = ActorInputMessage::BuildOk(self.helper.target_id.clone());
+                                let msg = ActorInputMessage::BuildOk { target_id: self.helper.target_id.clone() };
                                 self.helper.send_to_build_requesters(msg).await;
                             }
 
