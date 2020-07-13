@@ -16,13 +16,6 @@ use target_actor_helper::TargetActorHelper;
 
 #[derive(Debug, Clone)]
 pub enum ActorInputMessage {
-    BuildOk(TargetId),
-    ServiceOk {
-        target_id: TargetId,
-        has_service: bool,
-    },
-    BuildInvalidated(TargetId),
-    ServiceInvalidated(TargetId),
     BuildRequested {
         requester: ActorId,
     },
@@ -35,6 +28,13 @@ pub enum ActorInputMessage {
     ServiceUnrequested {
         requester: ActorId,
     },
+    BuildOk(TargetId),
+    ServiceOk {
+        target_id: TargetId,
+        has_service: bool,
+    },
+    BuildInvalidated(TargetId),
+    ServiceInvalidated(TargetId),
 }
 
 pub enum TargetActorOutputMessage {

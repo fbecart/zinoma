@@ -17,27 +17,20 @@ use target_actor::{
 
 pub struct Engine {
     targets: HashMap<TargetId, Target>,
-    termination_events: Receiver<TerminationMessage>,
 }
 
 impl Engine {
-    pub fn new(
-        targets: HashMap<TargetId, Target>,
-        termination_events: Receiver<TerminationMessage>,
-    ) -> Self {
-        Self {
-            targets,
-            termination_events,
-        }
+    pub fn new(targets: HashMap<TargetId, Target>) -> Self {
+        Self { targets }
     }
 
-    pub async fn watch(self, root_target_ids: Vec<TargetId>) -> Result<()> {
-        let Engine {
-            targets,
-            mut termination_events,
-        } = self;
+    pub async fn watch(
+        self,
+        root_target_ids: Vec<TargetId>,
+        mut termination_events: Receiver<TerminationMessage>,
+    ) -> Result<()> {
         let (target_actor_join_handles, target_actor_handles, mut target_actor_output_events) =
-            Self::launch_target_actors(targets, TargetWatcherOption::Enabled)?;
+            Self::launch_target_actors(self.targets, TargetWatcherOption::Enabled)?;
 
         for target_id in &root_target_ids {
             Self::request_target(&target_actor_handles[target_id]).await
@@ -67,13 +60,13 @@ impl Engine {
         Ok(())
     }
 
-    pub async fn execute_once(self, root_target_ids: Vec<TargetId>) -> Result<()> {
-        let Engine {
-            targets,
-            mut termination_events,
-        } = self;
+    pub async fn execute_once(
+        self,
+        root_target_ids: Vec<TargetId>,
+        mut termination_events: Receiver<TerminationMessage>,
+    ) -> Result<()> {
         let (target_actor_join_handles, target_actor_handles, mut target_actor_output_events) =
-            Self::launch_target_actors(targets, TargetWatcherOption::Disabled)?;
+            Self::launch_target_actors(self.targets, TargetWatcherOption::Disabled)?;
 
         for target_id in &root_target_ids {
             Self::request_target(&target_actor_handles[target_id]).await
@@ -89,9 +82,7 @@ impl Engine {
             || unavailable_root_services.is_empty() && unavailable_root_builds.is_empty())
         {
             futures::select! {
-                _ = termination_events.next().fuse() => {
-                    terminating = true
-                },
+                _ = termination_events.next().fuse() => terminating = true,
                 target_actor_output = target_actor_output_events.next().fuse() => {
                     match target_actor_output.unwrap() {
                         TargetActorOutputMessage::TargetExecutionError(target_id, e) => {

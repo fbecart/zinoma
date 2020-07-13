@@ -89,16 +89,16 @@ fn main() -> Result<()> {
 
         if requested_targets.is_some() {
             let termination_events = terminate_on_ctrlc()?;
-            let engine = Engine::new(targets, termination_events);
+            let engine = Engine::new(targets);
 
             if arg_matches.is_present(cli::arg::WATCH) {
                 engine
-                    .watch(root_target_ids)
+                    .watch(root_target_ids, termination_events)
                     .await
                     .with_context(|| "Watch error")?;
             } else {
                 engine
-                    .execute_once(root_target_ids)
+                    .execute_once(root_target_ids, termination_events)
                     .await
                     .with_context(|| "Build error")?;
             };
