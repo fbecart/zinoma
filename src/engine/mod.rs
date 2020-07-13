@@ -167,16 +167,12 @@ impl Engine {
     }
 
     async fn request_target(handles: &TargetActorHandleSet) {
-        let build_msg = ActorInputMessage::Requested {
-            kind: ExecutionKind::Build,
-            requester: ActorId::Root,
-        };
-        handles.target_actor_input_sender.send(build_msg).await;
-
-        let service_msg = ActorInputMessage::Requested {
-            kind: ExecutionKind::Service,
-            requester: ActorId::Root,
-        };
-        handles.target_actor_input_sender.send(service_msg).await;
+        for &kind in &[ExecutionKind::Build, ExecutionKind::Service] {
+            let build_msg = ActorInputMessage::Requested {
+                kind,
+                requester: ActorId::Root,
+            };
+            handles.target_actor_input_sender.send(build_msg).await;
+        }
     }
 }
