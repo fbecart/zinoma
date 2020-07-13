@@ -53,31 +53,14 @@ impl TargetActorHelper {
         }
     }
 
-    pub async fn notify_build_invalidated(&mut self) {
+    pub async fn notify_invalidated(&mut self, kind: ExecutionKind) {
         if !self.to_execute {
             self.to_execute = true;
             self.executed = false;
 
             let target_id = self.target_id.clone();
-            let msg = ActorInputMessage::Invalidated {
-                kind: ExecutionKind::Build,
-                target_id,
-            };
-            self.send_to_build_requesters(msg).await
-        }
-    }
-
-    pub async fn notify_service_invalidated(&mut self) {
-        if !self.to_execute {
-            self.to_execute = true;
-            self.executed = false;
-
-            let target_id = self.target_id.clone();
-            let msg = ActorInputMessage::Invalidated {
-                kind: ExecutionKind::Service,
-                target_id,
-            };
-            self.send_to_service_requesters(msg).await
+            let msg = ActorInputMessage::Invalidated { kind, target_id };
+            self.send_to_requesters(kind, msg).await
         }
     }
 
@@ -105,14 +88,8 @@ impl TargetActorHelper {
         }
     }
 
-    pub async fn send_to_build_requesters(&self, msg: ActorInputMessage) {
-        for requester in &self.requesters[&ExecutionKind::Build] {
-            self.send_to_actor(requester.clone(), msg.clone()).await
-        }
-    }
-
-    pub async fn send_to_service_requesters(&self, msg: ActorInputMessage) {
-        for requester in &self.requesters[&ExecutionKind::Service] {
+    pub async fn send_to_requesters(&self, kind: ExecutionKind, msg: ActorInputMessage) {
+        for requester in &self.requesters[&kind] {
             self.send_to_actor(requester.clone(), msg.clone()).await
         }
     }

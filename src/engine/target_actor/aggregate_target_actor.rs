@@ -39,7 +39,7 @@ impl AggregateTargetActor {
                                     target_id: self.helper.target_id.clone(),
                                     actual: !dependencies[&ExecutionKind::Build].is_empty(),
                                 };
-                                self.helper.send_to_build_requesters(msg).await
+                                self.helper.send_to_requesters(ExecutionKind::Build, msg).await
                             }
                         },
                         ActorInputMessage::Ok { kind: ExecutionKind::Service, target_id, actual } => {
@@ -55,7 +55,7 @@ impl AggregateTargetActor {
                                     target_id: self.helper.target_id.clone(),
                                     actual: !dependencies[&ExecutionKind::Service].is_empty(),
                                 };
-                                self.helper.send_to_service_requesters(msg).await
+                                self.helper.send_to_requesters(ExecutionKind::Service, msg).await
                             }
                         },
                         ActorInputMessage::Invalidated { kind: ExecutionKind::Build, target_id } => {
@@ -63,7 +63,7 @@ impl AggregateTargetActor {
 
                             if inserted && self.helper.unavailable_dependencies[&ExecutionKind::Build].len() == 1 {
                                 let msg = ActorInputMessage::Invalidated { kind: ExecutionKind::Build, target_id: self.helper.target_id.clone() };
-                                self.helper.send_to_build_requesters(msg).await
+                                self.helper.send_to_requesters(ExecutionKind::Build, msg).await
                             }
                         }
                         ActorInputMessage::Invalidated { kind: ExecutionKind::Service, target_id } => {
@@ -71,7 +71,7 @@ impl AggregateTargetActor {
 
                             if inserted && self.helper.unavailable_dependencies[&ExecutionKind::Service].len() == 1 {
                                 let msg = ActorInputMessage::Invalidated { kind: ExecutionKind::Service, target_id: self.helper.target_id.clone() };
-                                self.helper.send_to_service_requesters(msg).await
+                                self.helper.send_to_requesters(ExecutionKind::Service, msg).await
                             }
                         }
                         ActorInputMessage::Requested { kind: ExecutionKind::Build, requester } => {

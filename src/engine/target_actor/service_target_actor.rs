@@ -41,7 +41,9 @@ impl ServiceTargetActor {
                                 target_id: self.helper.target_id.clone(),
                                 actual: true,
                             };
-                            self.helper.send_to_service_requesters(msg).await;
+                            self.helper
+                                .send_to_requesters(ExecutionKind::Service, msg)
+                                .await;
                         }
                     }
                     Err(e) => self.helper.notify_execution_failed(e).await,
@@ -51,7 +53,7 @@ impl ServiceTargetActor {
             futures::select! {
                 _ = self.helper.termination_events.next().fuse() => break,
                 _ = self.helper.target_invalidated_events.next().fuse() => {
-                    self.helper.notify_service_invalidated().await
+                    self.helper.notify_invalidated(ExecutionKind::Service).await
                 }
                 message = self.helper.target_actor_input_receiver.next().fuse() => {
                     match message.unwrap() {
@@ -63,11 +65,11 @@ impl ServiceTargetActor {
                         },
                         ActorInputMessage::Invalidated { kind: ExecutionKind::Build, target_id } => {
                             self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Build).unwrap().insert(target_id);
-                            self.helper.notify_service_invalidated().await
+                            self.helper.notify_invalidated(ExecutionKind::Service).await
                         }
                         ActorInputMessage::Invalidated { kind: ExecutionKind::Service, target_id } => {
                             self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Service).unwrap().insert(target_id);
-                            self.helper.notify_service_invalidated().await
+                            self.helper.notify_invalidated(ExecutionKind::Service).await
                         }
                         ActorInputMessage::Requested { kind: ExecutionKind::Build, requester } => {
                             let msg = ActorInputMessage::Ok {

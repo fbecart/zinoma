@@ -58,7 +58,7 @@ impl BuildTargetActor {
                     }
                 },
                 _ = self.helper.target_invalidated_events.next().fuse() => {
-                    self.helper.notify_build_invalidated().await
+                    self.helper.notify_invalidated(ExecutionKind::Build).await
                 }
                 message = self.helper.target_actor_input_receiver.next().fuse() => {
                     match message.unwrap() {
@@ -70,7 +70,7 @@ impl BuildTargetActor {
                         },
                         ActorInputMessage::Invalidated { kind: ExecutionKind::Build, target_id } => {
                             self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Build).unwrap().insert(target_id);
-                            self.helper.notify_build_invalidated().await
+                            self.helper.notify_invalidated(ExecutionKind::Build).await
                         }
                         ActorInputMessage::Invalidated { kind: ExecutionKind::Service, target_id } => {
                             self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Service).unwrap().insert(target_id);
@@ -152,7 +152,7 @@ impl BuildTargetActor {
                 target_id,
                 actual: true,
             };
-            helper.send_to_build_requesters(msg).await
+            helper.send_to_requesters(ExecutionKind::Build, msg).await
         }
     }
 }
