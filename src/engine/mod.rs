@@ -12,7 +12,8 @@ use async_std::task::JoinHandle;
 use futures::{future, FutureExt};
 use std::collections::{HashMap, HashSet};
 use target_actor::{
-    ActorId, ActorInputMessage, TargetActorHandleSet, TargetActorOutputMessage, WatchOption,
+    ActorId, ActorInputMessage, ExecutionKind, TargetActorHandleSet, TargetActorOutputMessage,
+    WatchOption,
 };
 
 pub struct Engine {
@@ -94,13 +95,13 @@ impl Engine {
                                 target_actor_handles[&target_id].target_actor_input_sender.send(msg).await;
                             }
                             ActorId::Root => match msg {
-                                ActorInputMessage::BuildOk { target_id } => {
+                                ActorInputMessage::Ok { kind: ExecutionKind::Build, target_id, .. } => {
                                     unavailable_root_builds.remove(&target_id);
                                 },
-                                ActorInputMessage::ServiceOk { target_id, has_service } => {
+                                ActorInputMessage::Ok { kind: ExecutionKind::Service, target_id, actual } => {
                                     unavailable_root_services.remove(&target_id);
 
-                                    if has_service {
+                                    if actual {
                                         service_root_targets.insert(target_id);
                                     }
                                 },
@@ -166,12 +167,14 @@ impl Engine {
     }
 
     async fn request_target(handles: &TargetActorHandleSet) {
-        let build_msg = ActorInputMessage::BuildRequested {
+        let build_msg = ActorInputMessage::Requested {
+            kind: ExecutionKind::Build,
             requester: ActorId::Root,
         };
         handles.target_actor_input_sender.send(build_msg).await;
 
-        let service_msg = ActorInputMessage::ServiceRequested {
+        let service_msg = ActorInputMessage::Requested {
+            kind: ExecutionKind::Service,
             requester: ActorId::Root,
         };
         handles.target_actor_input_sender.send(service_msg).await;

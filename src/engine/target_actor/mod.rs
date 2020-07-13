@@ -16,53 +16,51 @@ use target_actor_helper::TargetActorHelper;
 
 #[derive(Debug, Clone)]
 pub enum ActorInputMessage {
-    /// Indicates the execution of the build scripts behind this target are requested.
+    /// Indicates the execution of the build scripts or services behind this target are requested.
     ///
     /// This message should only be sent to direct dependencies.
-    BuildRequested { requester: ActorId },
-    /// Indicates the execution of the services behind this target are requested.
+    Requested {
+        kind: ExecutionKind,
+        requester: ActorId,
+    },
+    /// Indicates the execution of the build scripts or services behind this target are no more requested by the provided requester.
     ///
     /// This message should only be sent to direct dependencies.
-    ServiceRequested { requester: ActorId },
-    /// Indicates the execution of the build scripts behind this target are no more requested by the provided requester.
+    Unrequested {
+        kind: ExecutionKind,
+        requester: ActorId,
+    },
+    /// Indicates the execution of the build scripts behind the provided target are Ok.
     ///
-    /// This message should only be sent to direct dependencies.
-    BuildUnrequested { requester: ActorId },
-    /// Indicates the execution of the services behind this target are no more requested by the provided requester.
-    ///
-    /// This message should only be sent to direct dependencies.
-    ServiceUnrequested { requester: ActorId },
-    /// Indicates the execution of the build scripts behind the provided target are OK.
-    ///
-    /// Here, OK means one of the following:
+    /// If kind is [`Build`], Ok means one of the following:
     /// - There is no build script behind this target;
     /// - All build scripts have been executed or skipped, and therefore, their output resources are available.
     ///
-    /// This message should only be sent to build requesters.
-    BuildOk { target_id: TargetId },
-    /// Indicates the execution of the services behind the provided target are OK.
+    /// [`Build`]: enum.ExecutionKind.html#variant.Build
     ///
-    /// Here, OK means one of the following:
+    /// If kind is [`Service`], Ok means one of the following:
     /// - There is no service behind this target;
     /// - All services have been started and are currently running.
     ///
-    /// This message should only be sent to service requesters.
-    ServiceOk {
+    /// [`Service`]: enum.ExecutionKind.html#variant.Service
+    ///
+    /// `actual` should be `true` if there is an actual build/service behind this target.
+    ///
+    /// This message should only be sent to build requesters.
+    Ok {
+        kind: ExecutionKind,
         target_id: TargetId,
-        has_service: bool,
+        actual: bool,
     },
-    /// Indicates the build scripts behind the target are not OK anymore.
+    /// Indicates the build scripts or services behind the target are not OK anymore.
     ///
-    /// The requester should invalidate the previously sent [`BuildOk`].
+    /// The requester should invalidate the previously sent [`Ok`].
     ///
-    /// [`BuildOk`]: #variant.BuildOk
-    BuildInvalidated { target_id: TargetId },
-    /// Indicates the services behind the target are not OK anymore.
-    ///
-    /// The requester should invalidate the previously sent [`ServiceOk`].
-    ///
-    /// [`ServiceOk`]: #variant.ServiceOk
-    ServiceInvalidated { target_id: TargetId },
+    /// [`Ok`]: #variant.Ok
+    Invalidated {
+        kind: ExecutionKind,
+        target_id: TargetId,
+    },
 }
 
 pub enum TargetActorOutputMessage {
@@ -143,4 +141,10 @@ pub struct TargetActorHandleSet {
     pub target_actor_input_sender: Sender<ActorInputMessage>,
     _target_invalidated_sender: Sender<TargetInvalidatedMessage>,
     _watcher: Option<TargetWatcher>,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum ExecutionKind {
+    Build,
+    Service,
 }

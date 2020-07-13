@@ -1,4 +1,4 @@
-use super::{ActorId, ActorInputMessage, TargetActorHelper};
+use super::{ActorId, ActorInputMessage, ExecutionKind, TargetActorHelper};
 use crate::domain::ServiceTarget;
 use crate::run_script;
 use anyhow::{Context, Result};
@@ -36,9 +36,10 @@ impl ServiceTargetActor {
                         self.helper.executed = !self.helper.to_execute;
 
                         if self.helper.executed {
-                            let msg = ActorInputMessage::ServiceOk {
+                            let msg = ActorInputMessage::Ok {
+                                kind: ExecutionKind::Service,
                                 target_id: self.helper.target_id.clone(),
-                                has_service: true,
+                                actual: true,
                             };
                             self.helper.send_to_service_requesters(msg).await;
                         }
@@ -54,45 +55,53 @@ impl ServiceTargetActor {
                 }
                 message = self.helper.target_actor_input_receiver.next().fuse() => {
                     match message.unwrap() {
-                        ActorInputMessage::BuildOk { target_id } => {
+                        ActorInputMessage::Ok { kind: ExecutionKind::Build, target_id, .. } => {
                             self.helper.unavailable_dependency_builds.remove(&target_id);
                         },
-                        ActorInputMessage::ServiceOk { target_id, .. } => {
+                        ActorInputMessage::Ok { kind: ExecutionKind::Service, target_id, .. } => {
                             self.helper.unavailable_dependency_services.remove(&target_id);
                         },
-                        ActorInputMessage::BuildInvalidated { target_id } => {
+                        ActorInputMessage::Invalidated { kind: ExecutionKind::Build, target_id } => {
                             self.helper.unavailable_dependency_builds.insert(target_id);
                             self.helper.notify_service_invalidated().await
                         }
-                        ActorInputMessage::ServiceInvalidated { target_id } => {
+                        ActorInputMessage::Invalidated { kind: ExecutionKind::Service, target_id } => {
                             self.helper.unavailable_dependency_services.insert(target_id);
                             self.helper.notify_service_invalidated().await
                         }
-                        ActorInputMessage::BuildRequested { requester } => {
-                            let msg = ActorInputMessage::BuildOk { target_id: self.helper.target_id.clone() };
+                        ActorInputMessage::Requested { kind: ExecutionKind::Build, requester } => {
+                            let msg = ActorInputMessage::Ok {
+                                kind: ExecutionKind::Build,
+                                target_id: self.helper.target_id.clone(),
+                                actual: false,
+                            };
                             self.helper.send_to_actor(requester, msg).await
                         }
-                        ActorInputMessage::ServiceRequested { requester } => {
+                        ActorInputMessage::Requested { kind: ExecutionKind::Service, requester } => {
                             let inserted = self.helper.service_requesters.insert(requester);
 
                             if inserted && self.helper.service_requesters.len() == 1 {
-                                self.helper.send_to_dependencies(ActorInputMessage::BuildRequested {
+                                self.helper.send_to_dependencies(ActorInputMessage::Requested {
+                                    kind: ExecutionKind::Build,
                                     requester: ActorId::Target(self.helper.target_id.clone()),
                                 }).await;
-                                self.helper.send_to_dependencies(ActorInputMessage::ServiceRequested {
+                                self.helper.send_to_dependencies(ActorInputMessage::Requested {
+                                    kind: ExecutionKind::Service,
                                     requester: ActorId::Target(self.helper.target_id.clone()),
                                 }).await;
                             }
                         }
-                        ActorInputMessage::BuildUnrequested { requester } => {}
-                        ActorInputMessage::ServiceUnrequested { requester } => {
+                        ActorInputMessage::Unrequested { kind: ExecutionKind::Build, requester } => {}
+                        ActorInputMessage::Unrequested { kind: ExecutionKind::Service, requester } => {
                             let removed = self.helper.service_requesters.remove(&requester);
 
                             if removed && self.helper.service_requesters.is_empty() {
-                                self.helper.send_to_dependencies(ActorInputMessage::BuildUnrequested {
+                                self.helper.send_to_dependencies(ActorInputMessage::Unrequested {
+                                    kind: ExecutionKind::Build,
                                     requester: ActorId::Target(self.helper.target_id.clone()),
                                 }).await;
-                                self.helper.send_to_dependencies(ActorInputMessage::ServiceUnrequested {
+                                self.helper.send_to_dependencies(ActorInputMessage::Unrequested {
+                                    kind: ExecutionKind::Service,
                                     requester: ActorId::Target(self.helper.target_id.clone()),
                                 }).await;
 

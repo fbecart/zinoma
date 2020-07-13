@@ -1,4 +1,4 @@
-use super::{ActorId, ActorInputMessage, TargetActorOutputMessage};
+use super::{ActorId, ActorInputMessage, ExecutionKind, TargetActorOutputMessage};
 use crate::domain::{TargetId, TargetMetadata};
 use crate::engine::watcher::TargetInvalidatedMessage;
 use crate::TerminationMessage;
@@ -56,7 +56,10 @@ impl TargetActorHelper {
             self.executed = false;
 
             let target_id = self.target_id.clone();
-            let msg = ActorInputMessage::BuildInvalidated { target_id };
+            let msg = ActorInputMessage::Invalidated {
+                kind: ExecutionKind::Build,
+                target_id,
+            };
             self.send_to_build_requesters(msg).await
         }
     }
@@ -67,7 +70,10 @@ impl TargetActorHelper {
             self.executed = false;
 
             let target_id = self.target_id.clone();
-            let msg = ActorInputMessage::ServiceInvalidated { target_id };
+            let msg = ActorInputMessage::Invalidated {
+                kind: ExecutionKind::Service,
+                target_id,
+            };
             self.send_to_service_requesters(msg).await
         }
     }
