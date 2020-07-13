@@ -4,7 +4,7 @@ use crate::engine::watcher::TargetInvalidatedMessage;
 use crate::TerminationMessage;
 use anyhow::Error;
 use async_std::sync::{Receiver, Sender};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 pub struct TargetActorHelper {
@@ -16,10 +16,8 @@ pub struct TargetActorHelper {
     pub to_execute: bool,
     pub executed: bool,
     pub dependencies: Vec<TargetId>,
-    pub unavailable_dependency_builds: HashSet<TargetId>,
-    pub unavailable_dependency_services: HashSet<TargetId>,
-    pub build_requesters: HashSet<ActorId>,
-    pub service_requesters: HashSet<ActorId>,
+    pub unavailable_dependencies: HashMap<ExecutionKind, HashSet<TargetId>>,
+    pub requesters: HashMap<ExecutionKind, HashSet<ActorId>>,
 }
 
 impl TargetActorHelper {
@@ -31,8 +29,15 @@ impl TargetActorHelper {
         target_actor_output_sender: Sender<TargetActorOutputMessage>,
     ) -> Self {
         let dependencies = target_metadata.dependencies.clone();
-        let unavailable_dependency_builds = HashSet::from_iter(dependencies.iter().cloned());
-        let unavailable_dependency_services = unavailable_dependency_builds.clone();
+
+        let mut unavailable_dependencies = HashMap::new();
+        let dependencies_set = HashSet::from_iter(dependencies.iter().cloned());
+        unavailable_dependencies.insert(ExecutionKind::Build, dependencies_set.clone());
+        unavailable_dependencies.insert(ExecutionKind::Service, dependencies_set);
+
+        let mut requesters = HashMap::new();
+        requesters.insert(ExecutionKind::Build, HashSet::new());
+        requesters.insert(ExecutionKind::Service, HashSet::new());
 
         Self {
             target_id: target_metadata.id.clone(),
@@ -43,10 +48,8 @@ impl TargetActorHelper {
             to_execute: true,
             executed: false,
             dependencies,
-            unavailable_dependency_builds,
-            unavailable_dependency_services,
-            build_requesters: HashSet::new(),
-            service_requesters: HashSet::new(),
+            unavailable_dependencies,
+            requesters,
         }
     }
 
@@ -103,13 +106,13 @@ impl TargetActorHelper {
     }
 
     pub async fn send_to_build_requesters(&self, msg: ActorInputMessage) {
-        for requester in &self.build_requesters {
+        for requester in &self.requesters[&ExecutionKind::Build] {
             self.send_to_actor(requester.clone(), msg.clone()).await
         }
     }
 
     pub async fn send_to_service_requesters(&self, msg: ActorInputMessage) {
-        for requester in &self.service_requesters {
+        for requester in &self.requesters[&ExecutionKind::Service] {
             self.send_to_actor(requester.clone(), msg.clone()).await
         }
     }

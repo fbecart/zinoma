@@ -25,9 +25,9 @@ impl ServiceTargetActor {
     pub async fn run(mut self) {
         loop {
             if self.helper.to_execute
-                && !self.helper.service_requesters.is_empty()
-                && self.helper.unavailable_dependency_builds.is_empty()
-                && self.helper.unavailable_dependency_services.is_empty()
+                && !self.helper.requesters[&ExecutionKind::Service].is_empty()
+                && self.helper.unavailable_dependencies[&ExecutionKind::Build].is_empty()
+                && self.helper.unavailable_dependencies[&ExecutionKind::Service].is_empty()
             {
                 self.helper.set_execution_started();
 
@@ -56,17 +56,17 @@ impl ServiceTargetActor {
                 message = self.helper.target_actor_input_receiver.next().fuse() => {
                     match message.unwrap() {
                         ActorInputMessage::Ok { kind: ExecutionKind::Build, target_id, .. } => {
-                            self.helper.unavailable_dependency_builds.remove(&target_id);
+                            self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Build).unwrap().remove(&target_id);
                         },
                         ActorInputMessage::Ok { kind: ExecutionKind::Service, target_id, .. } => {
-                            self.helper.unavailable_dependency_services.remove(&target_id);
+                            self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Service).unwrap().remove(&target_id);
                         },
                         ActorInputMessage::Invalidated { kind: ExecutionKind::Build, target_id } => {
-                            self.helper.unavailable_dependency_builds.insert(target_id);
+                            self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Build).unwrap().insert(target_id);
                             self.helper.notify_service_invalidated().await
                         }
                         ActorInputMessage::Invalidated { kind: ExecutionKind::Service, target_id } => {
-                            self.helper.unavailable_dependency_services.insert(target_id);
+                            self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Service).unwrap().insert(target_id);
                             self.helper.notify_service_invalidated().await
                         }
                         ActorInputMessage::Requested { kind: ExecutionKind::Build, requester } => {
@@ -78,9 +78,9 @@ impl ServiceTargetActor {
                             self.helper.send_to_actor(requester, msg).await
                         }
                         ActorInputMessage::Requested { kind: ExecutionKind::Service, requester } => {
-                            let inserted = self.helper.service_requesters.insert(requester);
+                            let inserted = self.helper.requesters.get_mut(&ExecutionKind::Service).unwrap().insert(requester);
 
-                            if inserted && self.helper.service_requesters.len() == 1 {
+                            if inserted && self.helper.requesters[&ExecutionKind::Service].len() == 1 {
                                 self.helper.send_to_dependencies(ActorInputMessage::Requested {
                                     kind: ExecutionKind::Build,
                                     requester: ActorId::Target(self.helper.target_id.clone()),
@@ -93,9 +93,9 @@ impl ServiceTargetActor {
                         }
                         ActorInputMessage::Unrequested { kind: ExecutionKind::Build, requester } => {}
                         ActorInputMessage::Unrequested { kind: ExecutionKind::Service, requester } => {
-                            let removed = self.helper.service_requesters.remove(&requester);
+                            let removed = self.helper.requesters.get_mut(&ExecutionKind::Service).unwrap().remove(&requester);
 
-                            if removed && self.helper.service_requesters.is_empty() {
+                            if removed && self.helper.requesters[&ExecutionKind::Service].is_empty() {
                                 self.helper.send_to_dependencies(ActorInputMessage::Unrequested {
                                     kind: ExecutionKind::Build,
                                     requester: ActorId::Target(self.helper.target_id.clone()),

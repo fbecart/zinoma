@@ -27,9 +27,9 @@ impl BuildTargetActor {
         loop {
             if self.helper.to_execute
                 && ongoing_build_cancellation_sender.is_none()
-                && !self.helper.build_requesters.is_empty()
-                && self.helper.unavailable_dependency_builds.is_empty()
-                && self.helper.unavailable_dependency_services.is_empty()
+                && !self.helper.requesters[&ExecutionKind::Build].is_empty()
+                && self.helper.unavailable_dependencies[&ExecutionKind::Build].is_empty()
+                && self.helper.unavailable_dependencies[&ExecutionKind::Service].is_empty()
             {
                 let (build_cancellation_sender, build_cancellation_events) = sync::channel(1);
                 ongoing_build_cancellation_sender = Some(build_cancellation_sender);
@@ -63,24 +63,24 @@ impl BuildTargetActor {
                 message = self.helper.target_actor_input_receiver.next().fuse() => {
                     match message.unwrap() {
                         ActorInputMessage::Ok { kind: ExecutionKind::Build, target_id, .. } => {
-                            self.helper.unavailable_dependency_builds.remove(&target_id);
+                            self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Build).unwrap().remove(&target_id);
                         },
                         ActorInputMessage::Ok { kind: ExecutionKind::Service, target_id, .. } => {
-                            self.helper.unavailable_dependency_services.remove(&target_id);
+                            self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Service).unwrap().remove(&target_id);
                         },
                         ActorInputMessage::Invalidated { kind: ExecutionKind::Build, target_id } => {
-                            self.helper.unavailable_dependency_builds.insert(target_id);
+                            self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Build).unwrap().insert(target_id);
                             self.helper.notify_build_invalidated().await
                         }
                         ActorInputMessage::Invalidated { kind: ExecutionKind::Service, target_id } => {
-                            self.helper.unavailable_dependency_services.insert(target_id);
+                            self.helper.unavailable_dependencies.get_mut(&ExecutionKind::Service).unwrap().insert(target_id);
 
                             // TODO If ongoing build, cancel?
                         }
                         ActorInputMessage::Requested { kind: ExecutionKind::Build, requester } => {
-                            let inserted = self.helper.build_requesters.insert(requester);
+                            let inserted = self.helper.requesters.get_mut(&ExecutionKind::Build).unwrap().insert(requester);
 
-                            if inserted && self.helper.build_requesters.len() == 1 {
+                            if inserted && self.helper.requesters[&ExecutionKind::Build].len() == 1 {
                                 // TODO Eventually, only request deps build (request services when build not skipped)
                                 self.helper.send_to_dependencies(ActorInputMessage::Requested {
                                     kind: ExecutionKind::Build,
@@ -101,9 +101,9 @@ impl BuildTargetActor {
                             self.helper.send_to_actor(requester, msg).await
                         }
                         ActorInputMessage::Unrequested { kind: ExecutionKind::Build, requester } => {
-                            let removed = self.helper.build_requesters.remove(&requester);
+                            let removed = self.helper.requesters.get_mut(&ExecutionKind::Build).unwrap().remove(&requester);
 
-                            if removed && self.helper.build_requesters.is_empty() {
+                            if removed && self.helper.requesters[&ExecutionKind::Build].is_empty() {
                                 self.helper.send_to_dependencies(ActorInputMessage::Unrequested {
                                     kind: ExecutionKind::Build,
                                     requester: ActorId::Target(self.helper.target_id.clone()),

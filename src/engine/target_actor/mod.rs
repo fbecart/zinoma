@@ -143,7 +143,7 @@ pub struct TargetActorHandleSet {
     _watcher: Option<TargetWatcher>,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ExecutionKind {
     Build,
     Service,
