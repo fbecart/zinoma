@@ -29,8 +29,7 @@ impl ServiceTargetActor {
                 && self.helper.unavailable_dependency_builds.is_empty()
                 && self.helper.unavailable_dependency_services.is_empty()
             {
-                self.helper.to_execute = false;
-                self.helper.executed = false;
+                self.helper.set_execution_started();
 
                 match self.restart_service().await {
                     Ok(()) => {
@@ -44,10 +43,7 @@ impl ServiceTargetActor {
                             self.helper.send_to_service_requesters(msg).await;
                         }
                     }
-                    Err(e) => {
-                        self.helper.executed = false;
-                        self.helper.send_target_execution_error(e).await;
-                    }
+                    Err(e) => self.helper.notify_execution_failed(e).await,
                 }
             }
 

@@ -55,9 +55,8 @@ impl TargetActorHelper {
             self.to_execute = true;
             self.executed = false;
 
-            let msg = ActorInputMessage::BuildInvalidated {
-                target_id: self.target_id.clone(),
-            };
+            let target_id = self.target_id.clone();
+            let msg = ActorInputMessage::BuildInvalidated { target_id };
             self.send_to_build_requesters(msg).await
         }
     }
@@ -67,16 +66,10 @@ impl TargetActorHelper {
             self.to_execute = true;
             self.executed = false;
 
-            let msg = ActorInputMessage::ServiceInvalidated {
-                target_id: self.target_id.clone(),
-            };
+            let target_id = self.target_id.clone();
+            let msg = ActorInputMessage::ServiceInvalidated { target_id };
             self.send_to_service_requesters(msg).await
         }
-    }
-
-    pub async fn send_target_execution_error(&self, e: Error) {
-        let msg = TargetActorOutputMessage::TargetExecutionError(self.target_id.clone(), e);
-        self.target_actor_output_sender.send(msg).await;
     }
 
     pub fn set_execution_started(&mut self) {
@@ -86,7 +79,8 @@ impl TargetActorHelper {
 
     pub async fn notify_execution_failed(&mut self, e: Error) {
         self.executed = false;
-        self.send_target_execution_error(e).await;
+        let msg = TargetActorOutputMessage::TargetExecutionError(self.target_id.clone(), e);
+        self.target_actor_output_sender.send(msg).await;
     }
 
     pub async fn send_to_actor(&self, dest: ActorId, msg: ActorInputMessage) {
@@ -95,18 +89,10 @@ impl TargetActorHelper {
             .await
     }
 
-    pub async fn send_to_target(&self, dest: TargetId, msg: ActorInputMessage) {
-        self.target_actor_output_sender
-            .send(TargetActorOutputMessage::MessageActor {
-                dest: ActorId::Target(dest),
-                msg,
-            })
-            .await
-    }
-
     pub async fn send_to_dependencies(&self, msg: ActorInputMessage) {
         for dependency in &self.dependencies {
-            self.send_to_target(dependency.clone(), msg.clone()).await
+            self.send_to_actor(ActorId::Target(dependency.clone()), msg.clone())
+                .await
         }
     }
 
