@@ -101,8 +101,6 @@ impl BuildTargetActor {
                             let removed = self.helper.build_requesters.remove(&requester);
 
                             if removed && self.helper.build_requesters.is_empty() {
-                                // TODO Interrupt ongoing build?
-
                                 self.helper.send_to_dependencies(ActorInputMessage::BuildUnrequested {
                                     requester: ActorId::Target(self.helper.target_id.clone()),
                                 }).await;
@@ -124,32 +122,28 @@ impl BuildTargetActor {
                         IncrementalRunResult::Run(Err(e)) => self.helper.notify_execution_failed(e).await,
                         IncrementalRunResult::Skipped => {
                             log::info!("{} - Build skipped (Not Modified)", self.target);
-
-                            // TODO Remove duplication (1)
-                            self.helper.executed = !self.helper.to_execute;
-
-                            if self.helper.executed {
-                                let msg = ActorInputMessage::BuildOk { target_id: self.helper.target_id.clone() };
-                                self.helper.send_to_build_requesters(msg).await;
-                            }
+                            Self::on_success(&mut self.helper).await;
                         }
                         IncrementalRunResult::Run(Ok(BuildCompletionReport::Completed)) => {
                             // TODO Why spreading logs between here and builder?
+                            Self::on_success(&mut self.helper).await;
 
-                            // TODO Remove duplication (1)
-                            self.helper.executed = !self.helper.to_execute;
-
-                            if self.helper.executed {
-                                let msg = ActorInputMessage::BuildOk { target_id: self.helper.target_id.clone() };
-                                self.helper.send_to_build_requesters(msg).await;
-                            }
-
-                            // TODO Unrequest dependency services
+                            // TODO Eventually, unrequest dependency services
                         }
                         IncrementalRunResult::Run(Ok(BuildCompletionReport::Aborted)) => break,
                     }
                 },
             }
+        }
+    }
+
+    async fn on_success(helper: &mut TargetActorHelper) {
+        helper.executed = !helper.to_execute;
+
+        if helper.executed {
+            let target_id = helper.target_id.clone();
+            let msg = ActorInputMessage::BuildOk { target_id };
+            helper.send_to_build_requesters(msg).await
         }
     }
 }
