@@ -53,7 +53,7 @@ pub enum ActorId {
 
 pub fn launch_target_actor(
     target: Target,
-    target_watcher_option: &TargetWatcherOption,
+    target_watcher_option: TargetWatcherOption,
     target_actor_output_sender: Sender<TargetActorOutputMessage>,
 ) -> Result<(JoinHandle<()>, TargetActorHandleSet)> {
     let (termination_sender, termination_events) = sync::channel(1);
@@ -104,6 +104,7 @@ pub fn launch_target_actor(
     ))
 }
 
+#[derive(Copy, Clone)]
 pub enum TargetWatcherOption {
     Enabled,
     Disabled,

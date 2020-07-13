@@ -15,7 +15,7 @@ impl fmt::Display for TargetMetadata {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct BuildTarget {
     pub metadata: TargetMetadata,
     pub build_script: String,
@@ -29,7 +29,7 @@ impl fmt::Display for BuildTarget {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ServiceTarget {
     pub metadata: TargetMetadata,
     pub run_script: String,
@@ -42,12 +42,12 @@ impl fmt::Display for ServiceTarget {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct AggregateTarget {
     pub metadata: TargetMetadata,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Target {
     Build(BuildTarget),
     Service(ServiceTarget),

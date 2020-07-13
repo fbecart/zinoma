@@ -31,9 +31,13 @@ impl Engine {
         }
     }
 
-    pub async fn watch(mut self, root_target_ids: Vec<TargetId>) -> Result<()> {
+    pub async fn watch(self, root_target_ids: Vec<TargetId>) -> Result<()> {
+        let Engine {
+            targets,
+            mut termination_events,
+        } = self;
         let (target_actor_join_handles, target_actor_handles, mut target_actor_output_events) =
-            Self::launch_target_actors(&self.targets, TargetWatcherOption::Enabled)?;
+            Self::launch_target_actors(targets, TargetWatcherOption::Enabled)?;
 
         for target_id in &root_target_ids {
             Self::request_target(&target_actor_handles[target_id]).await
@@ -41,7 +45,7 @@ impl Engine {
 
         loop {
             futures::select! {
-                _ = self.termination_events.next().fuse() => break,
+                _ = termination_events.next().fuse() => break,
                 target_actor_output = target_actor_output_events.next().fuse() => {
                     match target_actor_output.unwrap() {
                         TargetActorOutputMessage::TargetExecutionError(target_id, e) => {
@@ -63,9 +67,13 @@ impl Engine {
         Ok(())
     }
 
-    pub async fn execute_once(mut self, root_target_ids: Vec<TargetId>) -> Result<()> {
+    pub async fn execute_once(self, root_target_ids: Vec<TargetId>) -> Result<()> {
+        let Engine {
+            targets,
+            mut termination_events,
+        } = self;
         let (target_actor_join_handles, target_actor_handles, mut target_actor_output_events) =
-            Self::launch_target_actors(&self.targets, TargetWatcherOption::Disabled)?;
+            Self::launch_target_actors(targets, TargetWatcherOption::Disabled)?;
 
         for target_id in &root_target_ids {
             Self::request_target(&target_actor_handles[target_id]).await
@@ -81,7 +89,7 @@ impl Engine {
             || unavailable_root_services.is_empty() && unavailable_root_builds.is_empty())
         {
             futures::select! {
-                _ = self.termination_events.next().fuse() => {
+                _ = termination_events.next().fuse() => {
                     terminating = true
                 },
                 target_actor_output = target_actor_output_events.next().fuse() => {
@@ -115,7 +123,7 @@ impl Engine {
 
         if !terminating && !service_root_targets.is_empty() {
             // Wait for termination event
-            self.termination_events
+            termination_events
                 .recv()
                 .await
                 .with_context(|| "Failed to listen to termination event".to_string())?;
@@ -128,7 +136,7 @@ impl Engine {
     }
 
     fn launch_target_actors(
-        targets: &HashMap<TargetId, Target>,
+        targets: HashMap<TargetId, Target>,
         target_watcher_option: TargetWatcherOption,
     ) -> Result<(
         Vec<JoinHandle<()>>,
@@ -138,17 +146,16 @@ impl Engine {
         let (target_actor_output_sender, target_actor_output_events) =
             sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
-        // TODO Instead, consume targets
         let mut target_actor_handles = HashMap::with_capacity(targets.len());
         let mut join_handles = Vec::with_capacity(targets.len());
-        for (target_id, target) in targets {
+        for (target_id, target) in targets.into_iter() {
             let (join_handle, handles) = target_actor::launch_target_actor(
-                target.clone(), // TODO Remove clone
-                &target_watcher_option,
+                target,
+                target_watcher_option,
                 target_actor_output_sender.clone(),
             )?;
             join_handles.push(join_handle);
-            target_actor_handles.insert(target_id.clone(), handles);
+            target_actor_handles.insert(target_id, handles);
         }
 
         Ok((
