@@ -7,6 +7,7 @@ use async_std::task;
 use futures::FutureExt;
 use std::mem;
 use std::process::{Child, Stdio};
+
 pub struct ServiceTargetActor {
     target: ServiceTarget,
     helper: TargetActorHelper,
@@ -106,7 +107,7 @@ impl ServiceTargetActor {
 
         let service_process = task::spawn_blocking(move || command.spawn())
             .await
-            .with_context(|| format!("{} - Failed to start service", &self.target.metadata.id))?;
+            .with_context(|| format!("Failed to start service"))?;
 
         self.service_process = Some(service_process);
 

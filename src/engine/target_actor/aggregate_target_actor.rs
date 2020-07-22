@@ -3,6 +3,7 @@ use crate::domain::AggregateTarget;
 use async_std::prelude::*;
 use futures::FutureExt;
 use std::collections::{HashMap, HashSet};
+
 pub struct AggregateTargetActor {
     _target: AggregateTarget,
     helper: TargetActorHelper,

@@ -38,7 +38,7 @@ pub async fn build_target(
             _ = ticks.next().fuse() => {
                 if let Some(exit_status) = build_process.try_wait()? {
                     if !exit_status.success() {
-                        break Err(anyhow!("{} - Build failed ({})", target, exit_status));
+                        break Err(anyhow!("Build failed ({})", exit_status));
                     }
                     let target_build_duration = target_start.elapsed();
                     log::info!(

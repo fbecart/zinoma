@@ -4,8 +4,10 @@ use crate::engine::{builder, incremental};
 use anyhow::Context;
 use async_std::{prelude::*, sync};
 use builder::{BuildCancellationMessage, BuildCompletionReport};
-use futures::{future::Fuse, pin_mut, FutureExt};
+use futures::future::Fuse;
+use futures::{pin_mut, FutureExt};
 use incremental::IncrementalRunResult;
+
 pub struct BuildTargetActor {
     target: BuildTarget,
     helper: TargetActorHelper,

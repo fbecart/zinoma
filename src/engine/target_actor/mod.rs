@@ -63,6 +63,7 @@ pub enum ActorInputMessage {
     },
 }
 
+#[derive(Debug)]
 pub enum TargetActorOutputMessage {
     TargetExecutionError(TargetId, Error),
     MessageActor {
