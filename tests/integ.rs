@@ -176,6 +176,15 @@ fn non_requested_service() {
         .stderr(contains("my_build_target - Build success"));
 }
 
+#[test]
+fn build_failure() {
+    zinoma_command("build_failure", &["incorrect_target"])
+        .assert()
+        .failure()
+        .stderr(contains("An issue occurred with target incorrect_target"))
+        .stderr(contains("Build failed with exit code: 127"));
+}
+
 fn zinoma_command<I, S>(integ_test_dir_name: &str, args: I) -> Command
 where
     I: IntoIterator<Item = S>,

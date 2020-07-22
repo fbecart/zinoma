@@ -41,15 +41,13 @@ impl Engine {
             Self::request_target(&target_actor_handles[target_id]).await
         }
 
-        match watch_option {
-            WatchOption::Enabled => {
-                Self::watch(
-                    termination_events,
-                    target_actor_output_events,
-                    &target_actor_handles,
-                )
-                .await
-            }
+        let result = match watch_option {
+            WatchOption::Enabled => Ok(Self::watch(
+                termination_events,
+                target_actor_output_events,
+                &target_actor_handles,
+            )
+            .await),
             WatchOption::Disabled => {
                 Self::execute_once(
                     &root_target_ids,
@@ -57,14 +55,14 @@ impl Engine {
                     target_actor_output_events,
                     &target_actor_handles,
                 )
-                .await?
+                .await
             }
-        }
+        };
 
         Self::send_termination_message(&target_actor_handles).await;
         future::join_all(target_actor_join_handles).await;
 
-        Ok(())
+        result
     }
 
     async fn watch(
@@ -101,18 +99,17 @@ impl Engine {
         let mut unavailable_root_builds = unavailable_root_targets.clone();
         let mut unavailable_root_services = unavailable_root_targets;
         let mut service_root_targets = HashSet::new();
-        let mut terminating = false;
+        let mut termination_event_received = false;
 
-        while !(terminating
+        while !(termination_event_received
             || unavailable_root_services.is_empty() && unavailable_root_builds.is_empty())
         {
             futures::select! {
-                _ = termination_events.next().fuse() => terminating = true,
+                _ = termination_events.next().fuse() => termination_event_received = true,
                 target_actor_output = target_actor_output_events.next().fuse() => {
                     match target_actor_output.unwrap() {
                         TargetActorOutputMessage::TargetExecutionError(target_id, e) => {
-                            log::error!("{} - {}", target_id, e);
-                            terminating = true
+                            return Err(e.context(format!("An issue occurred with target {}", target_id)));
                         },
                         TargetActorOutputMessage::MessageActor { dest, msg } => match dest {
                             ActorId::Target(target_id) => {
@@ -137,7 +134,7 @@ impl Engine {
             }
         }
 
-        if !terminating && !service_root_targets.is_empty() {
+        if !termination_event_received && !service_root_targets.is_empty() {
             // Wait for termination event
             termination_events
                 .recv()
@@ -201,4 +198,14 @@ impl Engine {
 pub enum WatchOption {
     Enabled,
     Disabled,
+}
+
+impl From<bool> for WatchOption {
+    fn from(value: bool) -> Self {
+        if value {
+            WatchOption::Enabled
+        } else {
+            WatchOption::Disabled
+        }
+    }
 }

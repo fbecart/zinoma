@@ -1,0 +1,3 @@
+targets:
+  incorrect_target:
+    build: unknown_command
