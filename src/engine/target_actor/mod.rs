@@ -4,6 +4,7 @@ mod service_target_actor;
 mod target_actor_helper;
 
 use super::watcher::{TargetInvalidatedMessage, TargetWatcher};
+use super::WatchOption;
 use crate::domain::{Target, TargetId};
 use crate::TerminationMessage;
 use aggregate_target_actor::AggregateTargetActor;
@@ -129,12 +130,6 @@ pub fn launch_target_actor(
             _watcher: watcher,
         },
     ))
-}
-
-#[derive(Copy, Clone)]
-pub enum WatchOption {
-    Enabled,
-    Disabled,
 }
 
 pub struct TargetActorHandleSet {

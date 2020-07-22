@@ -13,30 +13,65 @@ use futures::{future, FutureExt};
 use std::collections::{HashMap, HashSet};
 use target_actor::{
     ActorId, ActorInputMessage, ExecutionKind, TargetActorHandleSet, TargetActorOutputMessage,
-    WatchOption,
 };
 
 pub struct Engine {
     targets: HashMap<TargetId, Target>,
+    watch_option: WatchOption,
 }
 
 impl Engine {
-    pub fn new(targets: HashMap<TargetId, Target>) -> Self {
-        Self { targets }
+    pub fn new(targets: HashMap<TargetId, Target>, watch_option: WatchOption) -> Self {
+        Self {
+            targets,
+            watch_option,
+        }
     }
 
-    pub async fn watch(
+    pub async fn run(
         self,
         root_target_ids: Vec<TargetId>,
-        mut termination_events: Receiver<TerminationMessage>,
+        termination_events: Receiver<TerminationMessage>,
     ) -> Result<()> {
-        let (target_actor_join_handles, target_actor_handles, mut target_actor_output_events) =
-            Self::launch_target_actors(self.targets, WatchOption::Enabled)?;
+        let watch_option = self.watch_option.clone();
+        let (target_actor_join_handles, target_actor_handles, target_actor_output_events) =
+            self.launch_target_actors()?;
 
         for target_id in &root_target_ids {
             Self::request_target(&target_actor_handles[target_id]).await
         }
 
+        match watch_option {
+            WatchOption::Enabled => {
+                Self::watch(
+                    termination_events,
+                    target_actor_output_events,
+                    &target_actor_handles,
+                )
+                .await
+            }
+            WatchOption::Disabled => {
+                Self::execute_once(
+                    &root_target_ids,
+                    termination_events,
+                    target_actor_output_events,
+                    &target_actor_handles,
+                )
+                .await?
+            }
+        }
+
+        Self::send_termination_message(&target_actor_handles).await;
+        future::join_all(target_actor_join_handles).await;
+
+        Ok(())
+    }
+
+    async fn watch(
+        mut termination_events: Receiver<TerminationMessage>,
+        mut target_actor_output_events: Receiver<TargetActorOutputMessage>,
+        target_actor_handles: &HashMap<TargetId, TargetActorHandleSet>,
+    ) {
         loop {
             futures::select! {
                 _ = termination_events.next().fuse() => break,
@@ -54,25 +89,14 @@ impl Engine {
                 }
             }
         }
-
-        Self::send_termination_message(&target_actor_handles).await;
-        future::join_all(target_actor_join_handles).await;
-
-        Ok(())
     }
 
-    pub async fn execute_once(
-        self,
-        root_target_ids: Vec<TargetId>,
+    async fn execute_once(
+        root_target_ids: &[TargetId],
         mut termination_events: Receiver<TerminationMessage>,
+        mut target_actor_output_events: Receiver<TargetActorOutputMessage>,
+        target_actor_handles: &HashMap<TargetId, TargetActorHandleSet>,
     ) -> Result<()> {
-        let (target_actor_join_handles, target_actor_handles, mut target_actor_output_events) =
-            Self::launch_target_actors(self.targets, WatchOption::Disabled)?;
-
-        for target_id in &root_target_ids {
-            Self::request_target(&target_actor_handles[target_id]).await
-        }
-
         let unavailable_root_targets = root_target_ids.iter().cloned().collect::<HashSet<_>>();
         let mut unavailable_root_builds = unavailable_root_targets.clone();
         let mut unavailable_root_services = unavailable_root_targets;
@@ -121,15 +145,11 @@ impl Engine {
                 .with_context(|| "Failed to listen to termination event".to_string())?;
         }
 
-        Self::send_termination_message(&target_actor_handles).await;
-        future::join_all(target_actor_join_handles).await;
-
         Ok(())
     }
 
     fn launch_target_actors(
-        targets: HashMap<TargetId, Target>,
-        watch_option: WatchOption,
+        self,
     ) -> Result<(
         Vec<JoinHandle<()>>,
         HashMap<TargetId, TargetActorHandleSet>,
@@ -138,12 +158,12 @@ impl Engine {
         let (target_actor_output_sender, target_actor_output_events) =
             sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
-        let mut target_actor_handles = HashMap::with_capacity(targets.len());
-        let mut join_handles = Vec::with_capacity(targets.len());
-        for (target_id, target) in targets.into_iter() {
+        let mut target_actor_handles = HashMap::with_capacity(self.targets.len());
+        let mut join_handles = Vec::with_capacity(self.targets.len());
+        for (target_id, target) in self.targets.into_iter() {
             let (join_handle, handles) = target_actor::launch_target_actor(
                 target,
-                watch_option,
+                self.watch_option,
                 target_actor_output_sender.clone(),
             )?;
             join_handles.push(join_handle);
@@ -175,4 +195,10 @@ impl Engine {
             handles.target_actor_input_sender.send(build_msg).await;
         }
     }
+}
+
+#[derive(Copy, Clone)]
+pub enum WatchOption {
+    Enabled,
+    Disabled,
 }

@@ -18,7 +18,7 @@ use clean::clean_target_output_paths;
 use config::{ir, yaml};
 use domain::TargetId;
 use engine::incremental::storage::delete_saved_env_state;
-use engine::Engine;
+use engine::{Engine, WatchOption};
 use std::convert::TryInto;
 use work_dir::remove_work_dir;
 
@@ -89,19 +89,15 @@ fn main() -> Result<()> {
 
         if requested_targets.is_some() {
             let termination_events = terminate_on_ctrlc()?;
-            let engine = Engine::new(targets);
-
-            if arg_matches.is_present(cli::arg::WATCH) {
-                engine
-                    .watch(root_target_ids, termination_events)
-                    .await
-                    .with_context(|| "Watch error")?;
+            let watch_option = if arg_matches.is_present(cli::arg::WATCH) {
+                WatchOption::Enabled
             } else {
-                engine
-                    .execute_once(root_target_ids, termination_events)
-                    .await
-                    .with_context(|| "Build error")?;
+                WatchOption::Disabled
             };
+
+            Engine::new(targets, watch_option)
+                .run(root_target_ids, termination_events)
+                .await?;
         }
 
         Ok(())
