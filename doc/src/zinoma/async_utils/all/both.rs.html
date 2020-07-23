@@ -82,6 +82,9 @@
 <span id="82">82</span>
 <span id="83">83</span>
 <span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">maybe_done</span>::<span class="ident">MaybeDone</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
@@ -141,30 +144,33 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">both_are_true</span>() {
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">task</span>::<span class="ident">block_on</span>(<span class="kw">async</span> {
-            <span class="ident">both</span>(<span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">true</span>), <span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">true</span>)).<span class="kw">await</span>
-        }))
+        <span class="ident">task</span>::<span class="ident">block_on</span>(<span class="kw">async</span> {
+            <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="bool-val">true</span>, <span class="ident">both</span>(<span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">true</span>), <span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">true</span>)).<span class="kw">await</span>)
+        })
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">left_is_false</span>() {
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="op">!</span><span class="ident">task</span>::<span class="ident">block_on</span>(<span class="kw">async</span> {
-            <span class="ident">both</span>(<span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">false</span>), <span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">true</span>)).<span class="kw">await</span>
-        }))
+        <span class="ident">task</span>::<span class="ident">block_on</span>(<span class="kw">async</span> {
+            <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="bool-val">false</span>, <span class="ident">both</span>(<span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">false</span>), <span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">true</span>)).<span class="kw">await</span>)
+        })
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">right_is_false</span>() {
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="op">!</span><span class="ident">task</span>::<span class="ident">block_on</span>(<span class="kw">async</span> {
-            <span class="ident">both</span>(<span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">true</span>), <span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">false</span>)).<span class="kw">await</span>
-        }))
+        <span class="ident">task</span>::<span class="ident">block_on</span>(<span class="kw">async</span> {
+            <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="bool-val">false</span>, <span class="ident">both</span>(<span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">true</span>), <span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">false</span>)).<span class="kw">await</span>)
+        })
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">both_are_false</span>() {
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="op">!</span><span class="ident">task</span>::<span class="ident">block_on</span>(<span class="kw">async</span> {
-            <span class="ident">both</span>(<span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">false</span>), <span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">false</span>)).<span class="kw">await</span>
-        }))
+        <span class="ident">task</span>::<span class="ident">block_on</span>(<span class="kw">async</span> {
+            <span class="macro">assert_eq</span><span class="macro">!</span>(
+                <span class="bool-val">false</span>,
+                <span class="ident">both</span>(<span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">false</span>), <span class="ident">future</span>::<span class="ident">ready</span>(<span class="bool-val">false</span>)).<span class="kw">await</span>
+            )
+        })
     }
 }
 </pre></div>

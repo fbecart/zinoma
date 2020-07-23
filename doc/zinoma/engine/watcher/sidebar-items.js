@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["is_tmp_editor_file",""]],"struct":[["TargetWatcher",""]]});
+initSidebarItems({"fn":[["is_tmp_editor_file",""]],"struct":[["TargetInvalidatedMessage",""],["TargetWatcher",""]]});

@@ -199,259 +199,207 @@
 <span id="199">199</span>
 <span id="200">200</span>
 <span id="201">201</span>
-<span id="202">202</span>
-<span id="203">203</span>
-<span id="204">204</span>
-<span id="205">205</span>
-<span id="206">206</span>
-<span id="207">207</span>
-<span id="208">208</span>
-<span id="209">209</span>
-<span id="210">210</span>
-<span id="211">211</span>
-<span id="212">212</span>
-<span id="213">213</span>
-<span id="214">214</span>
-<span id="215">215</span>
-<span id="216">216</span>
-<span id="217">217</span>
-<span id="218">218</span>
-<span id="219">219</span>
-<span id="220">220</span>
-<span id="221">221</span>
-<span id="222">222</span>
-<span id="223">223</span>
-<span id="224">224</span>
-<span id="225">225</span>
-<span id="226">226</span>
-<span id="227">227</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="kw">mod</span> <span class="ident">build_state</span>;
-<span class="kw">mod</span> <span class="ident">builder</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">builder</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">incremental</span>;
-<span class="kw">mod</span> <span class="ident">service</span>;
+<span class="kw">mod</span> <span class="ident">target_actor</span>;
 <span class="kw">mod</span> <span class="ident">watcher</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::{<span class="ident">Target</span>, <span class="ident">TargetId</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">TerminationMessage</span>;
 <span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">Context</span>, <span class="prelude-ty">Result</span>};
 <span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">sync</span>::{<span class="self">self</span>, <span class="ident">Receiver</span>, <span class="ident">Sender</span>};
-<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">task</span>;
-<span class="kw">use</span> <span class="ident">build_state</span>::<span class="ident">TargetBuildStates</span>;
-<span class="kw">use</span> <span class="ident">builder</span>::<span class="ident">build_target</span>;
+<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">sync</span>::{<span class="self">self</span>, <span class="ident">Receiver</span>};
 <span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">future</span>, <span class="ident">FutureExt</span>};
-<span class="kw">use</span> <span class="ident">incremental</span>::<span class="ident">IncrementalRunResult</span>;
-<span class="kw">use</span> <span class="ident">service</span>::<span class="ident">ServicesRunner</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">collections</span>::<span class="ident">HashMap</span>;
-<span class="kw">use</span> <span class="ident">watcher</span>::<span class="ident">TargetWatcher</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">collections</span>::{<span class="ident">HashMap</span>, <span class="ident">HashSet</span>};
+<span class="kw">use</span> <span class="ident">target_actor</span>::{
+    <span class="ident">ActorId</span>, <span class="ident">ActorInputMessage</span>, <span class="ident">ExecutionKind</span>, <span class="ident">TargetActorHandleSet</span>, <span class="ident">TargetActorOutputMessage</span>,
+};
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Engine</span> {
     <span class="ident">targets</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">TargetId</span>, <span class="ident">Target</span><span class="op">&gt;</span>,
-    <span class="ident">root_target_ids</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TargetId</span><span class="op">&gt;</span>,
+    <span class="ident">watch_option</span>: <span class="ident">WatchOption</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">Engine</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">targets</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">TargetId</span>, <span class="ident">Target</span><span class="op">&gt;</span>, <span class="ident">root_target_ids</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TargetId</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">targets</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">TargetId</span>, <span class="ident">Target</span><span class="op">&gt;</span>, <span class="ident">watch_option</span>: <span class="ident">WatchOption</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">targets</span>,
-            <span class="ident">root_target_ids</span>,
+            <span class="ident">watch_option</span>,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">watch</span>(<span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">termination_events</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">TerminationMessage</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">target_invalidated_sender</span>, <span class="kw-2">mut</span> <span class="ident">target_invalidated_events</span>) <span class="op">=</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run</span>(
+        <span class="self">self</span>,
+        <span class="ident">root_target_ids</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TargetId</span><span class="op">&gt;</span>,
+        <span class="ident">termination_events</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">TerminationMessage</span><span class="op">&gt;</span>,
+    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="kw">let</span> (<span class="ident">target_actor_output_sender</span>, <span class="ident">target_actor_output_events</span>) <span class="op">=</span>
             <span class="ident">sync</span>::<span class="ident">channel</span>(<span class="kw">crate</span>::<span class="ident">DEFAULT_CHANNEL_CAP</span>);
-        <span class="kw">let</span> <span class="ident">_target_watchers</span> <span class="op">=</span>
-            <span class="ident">future</span>::<span class="ident">try_join_all</span>(<span class="self">self</span>.<span class="ident">targets</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">target_id</span>, <span class="ident">target</span>)<span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">target_invalidated_sender</span> <span class="op">=</span> <span class="ident">target_invalidated_sender</span>.<span class="ident">clone</span>();
-                <span class="kw">async</span> <span class="kw">move</span> {
-                    <span class="ident">TargetWatcher</span>::<span class="ident">new</span>(
-                        <span class="ident">target</span>.<span class="ident">id</span>().<span class="ident">clone</span>(),
-                        <span class="ident">target</span>.<span class="ident">input</span>().<span class="ident">cloned</span>(),
-                        <span class="ident">target_invalidated_sender</span>,
-                    )
-                    .<span class="kw">await</span>
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">watcher</span><span class="op">|</span> (<span class="ident">target_id</span>, <span class="ident">watcher</span>))
-                }
-            }))
-            .<span class="kw">await</span>
-            .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="string">&quot;Failed setting up filesystem watchers&quot;</span>)<span class="question-mark">?</span>
+
+        <span class="kw">let</span> <span class="ident">watch_option</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">watch_option</span>;
+        <span class="kw">let</span> <span class="ident">launch_target_actor</span> <span class="op">=</span> <span class="op">|</span>(<span class="ident">target_id</span>, <span class="ident">target</span>)<span class="op">|</span> {
+            <span class="ident">target_actor</span>::<span class="ident">launch_target_actor</span>(
+                <span class="ident">target</span>,
+                <span class="ident">watch_option</span>,
+                <span class="ident">target_actor_output_sender</span>.<span class="ident">clone</span>(),
+            )
+            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">join_handle</span>, <span class="ident">handles</span>)<span class="op">|</span> ((<span class="ident">target_id</span>, <span class="ident">handles</span>), <span class="ident">join_handle</span>))
+        };
+
+        <span class="kw">let</span> (<span class="ident">target_actor_handles</span>, <span class="ident">target_actor_join_handles</span>): (<span class="ident">HashMap</span><span class="op">&lt;</span><span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>) <span class="op">=</span> <span class="self">self</span>
+            .<span class="ident">targets</span>
             .<span class="ident">into_iter</span>()
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+            .<span class="ident">map</span>(<span class="ident">launch_target_actor</span>)
+            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>
+            .<span class="ident">into_iter</span>()
+            .<span class="ident">unzip</span>();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">services_runner</span> <span class="op">=</span> <span class="ident">ServicesRunner</span>::<span class="ident">new</span>();
-        <span class="kw">let</span> (<span class="ident">build_report_sender</span>, <span class="kw-2">mut</span> <span class="ident">build_report_events</span>) <span class="op">=</span>
-            <span class="ident">sync</span>::<span class="ident">channel</span>(<span class="kw">crate</span>::<span class="ident">DEFAULT_CHANNEL_CAP</span>);
+        <span class="kw">for</span> <span class="ident">target_id</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">root_target_ids</span> {
+            <span class="self">Self</span>::<span class="ident">request_target</span>(<span class="kw-2">&amp;</span><span class="ident">target_actor_handles</span>[<span class="ident">target_id</span>]).<span class="kw">await</span>
+        }
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">target_build_states</span> <span class="op">=</span> <span class="ident">TargetBuildStates</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">targets</span>);
-
-        <span class="kw">loop</span> {
-            <span class="kw">for</span> <span class="ident">target_id</span> <span class="kw">in</span> <span class="ident">target_build_states</span>.<span class="ident">get_ready_to_build_targets</span>() {
-                <span class="kw">let</span> <span class="ident">target</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">targets</span>[<span class="kw-2">&amp;</span><span class="ident">target_id</span>].<span class="ident">clone</span>();
-                <span class="kw">let</span> <span class="ident">build_report_sender</span> <span class="op">=</span> <span class="ident">build_report_sender</span>.<span class="ident">clone</span>();
-                <span class="kw">let</span> (<span class="ident">build_cancellation_sender</span>, <span class="ident">build_cancellation_events</span>) <span class="op">=</span> <span class="ident">sync</span>::<span class="ident">channel</span>(<span class="number">1</span>);
-                <span class="kw">let</span> <span class="ident">build_thread</span> <span class="op">=</span> <span class="ident">task</span>::<span class="ident">spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-                    <span class="ident">build_target_incrementally</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">target</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">build_cancellation_events</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">build_report_sender</span>,
-                    )
-                    .<span class="kw">await</span>
-                });
-                <span class="ident">target_build_states</span>.<span class="ident">set_build_started</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">target_id</span>,
-                    <span class="ident">build_thread</span>,
-                    <span class="ident">build_cancellation_sender</span>,
-                );
+        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">watch_option</span> {
+            <span class="ident">WatchOption</span>::<span class="ident">Enabled</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="self">Self</span>::<span class="ident">watch</span>(
+                    <span class="ident">termination_events</span>,
+                    <span class="ident">target_actor_output_events</span>,
+                    <span class="kw-2">&amp;</span><span class="ident">target_actor_handles</span>,
+                )
+                .<span class="kw">await</span>;
+                <span class="prelude-val">Ok</span>(())
             }
+            <span class="ident">WatchOption</span>::<span class="ident">Disabled</span> <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="self">Self</span>::<span class="ident">execute_once</span>(
+                    <span class="kw-2">&amp;</span><span class="ident">root_target_ids</span>,
+                    <span class="ident">termination_events</span>,
+                    <span class="ident">target_actor_output_events</span>,
+                    <span class="kw-2">&amp;</span><span class="ident">target_actor_handles</span>,
+                )
+                .<span class="kw">await</span>
+            }
+        };
 
+        <span class="self">Self</span>::<span class="ident">send_termination_message</span>(<span class="kw-2">&amp;</span><span class="ident">target_actor_handles</span>).<span class="kw">await</span>;
+        <span class="ident">future</span>::<span class="ident">join_all</span>(<span class="ident">target_actor_join_handles</span>).<span class="kw">await</span>;
+
+        <span class="ident">result</span>
+    }
+
+    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">watch</span>(
+        <span class="kw-2">mut</span> <span class="ident">termination_events</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">TerminationMessage</span><span class="op">&gt;</span>,
+        <span class="kw-2">mut</span> <span class="ident">target_actor_output_events</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">TargetActorOutputMessage</span><span class="op">&gt;</span>,
+        <span class="ident">target_actor_handles</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">TargetId</span>, <span class="ident">TargetActorHandleSet</span><span class="op">&gt;</span>,
+    ) {
+        <span class="kw">loop</span> {
             <span class="ident">futures</span>::<span class="macro">select</span><span class="macro">!</span> {
-                <span class="kw">_</span> <span class="op">=</span> <span class="ident">termination_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="ident">target_build_states</span>.<span class="ident">cancel_all_builds</span>().<span class="kw">await</span>;
-                    <span class="ident">services_runner</span>.<span class="ident">terminate_all_services</span>().<span class="kw">await</span>;
-                    <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
-                },
-                <span class="ident">target_id</span> <span class="op">=</span> <span class="ident">target_invalidated_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="ident">target_build_states</span>.<span class="ident">set_build_invalidated</span>(<span class="kw-2">&amp;</span><span class="ident">target_id</span>.<span class="ident">unwrap</span>());
-                },
-                <span class="ident">build_report</span> <span class="op">=</span> <span class="ident">build_report_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="kw">let</span> <span class="ident">BuildReport</span> { <span class="ident">target_id</span>, <span class="ident">result</span> } <span class="op">=</span> <span class="ident">build_report</span>.<span class="ident">unwrap</span>();
-                    <span class="kw">let</span> <span class="ident">target</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">targets</span>[<span class="kw-2">&amp;</span><span class="ident">target_id</span>];
-
-                    <span class="ident">target_build_states</span>.<span class="ident">set_build_finished</span>(<span class="kw-2">&amp;</span><span class="ident">target_id</span>, <span class="kw-2">&amp;</span><span class="ident">result</span>).<span class="kw">await</span>;
-
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="ident">IncrementalRunResult</span>::<span class="ident">Run</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>)) <span class="op">=</span> <span class="ident">result</span> {
-                        <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;{} - {}&quot;</span>, <span class="ident">target</span>, <span class="ident">e</span>);
-                    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Target</span>::<span class="ident">Service</span>(<span class="ident">target</span>) <span class="op">=</span> <span class="ident">target</span> {
-                        <span class="ident">services_runner</span>.<span class="ident">restart_service</span>(<span class="ident">target</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">_</span> <span class="op">=</span> <span class="ident">termination_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() <span class="op">=</span><span class="op">&gt;</span> <span class="kw">break</span>,
+                <span class="ident">target_actor_output</span> <span class="op">=</span> <span class="ident">target_actor_output_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="kw">match</span> <span class="ident">target_actor_output</span>.<span class="ident">unwrap</span>() {
+                        <span class="ident">TargetActorOutputMessage</span>::<span class="ident">TargetExecutionError</span>(<span class="ident">target_id</span>, <span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                            <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;{} - {}&quot;</span>, <span class="ident">target_id</span>, <span class="ident">e</span>);
+                        },
+                        <span class="ident">TargetActorOutputMessage</span>::<span class="ident">MessageActor</span> { <span class="ident">dest</span>, <span class="ident">msg</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                            <span class="kw">if</span> <span class="kw">let</span> <span class="ident">ActorId</span>::<span class="ident">Target</span>(<span class="ident">target_id</span>) <span class="op">=</span> <span class="ident">dest</span> {
+                                <span class="ident">target_actor_handles</span>[<span class="kw-2">&amp;</span><span class="ident">target_id</span>].<span class="ident">target_actor_input_sender</span>.<span class="ident">send</span>(<span class="ident">msg</span>).<span class="kw">await</span>
+                            }
+                        }
                     }
-                },
+                }
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">build</span>(<span class="self">self</span>, <span class="kw-2">mut</span> <span class="ident">termination_events</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">TerminationMessage</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">services_runner</span> <span class="op">=</span> <span class="ident">ServicesRunner</span>::<span class="ident">new</span>();
-        <span class="kw">let</span> (<span class="ident">build_report_sender</span>, <span class="kw-2">mut</span> <span class="ident">build_report_events</span>) <span class="op">=</span>
-            <span class="ident">sync</span>::<span class="ident">channel</span>(<span class="kw">crate</span>::<span class="ident">DEFAULT_CHANNEL_CAP</span>);
+    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">execute_once</span>(
+        <span class="ident">root_target_ids</span>: <span class="kw-2">&amp;</span>[<span class="ident">TargetId</span>],
+        <span class="kw-2">mut</span> <span class="ident">termination_events</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">TerminationMessage</span><span class="op">&gt;</span>,
+        <span class="kw-2">mut</span> <span class="ident">target_actor_output_events</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">TargetActorOutputMessage</span><span class="op">&gt;</span>,
+        <span class="ident">target_actor_handles</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">TargetId</span>, <span class="ident">TargetActorHandleSet</span><span class="op">&gt;</span>,
+    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">unavailable_root_targets</span> <span class="op">=</span> <span class="ident">root_target_ids</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>().<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">unavailable_root_builds</span> <span class="op">=</span> <span class="ident">unavailable_root_targets</span>.<span class="ident">clone</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">unavailable_root_services</span> <span class="op">=</span> <span class="ident">unavailable_root_targets</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">service_root_targets</span> <span class="op">=</span> <span class="ident">HashSet</span>::<span class="ident">new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">termination_event_received</span> <span class="op">=</span> <span class="bool-val">false</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">target_build_states</span> <span class="op">=</span> <span class="ident">TargetBuildStates</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">targets</span>);
-
-        <span class="kw">while</span> <span class="op">!</span><span class="ident">target_build_states</span>.<span class="ident">all_are_built</span>() {
-            <span class="kw">for</span> <span class="ident">target_id</span> <span class="kw">in</span> <span class="ident">target_build_states</span>.<span class="ident">get_ready_to_build_targets</span>() {
-                <span class="kw">let</span> <span class="ident">target</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">targets</span>[<span class="kw-2">&amp;</span><span class="ident">target_id</span>].<span class="ident">clone</span>();
-                <span class="kw">let</span> <span class="ident">build_report_sender</span> <span class="op">=</span> <span class="ident">build_report_sender</span>.<span class="ident">clone</span>();
-                <span class="kw">let</span> (<span class="ident">build_cancellation_sender</span>, <span class="ident">build_cancellation_events</span>) <span class="op">=</span> <span class="ident">sync</span>::<span class="ident">channel</span>(<span class="number">1</span>);
-                <span class="kw">let</span> <span class="ident">build_thread</span> <span class="op">=</span> <span class="ident">task</span>::<span class="ident">spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-                    <span class="ident">build_target_incrementally</span>(
-                        <span class="kw-2">&amp;</span><span class="ident">target</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">build_cancellation_events</span>,
-                        <span class="kw-2">&amp;</span><span class="ident">build_report_sender</span>,
-                    )
-                    .<span class="kw">await</span>
-                });
-                <span class="ident">target_build_states</span>.<span class="ident">set_build_started</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">target_id</span>,
-                    <span class="ident">build_thread</span>,
-                    <span class="ident">build_cancellation_sender</span>,
-                );
-            }
-
+        <span class="kw">while</span> <span class="op">!</span>(<span class="ident">termination_event_received</span>
+            <span class="op">|</span><span class="op">|</span> <span class="ident">unavailable_root_services</span>.<span class="ident">is_empty</span>() <span class="kw-2">&amp;</span><span class="op">&amp;</span> <span class="ident">unavailable_root_builds</span>.<span class="ident">is_empty</span>())
+        {
             <span class="ident">futures</span>::<span class="macro">select</span><span class="macro">!</span> {
-                <span class="kw">_</span> <span class="op">=</span> <span class="ident">termination_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="ident">target_build_states</span>.<span class="ident">cancel_all_builds</span>().<span class="kw">await</span>;
-                    <span class="ident">services_runner</span>.<span class="ident">terminate_all_services</span>().<span class="kw">await</span>;
-                    <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
-                }
-                <span class="ident">build_report</span> <span class="op">=</span> <span class="ident">build_report_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="kw">let</span> <span class="ident">BuildReport</span> { <span class="ident">target_id</span>, <span class="ident">result</span> } <span class="op">=</span> <span class="ident">build_report</span>.<span class="ident">unwrap</span>();
+                <span class="kw">_</span> <span class="op">=</span> <span class="ident">termination_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() <span class="op">=</span><span class="op">&gt;</span> <span class="ident">termination_event_received</span> <span class="op">=</span> <span class="bool-val">true</span>,
+                <span class="ident">target_actor_output</span> <span class="op">=</span> <span class="ident">target_actor_output_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="kw">match</span> <span class="ident">target_actor_output</span>.<span class="ident">unwrap</span>() {
+                        <span class="ident">TargetActorOutputMessage</span>::<span class="ident">TargetExecutionError</span>(<span class="ident">target_id</span>, <span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>.<span class="ident">context</span>(<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;An issue occurred with target {}&quot;</span>, <span class="ident">target_id</span>)));
+                        },
+                        <span class="ident">TargetActorOutputMessage</span>::<span class="ident">MessageActor</span> { <span class="ident">dest</span>, <span class="ident">msg</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">dest</span> {
+                            <span class="ident">ActorId</span>::<span class="ident">Target</span>(<span class="ident">target_id</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                                <span class="ident">target_actor_handles</span>[<span class="kw-2">&amp;</span><span class="ident">target_id</span>].<span class="ident">target_actor_input_sender</span>.<span class="ident">send</span>(<span class="ident">msg</span>).<span class="kw">await</span>;
+                            }
+                            <span class="ident">ActorId</span>::<span class="ident">Root</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">msg</span> {
+                                <span class="ident">ActorInputMessage</span>::<span class="prelude-val">Ok</span> { <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>::<span class="ident">Build</span>, <span class="ident">target_id</span>, .. } <span class="op">=</span><span class="op">&gt;</span> {
+                                    <span class="ident">unavailable_root_builds</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">target_id</span>);
+                                },
+                                <span class="ident">ActorInputMessage</span>::<span class="prelude-val">Ok</span> { <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>::<span class="ident">Service</span>, <span class="ident">target_id</span>, <span class="ident">actual</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                                    <span class="ident">unavailable_root_services</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">target_id</span>);
 
-                    <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;{} - Build report received&quot;</span>, <span class="ident">target_id</span>);
-                    <span class="ident">target_build_states</span>.<span class="ident">set_build_finished</span>(<span class="kw-2">&amp;</span><span class="ident">target_id</span>, <span class="kw-2">&amp;</span><span class="ident">result</span>).<span class="kw">await</span>;
-
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="ident">IncrementalRunResult</span>::<span class="ident">Run</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>)) <span class="op">=</span> <span class="ident">result</span> {
-                        <span class="ident">target_build_states</span>.<span class="ident">cancel_all_builds</span>().<span class="kw">await</span>;
-                        <span class="ident">services_runner</span>.<span class="ident">terminate_all_services</span>().<span class="kw">await</span>;
-                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>);
-                    }
-
-                    <span class="kw">let</span> <span class="ident">target</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">targets</span>[<span class="kw-2">&amp;</span><span class="ident">target_id</span>];
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Target</span>::<span class="ident">Service</span>(<span class="ident">target</span>) <span class="op">=</span> <span class="ident">target</span> {
-                        <span class="ident">services_runner</span>.<span class="ident">start_service</span>(<span class="ident">target</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                                    <span class="kw">if</span> <span class="ident">actual</span> {
+                                        <span class="ident">service_root_targets</span>.<span class="ident">insert</span>(<span class="ident">target_id</span>);
+                                    }
+                                },
+                                <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {},
+                            }
+                        }
                     }
                 }
             }
         }
 
-        <span class="kw">let</span> <span class="ident">necessary_services</span> <span class="op">=</span>
-            <span class="ident">service</span>::<span class="ident">get_service_graph_targets</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">targets</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">root_target_ids</span>);
-        <span class="kw">let</span> <span class="ident">unnecessary_services</span> <span class="op">=</span> <span class="ident">services_runner</span>
-            .<span class="ident">list_running_services</span>()
-            .<span class="ident">iter</span>()
-            .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">target_id</span><span class="op">|</span> <span class="op">!</span><span class="ident">necessary_services</span>.<span class="ident">contains</span>(<span class="ident">target_id</span>))
-            .<span class="ident">cloned</span>()
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">unnecessary_services</span>.<span class="ident">is_empty</span>() {
-            <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Terminating unnecessary services&quot;</span>);
-            <span class="ident">services_runner</span>
-                .<span class="ident">terminate_services</span>(<span class="kw-2">&amp;</span><span class="ident">unnecessary_services</span>)
-                .<span class="kw">await</span>;
-        }
-
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">necessary_services</span>.<span class="ident">is_empty</span>() {
-            <span class="comment">// Wait for termination event to terminate all services</span>
+        <span class="kw">if</span> <span class="op">!</span><span class="ident">termination_event_received</span> <span class="kw-2">&amp;</span><span class="op">&amp;</span> <span class="op">!</span><span class="ident">service_root_targets</span>.<span class="ident">is_empty</span>() {
+            <span class="comment">// Wait for termination event</span>
             <span class="ident">termination_events</span>
                 .<span class="ident">recv</span>()
                 .<span class="kw">await</span>
                 .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="string">&quot;Failed to listen to termination event&quot;</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-            <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Terminating all services&quot;</span>);
-            <span class="ident">services_runner</span>.<span class="ident">terminate_all_services</span>().<span class="kw">await</span>;
         }
 
         <span class="prelude-val">Ok</span>(())
     }
-}
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">build_target_incrementally</span>(
-    <span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">Target</span>,
-    <span class="ident">build_cancellation_events</span>: <span class="kw-2">&amp;</span><span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">BuildCancellationMessage</span><span class="op">&gt;</span>,
-    <span class="ident">build_report_sender</span>: <span class="kw-2">&amp;</span><span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">BuildReport</span><span class="op">&gt;</span>,
-) {
-    <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">incremental</span>::<span class="ident">run</span>(<span class="kw-2">&amp;</span><span class="ident">target</span>, <span class="op">|</span><span class="op">|</span> <span class="kw">async</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Target</span>::<span class="ident">Build</span>(<span class="ident">target</span>) <span class="op">=</span> <span class="ident">target</span> {
-            <span class="ident">build_target</span>(<span class="kw-2">&amp;</span><span class="ident">target</span>, <span class="ident">build_cancellation_events</span>.<span class="ident">clone</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">send_termination_message</span>(
+        <span class="ident">target_actor_handles</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">TargetId</span>, <span class="ident">TargetActorHandleSet</span><span class="op">&gt;</span>,
+    ) {
+        <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Terminating all targets&quot;</span>);
+        <span class="kw">for</span> <span class="ident">handles</span> <span class="kw">in</span> <span class="ident">target_actor_handles</span>.<span class="ident">values</span>() {
+            <span class="ident">handles</span>.<span class="ident">termination_sender</span>.<span class="ident">send</span>(<span class="ident">TerminationMessage</span>).<span class="kw">await</span>;
         }
-
-        <span class="prelude-val">Ok</span>(())
-    })
-    .<span class="kw">await</span>
-    .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{} - Build failed&quot;</span>, <span class="ident">target</span>))
-    .<span class="ident">unwrap</span>();
-
-    <span class="kw">if</span> <span class="kw">let</span> <span class="ident">IncrementalRunResult</span>::<span class="ident">Skipped</span> <span class="op">=</span> <span class="ident">result</span> {
-        <span class="ident">log</span>::<span class="macro">info</span><span class="macro">!</span>(<span class="string">&quot;{} - Build skipped (Not Modified)&quot;</span>, <span class="ident">target</span>);
     }
 
-    <span class="ident">build_report_sender</span>
-        .<span class="ident">send</span>(<span class="ident">BuildReport</span>::<span class="ident">new</span>(<span class="ident">target</span>.<span class="ident">id</span>().<span class="ident">clone</span>(), <span class="ident">result</span>))
-        .<span class="kw">await</span>;
-}
-
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BuildReport</span> {
-    <span class="kw">pub</span> <span class="ident">target_id</span>: <span class="ident">TargetId</span>,
-    <span class="kw">pub</span> <span class="ident">result</span>: <span class="ident">IncrementalRunResult</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span>,
-}
-
-<span class="kw">impl</span> <span class="ident">BuildReport</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">target_id</span>: <span class="ident">TargetId</span>, <span class="ident">result</span>: <span class="ident">IncrementalRunResult</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">target_id</span>, <span class="ident">result</span> }
+    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">request_target</span>(<span class="ident">handles</span>: <span class="kw-2">&amp;</span><span class="ident">TargetActorHandleSet</span>) {
+        <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">kind</span> <span class="kw">in</span> <span class="kw-2">&amp;</span>[<span class="ident">ExecutionKind</span>::<span class="ident">Build</span>, <span class="ident">ExecutionKind</span>::<span class="ident">Service</span>] {
+            <span class="kw">let</span> <span class="ident">build_msg</span> <span class="op">=</span> <span class="ident">ActorInputMessage</span>::<span class="ident">Requested</span> {
+                <span class="ident">kind</span>,
+                <span class="ident">requester</span>: <span class="ident">ActorId</span>::<span class="ident">Root</span>,
+            };
+            <span class="ident">handles</span>.<span class="ident">target_actor_input_sender</span>.<span class="ident">send</span>(<span class="ident">build_msg</span>).<span class="kw">await</span>;
+        }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">BuildCancellationMessage</span> {
-    <span class="ident">CancelBuild</span>,
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>)]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">WatchOption</span> {
+    <span class="ident">Enabled</span>,
+    <span class="ident">Disabled</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WatchOption</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">value</span>: <span class="ident">bool</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="kw">if</span> <span class="ident">value</span> {
+            <span class="ident">WatchOption</span>::<span class="ident">Enabled</span>
+        } <span class="kw">else</span> {
+            <span class="ident">WatchOption</span>::<span class="ident">Disabled</span>
+        }
+    }
 }
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../../";window.currentCrate = "zinoma";</script><script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script><script defer src="../../../search-index.js"></script></body></html>

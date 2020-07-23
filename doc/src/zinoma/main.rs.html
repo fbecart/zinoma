@@ -113,19 +113,8 @@
 <span id="113">113</span>
 <span id="114">114</span>
 <span id="115">115</span>
-<span id="116">116</span>
-<span id="117">117</span>
-<span id="118">118</span>
-<span id="119">119</span>
-<span id="120">120</span>
-<span id="121">121</span>
-<span id="122">122</span>
-<span id="123">123</span>
-<span id="124">124</span>
-<span id="125">125</span>
-<span id="126">126</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="attribute">#![<span class="ident">recursion_limit</span> <span class="op">=</span> <span class="string">&quot;256&quot;</span>]</span>
+<span class="attribute">#![<span class="ident">recursion_limit</span> <span class="op">=</span> <span class="string">&quot;1024&quot;</span>]</span>
 
 <span class="kw">mod</span> <span class="ident">async_utils</span>;
 <span class="kw">mod</span> <span class="ident">clean</span>;
@@ -200,7 +189,7 @@
         <span class="kw">if</span> <span class="ident">arg_matches</span>.<span class="ident">is_present</span>(<span class="ident">cli</span>::<span class="ident">arg</span>::<span class="ident">CLEAN</span>) {
             <span class="kw">if</span> <span class="ident">requested_targets</span>.<span class="ident">is_some</span>() {
                 <span class="kw">for</span> <span class="ident">target</span> <span class="kw">in</span> <span class="ident">targets</span>.<span class="ident">values</span>() {
-                    <span class="ident">delete_saved_env_state</span>(<span class="ident">target</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="ident">delete_saved_env_state</span>(<span class="ident">target</span>.<span class="ident">metadata</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
                 }
             } <span class="kw">else</span> {
                 <span class="kw">for</span> <span class="ident">project_dir</span> <span class="kw">in</span> <span class="ident">project_dirs</span> {
@@ -215,20 +204,11 @@
         }
 
         <span class="kw">if</span> <span class="ident">requested_targets</span>.<span class="ident">is_some</span>() {
-            <span class="kw">let</span> <span class="ident">engine</span> <span class="op">=</span> <span class="ident">Engine</span>::<span class="ident">new</span>(<span class="ident">targets</span>, <span class="ident">root_target_ids</span>);
             <span class="kw">let</span> <span class="ident">termination_events</span> <span class="op">=</span> <span class="ident">terminate_on_ctrlc</span>()<span class="question-mark">?</span>;
 
-            <span class="kw">if</span> <span class="ident">arg_matches</span>.<span class="ident">is_present</span>(<span class="ident">cli</span>::<span class="ident">arg</span>::<span class="ident">WATCH</span>) {
-                <span class="ident">engine</span>
-                    .<span class="ident">watch</span>(<span class="ident">termination_events</span>)
-                    .<span class="kw">await</span>
-                    .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="string">&quot;Watch error&quot;</span>)<span class="question-mark">?</span>;
-            } <span class="kw">else</span> {
-                <span class="ident">engine</span>
-                    .<span class="ident">build</span>(<span class="ident">termination_events</span>)
-                    .<span class="kw">await</span>
-                    .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="string">&quot;Build error&quot;</span>)<span class="question-mark">?</span>;
-            };
+            <span class="ident">Engine</span>::<span class="ident">new</span>(<span class="ident">targets</span>, <span class="ident">arg_matches</span>.<span class="ident">is_present</span>(<span class="ident">cli</span>::<span class="ident">arg</span>::<span class="ident">WATCH</span>).<span class="ident">into</span>())
+                .<span class="ident">run</span>(<span class="ident">root_target_ids</span>, <span class="ident">termination_events</span>)
+                .<span class="kw">await</span><span class="question-mark">?</span>;
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -242,14 +222,12 @@
     <span class="ident">task</span>::<span class="ident">spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
         <span class="ident">ctrlc</span>.<span class="kw">await</span>;
         <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Ctrl-C received&quot;</span>);
-        <span class="ident">termination_sender</span>.<span class="ident">send</span>(<span class="ident">TerminationMessage</span>::<span class="ident">Terminate</span>).<span class="kw">await</span>;
+        <span class="ident">termination_sender</span>.<span class="ident">send</span>(<span class="ident">TerminationMessage</span>).<span class="kw">await</span>;
     });
 
     <span class="prelude-val">Ok</span>(<span class="ident">termination_events</span>)
 }
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">TerminationMessage</span> {
-    <span class="ident">Terminate</span>,
-}
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TerminationMessage</span>;
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "zinoma";</script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>

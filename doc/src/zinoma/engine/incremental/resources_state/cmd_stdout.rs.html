@@ -49,10 +49,6 @@
 <span id="49">49</span>
 <span id="50">50</span>
 <span id="51">51</span>
-<span id="52">52</span>
-<span id="53">53</span>
-<span id="54">54</span>
-<span id="55">55</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">async_utils</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">run_script</span>;
@@ -102,11 +98,7 @@
     <span class="kw">if</span> <span class="ident">output</span>.<span class="ident">status</span>.<span class="ident">success</span>() {
         <span class="prelude-val">Ok</span>(<span class="ident">String</span>::<span class="ident">from_utf8_lossy</span>(<span class="ident">output</span>.<span class="ident">stdout</span>.<span class="ident">as_slice</span>()).<span class="ident">to_string</span>())
     } <span class="kw">else</span> {
-        <span class="prelude-val">Err</span>(<span class="macro">anyhow</span><span class="macro">!</span>(
-            <span class="string">&quot;Command {} return error code {}&quot;</span>,
-            <span class="ident">cmd</span>,
-            <span class="ident">output</span>.<span class="ident">status</span>
-        ))
+        <span class="prelude-val">Err</span>(<span class="macro">anyhow</span><span class="macro">!</span>(<span class="string">&quot;Command {} returned {}&quot;</span>, <span class="ident">cmd</span>, <span class="ident">output</span>.<span class="ident">status</span>))
     }
 }
 </pre></div>
