@@ -314,7 +314,7 @@ pub enum InputResource {
     ///     service: node dist/index.js
     /// ```
     DependencyOutput(String),
-    Paths {
+    Files {
         /// Paths to files or directories.
         ///
         /// It should be an array of strings.
@@ -358,7 +358,7 @@ pub enum InputResource {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, untagged)]
 pub enum OutputResource {
-    Paths {
+    Files {
         /// Paths to files or directories.
         ///
         /// It should be an array of strings.

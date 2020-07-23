@@ -219,7 +219,7 @@ fn transform_input(
 
             use yaml::InputResource::*;
             match resource {
-                Paths { paths } => {
+                Files { paths } => {
                     let paths = paths.iter().map(|path| project_dir.join(path));
                     input.paths.extend(paths)
                 }
@@ -253,7 +253,7 @@ fn transform_output(output: yaml::OutputResources, project_dir: &Path) -> domain
         .fold(domain::Resources::new(), |mut acc, resource| {
             use yaml::OutputResource::*;
             match resource {
-                Paths { paths } => {
+                Files { paths } => {
                     let paths = paths.iter().map(|path| project_dir.join(path));
                     acc.paths.extend(paths)
                 }
@@ -300,7 +300,7 @@ mod tests {
         let config = build_config(vec![
             (
                 "target_1",
-                build_target_with_output(vec![yaml::OutputResource::Paths {
+                build_target_with_output(vec![yaml::OutputResource::Files {
                     paths: vec!["output.txt".to_string()],
                 }]),
             ),
