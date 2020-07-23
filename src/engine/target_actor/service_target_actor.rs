@@ -34,6 +34,7 @@ impl ServiceTargetActor {
                 }
             }
 
+            // TODO Catch service execution failures
             futures::select! {
                 _ = self.helper.termination_events.next().fuse() => break,
                 _ = self.helper.target_invalidated_events.next().fuse() => {
