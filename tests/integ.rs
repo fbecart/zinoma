@@ -2,6 +2,7 @@ use assert_cmd::prelude::*;
 use predicate::str::contains;
 use predicates::prelude::*;
 use std::ffi;
+use std::fs;
 use std::process::Command;
 
 #[test]
@@ -183,6 +184,33 @@ fn build_failure() {
         .failure()
         .stderr(contains("An issue occurred with target incorrect_target"))
         .stderr(contains("Build failed with exit code: 127"));
+}
+
+#[test]
+fn input_failure() {
+    zinoma_command("input_failure", &["incorrect_input"])
+        .assert()
+        .success()
+        .stdout(contains("Executing target with uncomputable input"))
+        .stderr(contains("INFO - incorrect_input - Build success"))
+        .stderr(contains("WARN - incorrect_input - Failed to compute state of inputs and outputs: Command unknown_command return error code exit code: 127"));
+}
+
+#[test]
+fn invalid_checksums_file() {
+    let checksums_dir_name = "tests/integ/invalid_checksums_file/.zinoma";
+    let checksums_file_name = format!("{}/invalid_checksums_file.checksums", checksums_dir_name);
+    fs::create_dir(checksums_dir_name).ok();
+    fs::write(checksums_file_name, "Lorem ipsum").unwrap();
+
+    zinoma_command("invalid_checksums_file", &["invalid_checksums_file", "-v"])
+        .assert()
+        .success()
+        .stdout(contains("Executing target with invalid checksums file"))
+        .stderr(contains(
+            "invalid_checksums_file - Dropping corrupted checksums file",
+        ))
+        .stderr(contains("invalid_checksums_file - Build success"));
 }
 
 fn zinoma_command<I, S>(integ_test_dir_name: &str, args: I) -> Command

@@ -107,7 +107,7 @@ impl ServiceTargetActor {
 
         let service_process = task::spawn_blocking(move || command.spawn())
             .await
-            .with_context(|| format!("Failed to start service"))?;
+            .with_context(|| "Failed to start service".to_string())?;
 
         self.service_process = Some(service_process);
 

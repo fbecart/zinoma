@@ -10,36 +10,43 @@ fn get_checksums_file_path(target: &TargetMetadata) -> PathBuf {
     work_dir::get_work_dir_path(&target.project_dir).join(format!("{}.checksums", target))
 }
 
-pub async fn read_saved_target_env_state(
-    target: &TargetMetadata,
-) -> Result<Option<TargetEnvState>> {
+pub async fn read_saved_target_env_state(target: &TargetMetadata) -> Option<TargetEnvState> {
     let file_path = get_checksums_file_path(target);
-    if file_path.exists().await {
+    if !&file_path.exists().await {
+        return None;
+    }
+
+    let result = {
         let target_id = target.id.clone();
-        let result = task::spawn_blocking(move || {
+        let file_path = file_path.clone();
+
+        task::spawn_blocking(move || {
             let file = std::fs::File::open(&file_path).with_context(|| {
-                format!("Failed to open checksums file {}", file_path.display())
+                format!("Failed to open checksums file {}", &file_path.display())
             })?;
             bincode::deserialize_from(file)
                 .with_context(|| format!("Failed to deserialize checksums for {}", target_id))
         })
-        .await;
+        .await
+    };
 
-        match result {
-            Ok(checksums) => Ok(Some(checksums)),
-            Err(e) => {
-                log::trace!(
-                    "{} - Dropping corrupted checksums file (Error: {})",
-                    target,
-                    e
-                );
-                delete_saved_env_state(&target).await?;
-                Ok(None)
-            }
+    if let Err(e) = &result {
+        log::debug!(
+            "{} - Dropping corrupted checksums file (Error: {})",
+            target,
+            e
+        );
+        if let Err(e) = task::block_on(delete_saved_env_state(&target)) {
+            log::error!(
+                "{} - Failed to drop corrupted checksum file: {} (Error: {})",
+                target,
+                file_path.display(),
+                e
+            )
         }
-    } else {
-        Ok(None)
     }
+
+    result.ok()
 }
 
 pub async fn delete_saved_env_state(target: &TargetMetadata) -> Result<()> {
@@ -52,6 +59,7 @@ pub async fn delete_saved_env_state(target: &TargetMetadata) -> Result<()> {
             )
         })?;
     }
+
     Ok(())
 }
 

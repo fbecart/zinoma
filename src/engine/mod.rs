@@ -33,7 +33,7 @@ impl Engine {
         root_target_ids: Vec<TargetId>,
         termination_events: Receiver<TerminationMessage>,
     ) -> Result<()> {
-        let watch_option = self.watch_option.clone();
+        let watch_option = self.watch_option;
         let (target_actor_join_handles, target_actor_handles, target_actor_output_events) =
             self.launch_target_actors()?;
 
@@ -42,12 +42,15 @@ impl Engine {
         }
 
         let result = match watch_option {
-            WatchOption::Enabled => Ok(Self::watch(
-                termination_events,
-                target_actor_output_events,
-                &target_actor_handles,
-            )
-            .await),
+            WatchOption::Enabled => {
+                Self::watch(
+                    termination_events,
+                    target_actor_output_events,
+                    &target_actor_handles,
+                )
+                .await;
+                Ok(())
+            }
             WatchOption::Disabled => {
                 Self::execute_once(
                     &root_target_ids,

@@ -1,7 +1,6 @@
 use super::{ActorInputMessage, ExecutionKind, TargetActorHelper};
 use crate::domain::BuildTarget;
 use crate::engine::{builder, incremental};
-use anyhow::Context;
 use async_std::{prelude::*, sync};
 use builder::{BuildCancellationMessage, BuildCompletionReport};
 use futures::future::Fuse;
@@ -100,23 +99,20 @@ impl BuildTargetActor {
                 }
                 build_result = ongoing_build_fuse => {
                     ongoing_build_cancellation_sender = None;
-                    // TODO Why unwrap?
-                    let build_result = build_result
-                        .with_context(|| format!("{} - Failed to evaluate target input/output", self.target))
-                        .unwrap();
+
                     match build_result {
-                        IncrementalRunResult::Run(Err(e)) => self.helper.notify_execution_failed(e).await,
-                        IncrementalRunResult::Skipped => {
+                        Err(e) | Ok(IncrementalRunResult::Run(Err(e))) => self.helper.notify_execution_failed(e).await,
+                        Ok(IncrementalRunResult::Skipped) => {
                             log::info!("{} - Build skipped (Not Modified)", self.target);
                             self.helper.notify_success(ExecutionKind::Build).await;
                         }
-                        IncrementalRunResult::Run(Ok(BuildCompletionReport::Completed)) => {
+                        Ok(IncrementalRunResult::Run(Ok(BuildCompletionReport::Completed))) => {
                             // TODO Why spreading logs between here and builder?
                             self.helper.notify_success(ExecutionKind::Build).await;
 
                             // TODO Eventually, unrequest dependency services
                         }
-                        IncrementalRunResult::Run(Ok(BuildCompletionReport::Aborted)) => break,
+                        Ok(IncrementalRunResult::Run(Ok(BuildCompletionReport::Aborted))) => break,
                     }
                 },
             }

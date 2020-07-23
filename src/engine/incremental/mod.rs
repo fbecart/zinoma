@@ -3,7 +3,7 @@ pub mod storage;
 
 use crate::async_utils::both;
 use crate::domain::{Resources, TargetMetadata};
-use anyhow::{Context, Result};
+use anyhow::Result;
 use futures::Future;
 use resources_state::ResourcesState;
 use serde::{Deserialize, Serialize};
@@ -28,7 +28,7 @@ where
         target_input,
         target_output,
     )
-    .await?
+    .await
     {
         return Ok(IncrementalRunResult::Skipped);
     }
@@ -39,9 +39,17 @@ where
 
     if result.is_ok() {
         match TargetEnvState::current(target_input, target_output).await {
-            Ok(Some(env_state)) => storage::save_env_state(target, env_state).await?,
+            Ok(Some(env_state)) => {
+                if let Err(e) = storage::save_env_state(target, env_state).await {
+                    log::warn!(
+                        "{} - Failed to save state of inputs and outputs: {}",
+                        target,
+                        e
+                    )
+                }
+            }
             Ok(None) => {}
-            Err(e) => log::error!(
+            Err(e) => log::warn!(
                 "{} - Failed to compute state of inputs and outputs: {}",
                 target,
                 e
@@ -56,17 +64,13 @@ async fn env_state_has_not_changed_since_last_successful_execution(
     target: &TargetMetadata,
     target_input: &Resources,
     target_output: Option<&Resources>,
-) -> Result<bool> {
-    let saved_state = storage::read_saved_target_env_state(target)
-        .await
-        .with_context(|| format!("Failed to read saved env state for {}", target))?;
-
-    if let Some(saved_state) = saved_state {
-        Ok(saved_state
+) -> bool {
+    if let Some(saved_state) = storage::read_saved_target_env_state(target).await {
+        saved_state
             .eq_current_state(target_input, target_output)
-            .await)
+            .await
     } else {
-        Ok(false)
+        false
     }
 }
 
