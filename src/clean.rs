@@ -5,8 +5,10 @@ use async_std::path::Path;
 
 pub async fn clean_target_output_paths(target: &Target) -> Result<()> {
     if let Some(output) = target.output() {
-        for output_path in &output.paths {
-            clean_path(output_path).await?;
+        for resource in &output.files {
+            for output_path in &resource.paths {
+                clean_path(output_path).await?;
+            }
         }
     }
 

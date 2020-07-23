@@ -16,29 +16,31 @@ impl TargetWatcher {
         target_invalidated_sender: Sender<TargetInvalidatedMessage>,
     ) -> Result<Option<Self>> {
         if let Some(target_input) = target_input {
-            if !target_input.paths.is_empty() {
+            if !target_input.files.is_empty() {
                 let mut watcher =
                     Self::build_immediate_watcher(target_id.clone(), target_invalidated_sender)?;
 
-                for path in &target_input.paths {
-                    match watcher.watch(path, RecursiveMode::Recursive) {
-                        Ok(_) => {}
-                        Err(notify::Error {
-                            kind: ErrorKind::PathNotFound,
-                            ..
-                        }) => {
-                            log::warn!(
-                                "{} - Skipping watch on non-existing path: {}",
-                                target_id,
-                                path.display(),
-                            );
-                        }
-                        Err(e) => {
-                            return Err(Error::new(e).context(format!(
-                                "Error watching path {} for target {}",
-                                path.display(),
-                                target_id,
-                            )));
+                for files_resource in &target_input.files {
+                    for path in &files_resource.paths {
+                        match watcher.watch(path, RecursiveMode::Recursive) {
+                            Ok(_) => {}
+                            Err(notify::Error {
+                                kind: ErrorKind::PathNotFound,
+                                ..
+                            }) => {
+                                log::warn!(
+                                    "{} - Skipping watch on non-existing path: {}",
+                                    target_id,
+                                    path.display(),
+                                );
+                            }
+                            Err(e) => {
+                                return Err(Error::new(e).context(format!(
+                                    "Error watching path {} for target {}",
+                                    path.display(),
+                                    target_id,
+                                )));
+                            }
                         }
                     }
                 }

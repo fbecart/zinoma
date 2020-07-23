@@ -2,6 +2,7 @@ use super::yaml;
 use crate::domain::{self, TargetId};
 use anyhow::{anyhow, Result};
 use async_std::path::{Path, PathBuf};
+use domain::{CmdResource, FilesResource};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
@@ -220,10 +221,13 @@ fn transform_input(
             use yaml::InputResource::*;
             match resource {
                 Files { paths } => {
-                    let paths = paths.iter().map(|path| project_dir.join(path));
-                    input.paths.extend(paths)
+                    let paths = paths.iter().map(|path| project_dir.join(path)).collect();
+                    input.files.push(FilesResource { paths })
                 }
-                CmdStdout { cmd_stdout } => input.cmds.push((cmd_stdout, project_dir.to_owned())),
+                CmdStdout { cmd_stdout } => input.cmds.push(CmdResource {
+                    cmd: cmd_stdout,
+                    dir: project_dir.to_owned(),
+                }),
                 DependencyOutput(id) => {
                     lazy_static! {
                         static ref RE: Regex =
@@ -254,10 +258,13 @@ fn transform_output(output: yaml::OutputResources, project_dir: &Path) -> domain
             use yaml::OutputResource::*;
             match resource {
                 Files { paths } => {
-                    let paths = paths.iter().map(|path| project_dir.join(path));
-                    acc.paths.extend(paths)
+                    let paths = paths.iter().map(|path| project_dir.join(path)).collect();
+                    acc.files.push(FilesResource { paths })
                 }
-                CmdStdout { cmd_stdout } => acc.cmds.push((cmd_stdout, project_dir.to_owned())),
+                CmdStdout { cmd_stdout } => acc.cmds.push(CmdResource {
+                    cmd: cmd_stdout,
+                    dir: project_dir.to_owned(),
+                }),
             }
             acc
         })

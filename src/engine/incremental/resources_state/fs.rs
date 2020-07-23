@@ -1,4 +1,4 @@
-use crate::{async_utils::all, work_dir};
+use crate::{async_utils::all, domain::FilesResource, work_dir};
 use anyhow::{Context, Result};
 use async_std::fs::File;
 use async_std::io::BufReader;
@@ -18,8 +18,8 @@ use work_dir::is_work_dir;
 pub struct ResourcesState(HashMap<std::path::PathBuf, (Duration, u64)>);
 
 impl ResourcesState {
-    pub async fn current(paths: &[PathBuf]) -> Result<Self> {
-        let files = list_files_in_paths(paths).await;
+    pub async fn current(resources: &[FilesResource]) -> Result<Self> {
+        let files = list_files_in_resources(resources).await;
 
         let mut state = HashMap::with_capacity(files.len());
 
@@ -36,8 +36,8 @@ impl ResourcesState {
         Ok(Self(state))
     }
 
-    pub async fn eq_current_state(&self, paths: &[PathBuf]) -> bool {
-        let files = list_files_in_paths(paths).await;
+    pub async fn eq_current_state(&self, resources: &[FilesResource]) -> bool {
+        let files = list_files_in_resources(resources).await;
 
         if files.len() != self.0.len() {
             return false;
@@ -68,6 +68,18 @@ impl ResourcesState {
 
         all(futures).await
     }
+}
+
+async fn list_files_in_resources(resources: &[FilesResource]) -> HashSet<PathBuf> {
+    future::join_all(
+        resources
+            .iter()
+            .map(|resource| list_files_in_paths(&resource.paths)),
+    )
+    .await
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
 async fn list_files_in_paths(paths: &[PathBuf]) -> HashSet<PathBuf> {
