@@ -8,7 +8,6 @@ use crate::TerminationMessage;
 use anyhow::{Context, Result};
 use async_std::prelude::*;
 use async_std::sync::{self, Receiver};
-use async_std::task::JoinHandle;
 use futures::{future, FutureExt};
 use std::collections::{HashMap, HashSet};
 use target_actor::{
@@ -33,15 +32,32 @@ impl Engine {
         root_target_ids: Vec<TargetId>,
         termination_events: Receiver<TerminationMessage>,
     ) -> Result<()> {
+        let (target_actor_output_sender, target_actor_output_events) =
+            sync::channel(crate::DEFAULT_CHANNEL_CAP);
+
         let watch_option = self.watch_option;
-        let (target_actor_join_handles, target_actor_handles, target_actor_output_events) =
-            self.launch_target_actors()?;
+        let launch_target_actor = |(target_id, target)| {
+            target_actor::launch_target_actor(
+                target,
+                watch_option,
+                target_actor_output_sender.clone(),
+            )
+            .map(|(join_handle, handles)| ((target_id, handles), join_handle))
+        };
+
+        let (target_actor_handles, target_actor_join_handles): (HashMap<_, _>, Vec<_>) = self
+            .targets
+            .into_iter()
+            .map(launch_target_actor)
+            .collect::<Result<Vec<_>>>()?
+            .into_iter()
+            .unzip();
 
         for target_id in &root_target_ids {
             Self::request_target(&target_actor_handles[target_id]).await
         }
 
-        let result = match watch_option {
+        let result = match self.watch_option {
             WatchOption::Enabled => {
                 Self::watch(
                     termination_events,
@@ -146,35 +162,6 @@ impl Engine {
         }
 
         Ok(())
-    }
-
-    fn launch_target_actors(
-        self,
-    ) -> Result<(
-        Vec<JoinHandle<()>>,
-        HashMap<TargetId, TargetActorHandleSet>,
-        Receiver<TargetActorOutputMessage>,
-    )> {
-        let (target_actor_output_sender, target_actor_output_events) =
-            sync::channel(crate::DEFAULT_CHANNEL_CAP);
-
-        let mut target_actor_handles = HashMap::with_capacity(self.targets.len());
-        let mut join_handles = Vec::with_capacity(self.targets.len());
-        for (target_id, target) in self.targets.into_iter() {
-            let (join_handle, handles) = target_actor::launch_target_actor(
-                target,
-                self.watch_option,
-                target_actor_output_sender.clone(),
-            )?;
-            join_handles.push(join_handle);
-            target_actor_handles.insert(target_id, handles);
-        }
-
-        Ok((
-            join_handles,
-            target_actor_handles,
-            target_actor_output_events,
-        ))
     }
 
     async fn send_termination_message(
