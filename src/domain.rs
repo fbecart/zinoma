@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use async_std::path::{Path, PathBuf};
+use async_std::path::PathBuf;
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -9,7 +9,13 @@ pub struct TargetMetadata {
     pub dependencies: Vec<TargetId>,
 }
 
-#[derive(Debug, Clone)]
+impl fmt::Display for TargetMetadata {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "{}", self.id)
+    }
+}
+
+#[derive(Debug)]
 pub struct BuildTarget {
     pub metadata: TargetMetadata,
     pub build_script: String,
@@ -23,7 +29,7 @@ impl fmt::Display for BuildTarget {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ServiceTarget {
     pub metadata: TargetMetadata,
     pub run_script: String,
@@ -36,12 +42,12 @@ impl fmt::Display for ServiceTarget {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct AggregateTarget {
     pub metadata: TargetMetadata,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Target {
     Build(BuildTarget),
     Service(ServiceTarget),
@@ -49,7 +55,7 @@ pub enum Target {
 }
 
 impl Target {
-    fn metadata(&self) -> &TargetMetadata {
+    pub fn metadata(&self) -> &TargetMetadata {
         match self {
             Target::Build(target) => &target.metadata,
             Target::Service(target) => &target.metadata,
@@ -59,10 +65,6 @@ impl Target {
 
     pub fn id(&self) -> &TargetId {
         &self.metadata().id
-    }
-
-    pub fn project_dir(&self) -> &Path {
-        &self.metadata().project_dir
     }
 
     pub fn dependencies(&self) -> &Vec<TargetId> {

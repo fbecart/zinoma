@@ -1,0 +1,5 @@
+targets:
+  incorrect_input:
+    input:
+      - cmd_stdout: unknown_command
+    build: echo "Executing target with uncomputable input"

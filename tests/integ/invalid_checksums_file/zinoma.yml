@@ -1,0 +1,5 @@
+targets:
+  invalid_checksums_file:
+    input:
+      - cmd_stdout: echo "Constant input"
+    build: echo "Executing target with invalid checksums file"

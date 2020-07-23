@@ -1,4 +1,4 @@
-#![recursion_limit = "256"]
+#![recursion_limit = "1024"]
 
 mod async_utils;
 mod clean;
@@ -73,7 +73,7 @@ fn main() -> Result<()> {
         if arg_matches.is_present(cli::arg::CLEAN) {
             if requested_targets.is_some() {
                 for target in targets.values() {
-                    delete_saved_env_state(target).await?;
+                    delete_saved_env_state(target.metadata()).await?;
                 }
             } else {
                 for project_dir in project_dirs {
@@ -88,20 +88,11 @@ fn main() -> Result<()> {
         }
 
         if requested_targets.is_some() {
-            let engine = Engine::new(targets, root_target_ids);
             let termination_events = terminate_on_ctrlc()?;
 
-            if arg_matches.is_present(cli::arg::WATCH) {
-                engine
-                    .watch(termination_events)
-                    .await
-                    .with_context(|| "Watch error")?;
-            } else {
-                engine
-                    .build(termination_events)
-                    .await
-                    .with_context(|| "Build error")?;
-            };
+            Engine::new(targets, arg_matches.is_present(cli::arg::WATCH).into())
+                .run(root_target_ids, termination_events)
+                .await?;
         }
 
         Ok(())
@@ -115,12 +106,10 @@ fn terminate_on_ctrlc() -> Result<Receiver<TerminationMessage>> {
     task::spawn(async move {
         ctrlc.await;
         log::debug!("Ctrl-C received");
-        termination_sender.send(TerminationMessage::Terminate).await;
+        termination_sender.send(TerminationMessage).await;
     });
 
     Ok(termination_events)
 }
 
-pub enum TerminationMessage {
-    Terminate,
-}
+pub struct TerminationMessage;

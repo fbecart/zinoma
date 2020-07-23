@@ -3,7 +3,6 @@ use crate::work_dir;
 use anyhow::{Context, Error, Result};
 use async_std::path::{Path, PathBuf};
 use async_std::sync::Sender;
-use async_std::task;
 use notify::{ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
 
 pub struct TargetWatcher {
@@ -11,45 +10,40 @@ pub struct TargetWatcher {
 }
 
 impl TargetWatcher {
-    pub async fn new(
+    pub fn new(
         target_id: TargetId,
         target_input: Option<Resources>,
-        target_invalidated_sender: Sender<TargetId>,
+        target_invalidated_sender: Sender<TargetInvalidatedMessage>,
     ) -> Result<Option<Self>> {
         if let Some(target_input) = target_input {
             if !target_input.paths.is_empty() {
-                return task::spawn_blocking(move || {
-                    let mut watcher = Self::build_immediate_watcher(
-                        target_id.clone(),
-                        target_invalidated_sender,
-                    )?;
+                let mut watcher =
+                    Self::build_immediate_watcher(target_id.clone(), target_invalidated_sender)?;
 
-                    for path in &target_input.paths {
-                        match watcher.watch(path, RecursiveMode::Recursive) {
-                            Ok(_) => {}
-                            Err(notify::Error {
-                                kind: ErrorKind::PathNotFound,
-                                ..
-                            }) => {
-                                log::warn!(
-                                    "{} - Skipping watch on non-existing path: {}",
-                                    target_id,
-                                    path.display(),
-                                );
-                            }
-                            Err(e) => {
-                                return Err(Error::new(e).context(format!(
-                                    "Error watching path {} for target {}",
-                                    path.display(),
-                                    target_id,
-                                )));
-                            }
+                for path in &target_input.paths {
+                    match watcher.watch(path, RecursiveMode::Recursive) {
+                        Ok(_) => {}
+                        Err(notify::Error {
+                            kind: ErrorKind::PathNotFound,
+                            ..
+                        }) => {
+                            log::warn!(
+                                "{} - Skipping watch on non-existing path: {}",
+                                target_id,
+                                path.display(),
+                            );
+                        }
+                        Err(e) => {
+                            return Err(Error::new(e).context(format!(
+                                "Error watching path {} for target {}",
+                                path.display(),
+                                target_id,
+                            )));
                         }
                     }
+                }
 
-                    Ok(Some(Self { _watcher: watcher }))
-                })
-                .await;
+                return Ok(Some(Self { _watcher: watcher }));
             }
         }
 
@@ -58,16 +52,32 @@ impl TargetWatcher {
 
     fn build_immediate_watcher(
         target_id: TargetId,
-        target_invalidated_sender: Sender<TargetId>,
+        target_invalidated_sender: Sender<TargetInvalidatedMessage>,
     ) -> Result<RecommendedWatcher> {
         Watcher::new_immediate(move |result: notify::Result<notify::Event>| {
-            let some_paths_are_relevant = result.unwrap().paths.into_iter().any(|path| {
-                let path: PathBuf = path.into();
-                !is_tmp_editor_file(&path) && !work_dir::is_in_work_dir(&path)
-            });
+            let relevant_paths = result
+                .unwrap()
+                .paths
+                .into_iter()
+                .filter(|path| {
+                    let path: PathBuf = path.into();
+                    !is_tmp_editor_file(&path) && !work_dir::is_in_work_dir(&path)
+                })
+                .collect::<Vec<_>>();
 
-            if some_paths_are_relevant {
-                task::block_on(target_invalidated_sender.send(target_id.clone()))
+            if !relevant_paths.is_empty() {
+                let target_id = target_id.clone();
+                log::trace!(
+                    "{} - Invalidated by {}",
+                    &target_id,
+                    itertools::join(relevant_paths.iter().flat_map(|path| path.to_str()), ", ")
+                );
+                if target_invalidated_sender
+                    .try_send(TargetInvalidatedMessage)
+                    .is_err()
+                {
+                    log::trace!("{} - Target already invalidated. Skipping.", &target_id);
+                }
             }
         })
         .with_context(|| "Error creating watcher")
@@ -88,6 +98,8 @@ fn is_tmp_editor_file(file_path: &Path) -> bool {
 
     false
 }
+
+pub struct TargetInvalidatedMessage;
 
 #[cfg(test)]
 mod is_tmp_editor_file_tests {

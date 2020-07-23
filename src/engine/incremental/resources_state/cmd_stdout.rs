@@ -46,10 +46,6 @@ async fn get_cmd_stdout(cmd: &str, dir: &Path) -> Result<String> {
     if output.status.success() {
         Ok(String::from_utf8_lossy(output.stdout.as_slice()).to_string())
     } else {
-        Err(anyhow!(
-            "Command {} return error code {}",
-            cmd,
-            output.status
-        ))
+        Err(anyhow!("Command {} returned {}", cmd, output.status))
     }
 }
