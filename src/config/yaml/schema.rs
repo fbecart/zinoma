@@ -274,7 +274,7 @@ pub enum Target {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(untagged)]
+#[serde(deny_unknown_fields, untagged)]
 pub enum InputResource {
     /// Output resources of another target.
     ///
@@ -356,7 +356,7 @@ pub enum InputResource {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(untagged)]
+#[serde(deny_unknown_fields, untagged)]
 pub enum OutputResource {
     Paths {
         /// Paths to files or directories.
