@@ -183,7 +183,7 @@ fn build_failure() {
         .assert()
         .failure()
         .stderr(contains("An issue occurred with target incorrect_target"))
-        .stderr(contains("Build failed with exit code: 127"));
+        .stderr(contains("Build failed"));
 }
 
 #[test]
