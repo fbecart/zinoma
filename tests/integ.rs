@@ -193,7 +193,9 @@ fn input_failure() {
         .success()
         .stdout(contains("Executing target with uncomputable input"))
         .stderr(contains("INFO - incorrect_input - Build success"))
-        .stderr(contains("WARN - incorrect_input - Failed to compute state of inputs and outputs: Command unknown_command return error code exit code: 127"));
+        .stderr(contains(
+            "WARN - incorrect_input - Failed to compute state of inputs and outputs",
+        ));
 }
 
 #[test]
