@@ -2,6 +2,10 @@
 
 ## TBD
 
+## 0.18.0 (2020-07-23)
+
+This release does not bring any new feature.
+
 Performance improvements:
 
 - [PERF #58](https://github.com/fbecart/zinoma/pull/58) Set up actors model.
