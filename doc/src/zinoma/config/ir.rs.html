@@ -686,7 +686,7 @@
                                 .<span class="ident">into_iter</span>()
                                 .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">ext</span><span class="op">|</span> <span class="op">!</span><span class="ident">ext</span>.<span class="ident">is_empty</span>())
                                 .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ext</span><span class="op">|</span> {
-                                    <span class="kw">if</span> <span class="ident">ext</span>.<span class="ident">starts_with</span>(<span class="string">&quot;.&quot;</span>) {
+                                    <span class="kw">if</span> <span class="ident">ext</span>.<span class="ident">starts_with</span>(<span class="string">&#39;.&#39;</span>) {
                                         <span class="ident">ext</span>
                                     } <span class="kw">else</span> {
                                         <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;.{}&quot;</span>, <span class="ident">ext</span>)
