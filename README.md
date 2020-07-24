@@ -145,7 +145,9 @@ targets:
   lint:
     input:
       - node_dependencies.output
-      - paths: [package.json, src, test]
+      - paths: [package.json]
+      - paths: [src, test]
+        extensions: [js]
     build: npm run lint
 
   check:
