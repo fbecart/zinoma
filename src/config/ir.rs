@@ -228,7 +228,7 @@ fn transform_input(
                                 .into_iter()
                                 .filter(|ext| !ext.is_empty())
                                 .map(|ext| {
-                                    if ext.starts_with(".") {
+                                    if ext.starts_with('.') {
                                         ext
                                     } else {
                                         format!(".{}", ext)
