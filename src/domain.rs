@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use async_std::path::PathBuf;
+use std::collections::BTreeSet;
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -162,25 +163,46 @@ impl fmt::Display for TargetId {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Resources {
+pub struct FilesResource {
     pub paths: Vec<PathBuf>,
-    pub cmds: Vec<(String, PathBuf)>,
+    pub extensions: FileExtensions,
+}
+
+pub type FileExtensions = Option<BTreeSet<String>>;
+
+pub fn matches_extensions(file: &std::path::Path, extensions: &FileExtensions) -> bool {
+    extensions.as_ref().map_or(true, |extensions| {
+        let file_name = file.file_name().unwrap().to_string_lossy();
+        extensions.iter().any(|ext| file_name.ends_with(ext))
+    })
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct CmdResource {
+    pub cmd: String,
+    pub dir: PathBuf,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Resources {
+    pub files: Vec<FilesResource>,
+    pub cmds: Vec<CmdResource>,
 }
 
 impl Resources {
     pub fn new() -> Self {
         Self {
-            paths: vec![],
+            files: vec![],
             cmds: vec![],
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.paths.is_empty() && self.cmds.is_empty()
+        self.files.is_empty() && self.cmds.is_empty()
     }
 
     pub fn extend(&mut self, other: &Resources) {
-        self.paths.extend_from_slice(&other.paths);
+        self.files.extend_from_slice(&other.files);
         self.cmds.extend_from_slice(&other.cmds);
     }
 }

@@ -90,11 +90,9 @@ pub fn launch_target_actor(
         sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
     let watcher = match watch_option {
-        WatchOption::Enabled => TargetWatcher::new(
-            target.id().clone(),
-            target.input().cloned(),
-            target_invalidated_sender.clone(),
-        )?,
+        WatchOption::Enabled => {
+            TargetWatcher::new(target.id(), target.input(), &target_invalidated_sender)?
+        }
         WatchOption::Disabled => None,
     };
 

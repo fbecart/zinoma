@@ -2,9 +2,10 @@ use super::yaml;
 use crate::domain::{self, TargetId};
 use anyhow::{anyhow, Result};
 use async_std::path::{Path, PathBuf};
+use domain::{CmdResource, FilesResource};
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 pub struct Config {
     pub root_project_name: Option<String>,
@@ -219,11 +220,29 @@ fn transform_input(
 
             use yaml::InputResource::*;
             match resource {
-                Paths { paths } => {
-                    let paths = paths.iter().map(|path| project_dir.join(path));
-                    input.paths.extend(paths)
+                Files { paths, extensions } => {
+                    let paths = paths.iter().map(|path| project_dir.join(path)).collect();
+                    let extensions = extensions
+                        .map(|extensions| {
+                            extensions
+                                .into_iter()
+                                .filter(|ext| !ext.is_empty())
+                                .map(|ext| {
+                                    if ext.starts_with(".") {
+                                        ext
+                                    } else {
+                                        format!(".{}", ext)
+                                    }
+                                })
+                                .collect::<BTreeSet<_>>()
+                        })
+                        .filter(|extensions| !extensions.is_empty());
+                    input.files.push(FilesResource { paths, extensions })
                 }
-                CmdStdout { cmd_stdout } => input.cmds.push((cmd_stdout, project_dir.to_owned())),
+                CmdStdout { cmd_stdout } => input.cmds.push(CmdResource {
+                    cmd: cmd_stdout,
+                    dir: project_dir.to_owned(),
+                }),
                 DependencyOutput(id) => {
                     lazy_static! {
                         static ref RE: Regex =
@@ -253,11 +272,14 @@ fn transform_output(output: yaml::OutputResources, project_dir: &Path) -> domain
         .fold(domain::Resources::new(), |mut acc, resource| {
             use yaml::OutputResource::*;
             match resource {
-                Paths { paths } => {
-                    let paths = paths.iter().map(|path| project_dir.join(path));
-                    acc.paths.extend(paths)
-                }
-                CmdStdout { cmd_stdout } => acc.cmds.push((cmd_stdout, project_dir.to_owned())),
+                Files { paths } => acc.files.push(FilesResource {
+                    paths: paths.iter().map(|path| project_dir.join(path)).collect(),
+                    extensions: None,
+                }),
+                CmdStdout { cmd_stdout } => acc.cmds.push(CmdResource {
+                    cmd: cmd_stdout,
+                    dir: project_dir.to_owned(),
+                }),
             }
             acc
         })
@@ -300,7 +322,7 @@ mod tests {
         let config = build_config(vec![
             (
                 "target_1",
-                build_target_with_output(vec![yaml::OutputResource::Paths {
+                build_target_with_output(vec![yaml::OutputResource::Files {
                     paths: vec!["output.txt".to_string()],
                 }]),
             ),

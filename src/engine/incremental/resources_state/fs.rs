@@ -1,15 +1,19 @@
-use crate::{async_utils::all, work_dir};
+use crate::async_utils::all;
+use crate::domain::{self, FilesResource};
+use crate::work_dir;
 use anyhow::{Context, Result};
 use async_std::fs::File;
 use async_std::io::BufReader;
 use async_std::path::{Path, PathBuf};
 use async_std::prelude::*;
 use async_std::task;
+use domain::FileExtensions;
 use futures::future;
 use seahash::SeaHasher;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::hash::Hasher;
+use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use walkdir::WalkDir;
 use work_dir::is_work_dir;
@@ -18,8 +22,8 @@ use work_dir::is_work_dir;
 pub struct ResourcesState(HashMap<std::path::PathBuf, (Duration, u64)>);
 
 impl ResourcesState {
-    pub async fn current(paths: &[PathBuf]) -> Result<Self> {
-        let files = list_files_in_paths(paths).await;
+    pub async fn current(resources: &[FilesResource]) -> Result<Self> {
+        let files = list_files_in_resources(resources).await;
 
         let mut state = HashMap::with_capacity(files.len());
 
@@ -36,8 +40,8 @@ impl ResourcesState {
         Ok(Self(state))
     }
 
-    pub async fn eq_current_state(&self, paths: &[PathBuf]) -> bool {
-        let files = list_files_in_paths(paths).await;
+    pub async fn eq_current_state(&self, resources: &[FilesResource]) -> bool {
+        let files = list_files_in_resources(resources).await;
 
         if files.len() != self.0.len() {
             return false;
@@ -70,18 +74,35 @@ impl ResourcesState {
     }
 }
 
-async fn list_files_in_paths(paths: &[PathBuf]) -> HashSet<PathBuf> {
-    future::join_all(paths.iter().map(|path| list_files_in_path(path)))
-        .await
-        .into_iter()
-        .flatten()
-        .collect()
+async fn list_files_in_resources(resources: &[FilesResource]) -> HashSet<PathBuf> {
+    future::join_all(
+        resources
+            .iter()
+            .map(|resource| list_files_in_paths(&resource.paths, &resource.extensions)),
+    )
+    .await
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
-async fn list_files_in_path(path: &Path) -> Vec<PathBuf> {
+async fn list_files_in_paths(paths: &[PathBuf], extensions: &FileExtensions) -> HashSet<PathBuf> {
+    future::join_all(
+        paths
+            .iter()
+            .map(|path| list_files_in_path(path, extensions)),
+    )
+    .await
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
+async fn list_files_in_path(path: &Path, extensions: &FileExtensions) -> Vec<PathBuf> {
     let walkdir = WalkDir::new(path);
 
-    task::spawn_blocking(|| {
+    let extensions = Arc::from(extensions.clone());
+    task::spawn_blocking(move || {
         walkdir
             .into_iter()
             .filter_entry(|e| !is_work_dir(e))
@@ -94,6 +115,7 @@ async fn list_files_in_path(path: &Path) -> Vec<PathBuf> {
                     let path = entry.into_path();
                     Some(path)
                         .filter(|path| path.is_file())
+                        .filter(|file| domain::matches_extensions(file, extensions.as_ref()))
                         .map(|path| path.into())
                 }
             })

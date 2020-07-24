@@ -274,7 +274,7 @@ pub enum Target {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(untagged)]
+#[serde(deny_unknown_fields, untagged)]
 pub enum InputResource {
     /// Output resources of another target.
     ///
@@ -314,7 +314,7 @@ pub enum InputResource {
     ///     service: node dist/index.js
     /// ```
     DependencyOutput(String),
-    Paths {
+    Files {
         /// Paths to files or directories.
         ///
         /// It should be an array of strings.
@@ -333,6 +333,22 @@ pub enum InputResource {
         ///     build: npm install
         /// ```
         paths: Vec<String>,
+        /// Filter files resource by file extensions.
+        ///
+        /// It should be an array of strings.
+        ///
+        /// If `extensions` are specified, only files matching at least one of the extensions will be included in the resource.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   fmt:
+        ///     input:
+        ///       - paths: [src, tests]
+        ///         extensions: [rs]
+        ///     build: exec cargo fmt --all -- --check
+        extensions: Option<Vec<String>>,
     },
     CmdStdout {
         /// Shell script whose output identifies the state of a resource.
@@ -356,9 +372,9 @@ pub enum InputResource {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(untagged)]
+#[serde(deny_unknown_fields, untagged)]
 pub enum OutputResource {
-    Paths {
+    Files {
         /// Paths to files or directories.
         ///
         /// It should be an array of strings.

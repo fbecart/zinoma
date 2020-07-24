@@ -1,0 +1,11 @@
+targets:
+  cp_src_csv_to_dist:
+    input:
+      - paths: [src]
+        extensions: [csv]
+    output:
+      - paths: [dist]
+    build: |
+      rm -rf dist
+      mkdir dist
+      cp src/*.csv dist
