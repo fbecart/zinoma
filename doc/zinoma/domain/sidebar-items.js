@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Target",""]],"struct":[["AggregateTarget",""],["BuildTarget",""],["Resources",""],["ServiceTarget",""],["TargetId",""],["TargetMetadata",""]]});
+initSidebarItems({"enum":[["Target",""]],"fn":[["matches_extensions",""]],"struct":[["AggregateTarget",""],["BuildTarget",""],["CmdResource",""],["FilesResource",""],["Resources",""],["ServiceTarget",""],["TargetId",""],["TargetMetadata",""]],"type":[["FileExtensions",""]]});

@@ -493,6 +493,22 @@
 <span id="493">493</span>
 <span id="494">494</span>
 <span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">schemars</span>::<span class="ident">JsonSchema</span>;
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
@@ -770,7 +786,7 @@
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
-<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">untagged</span>)]</span>
+<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>, <span class="ident">untagged</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">InputResource</span> {
     <span class="doccomment">/// Output resources of another target.</span>
     <span class="doccomment">///</span>
@@ -810,7 +826,7 @@
     <span class="doccomment">///     service: node dist/index.js</span>
     <span class="doccomment">/// ```</span>
     <span class="ident">DependencyOutput</span>(<span class="ident">String</span>),
-    <span class="ident">Paths</span> {
+    <span class="ident">Files</span> {
         <span class="doccomment">/// Paths to files or directories.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// It should be an array of strings.</span>
@@ -829,6 +845,22 @@
         <span class="doccomment">///     build: npm install</span>
         <span class="doccomment">/// ```</span>
         <span class="ident">paths</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
+        <span class="doccomment">/// Filter files resource by file extensions.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// It should be an array of strings.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// If `extensions` are specified, only files matching at least one of the extensions will be included in the resource.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// __Example__</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// ```yaml</span>
+        <span class="doccomment">/// targets:</span>
+        <span class="doccomment">///   fmt:</span>
+        <span class="doccomment">///     input:</span>
+        <span class="doccomment">///       - paths: [src, tests]</span>
+        <span class="doccomment">///         extensions: [rs]</span>
+        <span class="doccomment">///     build: exec cargo fmt --all -- --check</span>
+        <span class="ident">extensions</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     },
     <span class="ident">CmdStdout</span> {
         <span class="doccomment">/// Shell script whose output identifies the state of a resource.</span>
@@ -852,9 +884,9 @@
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
-<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">untagged</span>)]</span>
+<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>, <span class="ident">untagged</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">OutputResource</span> {
-    <span class="ident">Paths</span> {
+    <span class="ident">Files</span> {
         <span class="doccomment">/// Paths to files or directories.</span>
         <span class="doccomment">///</span>
         <span class="doccomment">/// It should be an array of strings.</span>

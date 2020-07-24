@@ -52,7 +52,7 @@
 <span class="kw">impl</span> <span class="ident">ResourcesState</span> {
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">current</span>(<span class="ident">resources</span>: <span class="kw-2">&amp;</span><span class="ident">Resources</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
         <span class="kw">let</span> (<span class="ident">fs</span>, <span class="ident">cmd_stdout</span>) <span class="op">=</span> <span class="ident">future</span>::<span class="ident">join</span>(
-            <span class="ident">fs</span>::<span class="ident">ResourcesState</span>::<span class="ident">current</span>(<span class="kw-2">&amp;</span><span class="ident">resources</span>.<span class="ident">paths</span>),
+            <span class="ident">fs</span>::<span class="ident">ResourcesState</span>::<span class="ident">current</span>(<span class="kw-2">&amp;</span><span class="ident">resources</span>.<span class="ident">files</span>),
             <span class="ident">cmd_stdout</span>::<span class="ident">ResourcesState</span>::<span class="ident">current</span>(<span class="kw-2">&amp;</span><span class="ident">resources</span>.<span class="ident">cmds</span>),
         )
         .<span class="kw">await</span>;
@@ -65,7 +65,7 @@
 
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">eq_current_state</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">resources</span>: <span class="kw-2">&amp;</span><span class="ident">Resources</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
         <span class="ident">both</span>(
-            <span class="self">self</span>.<span class="ident">fs</span>.<span class="ident">eq_current_state</span>(<span class="kw-2">&amp;</span><span class="ident">resources</span>.<span class="ident">paths</span>),
+            <span class="self">self</span>.<span class="ident">fs</span>.<span class="ident">eq_current_state</span>(<span class="kw-2">&amp;</span><span class="ident">resources</span>.<span class="ident">files</span>),
             <span class="self">self</span>.<span class="ident">cmd_stdout</span>.<span class="ident">eq_current_state</span>(<span class="kw-2">&amp;</span><span class="ident">resources</span>.<span class="ident">cmds</span>),
         )
         .<span class="kw">await</span>

@@ -142,8 +142,6 @@
 <span id="142">142</span>
 <span id="143">143</span>
 <span id="144">144</span>
-<span id="145">145</span>
-<span id="146">146</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">mod</span> <span class="ident">aggregate_target_actor</span>;
 <span class="kw">mod</span> <span class="ident">build_target_actor</span>;
@@ -237,11 +235,9 @@
         <span class="ident">sync</span>::<span class="ident">channel</span>(<span class="kw">crate</span>::<span class="ident">DEFAULT_CHANNEL_CAP</span>);
 
     <span class="kw">let</span> <span class="ident">watcher</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">watch_option</span> {
-        <span class="ident">WatchOption</span>::<span class="ident">Enabled</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">TargetWatcher</span>::<span class="ident">new</span>(
-            <span class="ident">target</span>.<span class="ident">id</span>().<span class="ident">clone</span>(),
-            <span class="ident">target</span>.<span class="ident">input</span>().<span class="ident">cloned</span>(),
-            <span class="ident">target_invalidated_sender</span>.<span class="ident">clone</span>(),
-        )<span class="question-mark">?</span>,
+        <span class="ident">WatchOption</span>::<span class="ident">Enabled</span> <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="ident">TargetWatcher</span>::<span class="ident">new</span>(<span class="ident">target</span>.<span class="ident">id</span>(), <span class="ident">target</span>.<span class="ident">input</span>(), <span class="kw-2">&amp;</span><span class="ident">target_invalidated_sender</span>)<span class="question-mark">?</span>
+        }
         <span class="ident">WatchOption</span>::<span class="ident">Disabled</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">None</span>,
     };
 
