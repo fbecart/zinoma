@@ -5,7 +5,7 @@ use async_std::path::{Path, PathBuf};
 use domain::{CmdResource, FilesResource};
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 pub struct Config {
     pub root_project_name: Option<String>,
@@ -220,9 +220,24 @@ fn transform_input(
 
             use yaml::InputResource::*;
             match resource {
-                Files { paths } => {
+                Files { paths, extensions } => {
                     let paths = paths.iter().map(|path| project_dir.join(path)).collect();
-                    input.files.push(FilesResource { paths })
+                    let extensions = extensions
+                        .map(|extensions| {
+                            extensions
+                                .into_iter()
+                                .filter(|ext| !ext.is_empty())
+                                .map(|ext| {
+                                    if ext.starts_with(".") {
+                                        ext
+                                    } else {
+                                        format!(".{}", ext)
+                                    }
+                                })
+                                .collect::<BTreeSet<_>>()
+                        })
+                        .filter(|extensions| !extensions.is_empty());
+                    input.files.push(FilesResource { paths, extensions })
                 }
                 CmdStdout { cmd_stdout } => input.cmds.push(CmdResource {
                     cmd: cmd_stdout,
@@ -257,10 +272,10 @@ fn transform_output(output: yaml::OutputResources, project_dir: &Path) -> domain
         .fold(domain::Resources::new(), |mut acc, resource| {
             use yaml::OutputResource::*;
             match resource {
-                Files { paths } => {
-                    let paths = paths.iter().map(|path| project_dir.join(path)).collect();
-                    acc.files.push(FilesResource { paths })
-                }
+                Files { paths } => acc.files.push(FilesResource {
+                    paths: paths.iter().map(|path| project_dir.join(path)).collect(),
+                    extensions: None,
+                }),
                 CmdStdout { cmd_stdout } => acc.cmds.push(CmdResource {
                     cmd: cmd_stdout,
                     dir: project_dir.to_owned(),

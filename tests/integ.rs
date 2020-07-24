@@ -215,6 +215,46 @@ fn invalid_checksums_file() {
         .stderr(contains("invalid_checksums_file - Build success"));
 }
 
+#[test]
+fn paths_input_resource_with_extensions() {
+    let csv_src_file_name = "tests/integ/paths_input_resource_with_extensions/src/1.csv";
+    let txt_src_file_name = "tests/integ/paths_input_resource_with_extensions/src/2.txt";
+
+    fs::write(csv_src_file_name, "1,2,3").unwrap();
+    fs::write(txt_src_file_name, "Hello Žinoma!").unwrap();
+
+    zinoma_command(
+        "paths_input_resource_with_extensions",
+        &["cp_src_csv_to_dist", "--clean"],
+    )
+    .assert()
+    .success()
+    .stderr(contains("cp_src_csv_to_dist - Build success"));
+
+    fs::write(txt_src_file_name, "Foobar").unwrap();
+
+    zinoma_command(
+        "paths_input_resource_with_extensions",
+        &["cp_src_csv_to_dist"],
+    )
+    .assert()
+    .success()
+    .stderr(contains("cp_src_csv_to_dist - Build skipped"));
+
+    fs::write(csv_src_file_name, "a,b,c").unwrap();
+
+    zinoma_command(
+        "paths_input_resource_with_extensions",
+        &["cp_src_csv_to_dist"],
+    )
+    .assert()
+    .success()
+    .stderr(contains("cp_src_csv_to_dist - Build success"));
+
+    fs::write(csv_src_file_name, "1,2,3").unwrap();
+    fs::write(txt_src_file_name, "Hello Žinoma!").unwrap();
+}
+
 fn zinoma_command<I, S>(integ_test_dir_name: &str, args: I) -> Command
 where
     I: IntoIterator<Item = S>,

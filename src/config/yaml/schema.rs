@@ -333,6 +333,22 @@ pub enum InputResource {
         ///     build: npm install
         /// ```
         paths: Vec<String>,
+        /// Filter files resource by file extensions.
+        ///
+        /// It should be an array of strings.
+        ///
+        /// If `extensions` are specified, only files matching at least one of the extensions will be included in the resource.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   fmt:
+        ///     input:
+        ///       - paths: [src, tests]
+        ///         extensions: [rs]
+        ///     build: exec cargo fmt --all -- --check
+        extensions: Option<Vec<String>>,
     },
     CmdStdout {
         /// Shell script whose output identifies the state of a resource.

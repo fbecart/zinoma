@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use async_std::path::PathBuf;
+use std::collections::BTreeSet;
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -164,6 +165,16 @@ impl fmt::Display for TargetId {
 #[derive(Debug, PartialEq, Clone)]
 pub struct FilesResource {
     pub paths: Vec<PathBuf>,
+    pub extensions: FileExtensions,
+}
+
+pub type FileExtensions = Option<BTreeSet<String>>;
+
+pub fn matches_extensions(file: &std::path::Path, extensions: &FileExtensions) -> bool {
+    extensions.as_ref().map_or(true, |extensions| {
+        let file_name = file.file_name().unwrap().to_string_lossy();
+        extensions.iter().any(|ext| file_name.ends_with(ext))
+    })
 }
 
 #[derive(Debug, PartialEq, Clone)]
