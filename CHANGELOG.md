@@ -2,6 +2,10 @@
 
 ## TBD
 
+Feature enhancements:
+
+- [FEATURE #59](https://github.com/fbecart/zinoma/issues/59) Filter input files resources by extensions.
+
 ## 0.18.2 (2020-07-23)
 
 This release was necessary to compensate for failed publications due to [a forced renewal of the crates.io API Token](https://blog.rust-lang.org/2020/07/14/crates-io-security-advisory.html) which broke the release process for 0.18.0 and 0.18.1.
