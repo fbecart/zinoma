@@ -2,6 +2,8 @@
 
 ## TBD
 
+## 0.19.0 (2020-07-24)
+
 Feature enhancements:
 
 - [FEATURE #59](https://github.com/fbecart/zinoma/issues/59) Filter input files resources by extensions.
