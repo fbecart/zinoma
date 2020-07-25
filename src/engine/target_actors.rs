@@ -25,15 +25,12 @@ impl TargetActors {
         target_actor_output_sender: Sender<TargetActorOutputMessage>,
         watch_option: WatchOption,
     ) -> Self {
-        let target_actor_handles = HashMap::new();
-        let target_actor_join_handles = Vec::new();
-
         Self {
             targets,
             target_actor_output_sender,
             watch_option,
-            target_actor_handles,
-            target_actor_join_handles,
+            target_actor_handles: HashMap::new(),
+            target_actor_join_handles: Vec::new(),
         }
     }
 

@@ -1,4 +1,4 @@
-pub mod builder;
+mod builder;
 pub mod incremental;
 mod target_actor;
 mod target_actors;
