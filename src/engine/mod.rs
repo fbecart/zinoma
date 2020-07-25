@@ -37,11 +37,11 @@ impl Engine {
         let (target_actor_output_sender, target_actor_output_events) =
             sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
-        let target_actors =
-            TargetActors::launch(self.targets, target_actor_output_sender, self.watch_option)?;
+        let mut target_actors =
+            TargetActors::new(self.targets, target_actor_output_sender, self.watch_option)?;
 
         for target_id in &root_target_ids {
-            target_actors.request_target(target_id).await;
+            target_actors.request_target(target_id).await?;
         }
 
         let result = match self.watch_option {
@@ -49,17 +49,16 @@ impl Engine {
                 Self::watch(
                     termination_events,
                     target_actor_output_events,
-                    &target_actors,
+                    &mut target_actors,
                 )
-                .await;
-                Ok(())
+                .await
             }
             WatchOption::Disabled => {
                 Self::execute_once(
                     &root_target_ids,
                     termination_events,
                     target_actor_output_events,
-                    &target_actors,
+                    &mut target_actors,
                 )
                 .await
             }
@@ -73,8 +72,8 @@ impl Engine {
     async fn watch(
         mut termination_events: Receiver<TerminationMessage>,
         mut target_actor_output_events: Receiver<TargetActorOutputMessage>,
-        target_actors: &TargetActors,
-    ) {
+        target_actors: &mut TargetActors,
+    ) -> Result<()> {
         loop {
             futures::select! {
                 _ = termination_events.next().fuse() => break,
@@ -85,20 +84,22 @@ impl Engine {
                         },
                         TargetActorOutputMessage::MessageActor { dest, msg } => {
                             if let ActorId::Target(target_id) = dest {
-                                target_actors.send(&target_id, msg).await;
+                                target_actors.send(&target_id, msg).await?;
                             }
                         }
                     }
                 }
             }
         }
+
+        Ok(())
     }
 
     async fn execute_once(
         root_target_ids: &[TargetId],
         mut termination_events: Receiver<TerminationMessage>,
         mut target_actor_output_events: Receiver<TargetActorOutputMessage>,
-        target_actors: &TargetActors,
+        target_actors: &mut TargetActors,
     ) -> Result<()> {
         let unavailable_root_targets = root_target_ids.iter().cloned().collect::<HashSet<_>>();
         let mut unavailable_root_builds = unavailable_root_targets.clone();
@@ -118,7 +119,7 @@ impl Engine {
                         },
                         TargetActorOutputMessage::MessageActor { dest, msg } => match dest {
                             ActorId::Target(target_id) => {
-                                target_actors.send(&target_id, msg).await;
+                                target_actors.send(&target_id, msg).await?;
                             }
                             ActorId::Root => match msg {
                                 ActorInputMessage::Ok { kind: ExecutionKind::Build, target_id, .. } => {
@@ -152,47 +153,60 @@ impl Engine {
 }
 
 struct TargetActors {
+    targets: HashMap<TargetId, Target>,
+    target_actor_output_sender: Sender<TargetActorOutputMessage>,
+    watch_option: WatchOption,
     target_actor_handles: HashMap<TargetId, TargetActorHandleSet>,
     target_actor_join_handles: Vec<JoinHandle<()>>,
 }
 
 impl TargetActors {
-    fn launch(
+    fn new(
         targets: HashMap<TargetId, Target>,
         target_actor_output_sender: Sender<TargetActorOutputMessage>,
         watch_option: WatchOption,
     ) -> Result<Self> {
-        let launch_target_actor = |(target_id, target)| {
-            target_actor::launch_target_actor(
-                target,
-                watch_option,
-                target_actor_output_sender.clone(),
-            )
-            .map(|(join_handle, handles)| ((target_id, handles), join_handle))
-        };
-
-        let (target_actor_handles, target_actor_join_handles): (HashMap<_, _>, Vec<_>) = targets
-            .into_iter()
-            .map(launch_target_actor)
-            .collect::<Result<Vec<_>>>()?
-            .into_iter()
-            .unzip();
+        let target_actor_handles = HashMap::new();
+        let target_actor_join_handles = Vec::new();
 
         Ok(Self {
+            targets,
+            target_actor_output_sender,
+            watch_option,
             target_actor_handles,
             target_actor_join_handles,
         })
     }
 
-    async fn send(&self, target_id: &TargetId, msg: ActorInputMessage) {
-        self.target_actor_handles[target_id]
-            .target_actor_input_sender
-            .send(msg)
-            .await
+    fn get_target_actor_handles<'a>(
+        &'a mut self,
+        target_id: &TargetId,
+    ) -> Result<&'a TargetActorHandleSet> {
+        if !&self.target_actor_handles.contains_key(target_id) {
+            let (owned_target_id, target) = self.targets.remove_entry(target_id).unwrap();
+            let (join_handle, handles) = target_actor::launch_target_actor(
+                target,
+                self.watch_option,
+                self.target_actor_output_sender.clone(),
+            )?;
+            self.target_actor_handles.insert(owned_target_id, handles);
+            self.target_actor_join_handles.push(join_handle);
+        }
+
+        Ok(&self.target_actor_handles[target_id])
     }
 
-    async fn request_target(&self, target_id: &TargetId) {
-        let handles = &self.target_actor_handles[target_id];
+    async fn send(&mut self, target_id: &TargetId, msg: ActorInputMessage) -> Result<()> {
+        self.get_target_actor_handles(target_id)?
+            .target_actor_input_sender
+            .send(msg)
+            .await;
+
+        Ok(())
+    }
+
+    async fn request_target(&mut self, target_id: &TargetId) -> Result<()> {
+        let handles = self.get_target_actor_handles(target_id)?;
         for &kind in &[ExecutionKind::Build, ExecutionKind::Service] {
             let build_msg = ActorInputMessage::Requested {
                 kind,
@@ -200,6 +214,8 @@ impl TargetActors {
             };
             handles.target_actor_input_sender.send(build_msg).await;
         }
+
+        Ok(())
     }
 
     async fn terminate(self) {
