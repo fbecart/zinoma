@@ -17,8 +17,7 @@ use async_std::task;
 use clean::clean_target_output_paths;
 use config::{ir, yaml};
 use domain::TargetId;
-use engine::incremental::storage::delete_saved_env_state;
-use engine::TargetActors;
+use engine::{incremental::storage::delete_saved_env_state, TargetActors};
 use std::convert::TryInto;
 use work_dir::remove_work_dir;
 
