@@ -18,7 +18,7 @@ use clean::clean_target_output_paths;
 use config::{ir, yaml};
 use domain::TargetId;
 use engine::incremental::storage::delete_saved_env_state;
-use engine::Engine;
+use engine::TargetActors;
 use std::convert::TryInto;
 use work_dir::remove_work_dir;
 
@@ -88,11 +88,26 @@ fn main() -> Result<()> {
         }
 
         if requested_targets.is_some() {
+            let watch_option = arg_matches.is_present(cli::arg::WATCH).into();
             let termination_events = terminate_on_ctrlc()?;
 
-            Engine::new(targets, arg_matches.is_present(cli::arg::WATCH).into())
-                .run(root_target_ids, termination_events)
-                .await?;
+            let (target_actor_output_sender, target_actor_output_events) =
+                sync::channel(crate::DEFAULT_CHANNEL_CAP);
+            let mut target_actors =
+                TargetActors::new(targets, target_actor_output_sender, watch_option);
+
+            let result = engine::run(
+                root_target_ids,
+                watch_option,
+                &mut target_actors,
+                termination_events,
+                target_actor_output_events,
+            )
+            .await;
+
+            target_actors.terminate().await;
+
+            result?;
         }
 
         Ok(())
