@@ -3,7 +3,9 @@ targets:
     input:
       - paths: [src, tests]
         extensions: [rs]
-    build: exec cargo clippy
+    build: |
+      touch src/main.rs
+      exec cargo clippy -- -Dwarnings
 
   test:
     dependencies: [clippy]
