@@ -8,8 +8,10 @@ use crate::TerminationMessage;
 use anyhow::{Context, Result};
 use async_std::prelude::*;
 use async_std::sync::{self, Receiver};
+use async_std::task::JoinHandle;
 use futures::{future, FutureExt};
 use std::collections::{HashMap, HashSet};
+use sync::Sender;
 use target_actor::{
     ActorId, ActorInputMessage, ExecutionKind, TargetActorHandleSet, TargetActorOutputMessage,
 };
@@ -35,26 +37,11 @@ impl Engine {
         let (target_actor_output_sender, target_actor_output_events) =
             sync::channel(crate::DEFAULT_CHANNEL_CAP);
 
-        let watch_option = self.watch_option;
-        let launch_target_actor = |(target_id, target)| {
-            target_actor::launch_target_actor(
-                target,
-                watch_option,
-                target_actor_output_sender.clone(),
-            )
-            .map(|(join_handle, handles)| ((target_id, handles), join_handle))
-        };
-
-        let (target_actor_handles, target_actor_join_handles): (HashMap<_, _>, Vec<_>) = self
-            .targets
-            .into_iter()
-            .map(launch_target_actor)
-            .collect::<Result<Vec<_>>>()?
-            .into_iter()
-            .unzip();
+        let target_actors =
+            TargetActors::launch(self.targets, target_actor_output_sender, self.watch_option)?;
 
         for target_id in &root_target_ids {
-            Self::request_target(&target_actor_handles[target_id]).await
+            target_actors.request_target(target_id).await;
         }
 
         let result = match self.watch_option {
@@ -62,7 +49,7 @@ impl Engine {
                 Self::watch(
                     termination_events,
                     target_actor_output_events,
-                    &target_actor_handles,
+                    &target_actors,
                 )
                 .await;
                 Ok(())
@@ -72,14 +59,13 @@ impl Engine {
                     &root_target_ids,
                     termination_events,
                     target_actor_output_events,
-                    &target_actor_handles,
+                    &target_actors,
                 )
                 .await
             }
         };
 
-        Self::send_termination_message(&target_actor_handles).await;
-        future::join_all(target_actor_join_handles).await;
+        target_actors.terminate().await;
 
         result
     }
@@ -87,7 +73,7 @@ impl Engine {
     async fn watch(
         mut termination_events: Receiver<TerminationMessage>,
         mut target_actor_output_events: Receiver<TargetActorOutputMessage>,
-        target_actor_handles: &HashMap<TargetId, TargetActorHandleSet>,
+        target_actors: &TargetActors,
     ) {
         loop {
             futures::select! {
@@ -99,7 +85,7 @@ impl Engine {
                         },
                         TargetActorOutputMessage::MessageActor { dest, msg } => {
                             if let ActorId::Target(target_id) = dest {
-                                target_actor_handles[&target_id].target_actor_input_sender.send(msg).await
+                                target_actors.send(&target_id, msg).await;
                             }
                         }
                     }
@@ -112,7 +98,7 @@ impl Engine {
         root_target_ids: &[TargetId],
         mut termination_events: Receiver<TerminationMessage>,
         mut target_actor_output_events: Receiver<TargetActorOutputMessage>,
-        target_actor_handles: &HashMap<TargetId, TargetActorHandleSet>,
+        target_actors: &TargetActors,
     ) -> Result<()> {
         let unavailable_root_targets = root_target_ids.iter().cloned().collect::<HashSet<_>>();
         let mut unavailable_root_builds = unavailable_root_targets.clone();
@@ -132,7 +118,7 @@ impl Engine {
                         },
                         TargetActorOutputMessage::MessageActor { dest, msg } => match dest {
                             ActorId::Target(target_id) => {
-                                target_actor_handles[&target_id].target_actor_input_sender.send(msg).await;
+                                target_actors.send(&target_id, msg).await;
                             }
                             ActorId::Root => match msg {
                                 ActorInputMessage::Ok { kind: ExecutionKind::Build, target_id, .. } => {
@@ -163,6 +149,63 @@ impl Engine {
 
         Ok(())
     }
+}
+
+struct TargetActors {
+    target_actor_handles: HashMap<TargetId, TargetActorHandleSet>,
+    target_actor_join_handles: Vec<JoinHandle<()>>,
+}
+
+impl TargetActors {
+    fn launch(
+        targets: HashMap<TargetId, Target>,
+        target_actor_output_sender: Sender<TargetActorOutputMessage>,
+        watch_option: WatchOption,
+    ) -> Result<Self> {
+        let launch_target_actor = |(target_id, target)| {
+            target_actor::launch_target_actor(
+                target,
+                watch_option,
+                target_actor_output_sender.clone(),
+            )
+            .map(|(join_handle, handles)| ((target_id, handles), join_handle))
+        };
+
+        let (target_actor_handles, target_actor_join_handles): (HashMap<_, _>, Vec<_>) = targets
+            .into_iter()
+            .map(launch_target_actor)
+            .collect::<Result<Vec<_>>>()?
+            .into_iter()
+            .unzip();
+
+        Ok(Self {
+            target_actor_handles,
+            target_actor_join_handles,
+        })
+    }
+
+    async fn send(&self, target_id: &TargetId, msg: ActorInputMessage) {
+        self.target_actor_handles[target_id]
+            .target_actor_input_sender
+            .send(msg)
+            .await
+    }
+
+    async fn request_target(&self, target_id: &TargetId) {
+        let handles = &self.target_actor_handles[target_id];
+        for &kind in &[ExecutionKind::Build, ExecutionKind::Service] {
+            let build_msg = ActorInputMessage::Requested {
+                kind,
+                requester: ActorId::Root,
+            };
+            handles.target_actor_input_sender.send(build_msg).await;
+        }
+    }
+
+    async fn terminate(self) {
+        Self::send_termination_message(&self.target_actor_handles).await;
+        future::join_all(self.target_actor_join_handles).await;
+    }
 
     async fn send_termination_message(
         target_actor_handles: &HashMap<TargetId, TargetActorHandleSet>,
@@ -170,16 +213,6 @@ impl Engine {
         log::debug!("Terminating all targets");
         for handles in target_actor_handles.values() {
             handles.termination_sender.send(TerminationMessage).await;
-        }
-    }
-
-    async fn request_target(handles: &TargetActorHandleSet) {
-        for &kind in &[ExecutionKind::Build, ExecutionKind::Service] {
-            let build_msg = ActorInputMessage::Requested {
-                kind,
-                requester: ActorId::Root,
-            };
-            handles.target_actor_input_sender.send(build_msg).await;
         }
     }
 }
