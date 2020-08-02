@@ -113,6 +113,20 @@
 <span id="113">113</span>
 <span id="114">114</span>
 <span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="attribute">#![<span class="ident">recursion_limit</span> <span class="op">=</span> <span class="string">&quot;1024&quot;</span>]</span>
 
@@ -133,8 +147,7 @@
 <span class="kw">use</span> <span class="ident">clean</span>::<span class="ident">clean_target_output_paths</span>;
 <span class="kw">use</span> <span class="ident">config</span>::{<span class="ident">ir</span>, <span class="ident">yaml</span>};
 <span class="kw">use</span> <span class="ident">domain</span>::<span class="ident">TargetId</span>;
-<span class="kw">use</span> <span class="ident">engine</span>::<span class="ident">incremental</span>::<span class="ident">storage</span>::<span class="ident">delete_saved_env_state</span>;
-<span class="kw">use</span> <span class="ident">engine</span>::<span class="ident">Engine</span>;
+<span class="kw">use</span> <span class="ident">engine</span>::{<span class="ident">incremental</span>::<span class="ident">storage</span>::<span class="ident">delete_saved_env_state</span>, <span class="ident">TargetActors</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">TryInto</span>;
 <span class="kw">use</span> <span class="ident">work_dir</span>::<span class="ident">remove_work_dir</span>;
 
@@ -204,11 +217,26 @@
         }
 
         <span class="kw">if</span> <span class="ident">requested_targets</span>.<span class="ident">is_some</span>() {
+            <span class="kw">let</span> <span class="ident">watch_option</span> <span class="op">=</span> <span class="ident">arg_matches</span>.<span class="ident">is_present</span>(<span class="ident">cli</span>::<span class="ident">arg</span>::<span class="ident">WATCH</span>).<span class="ident">into</span>();
             <span class="kw">let</span> <span class="ident">termination_events</span> <span class="op">=</span> <span class="ident">terminate_on_ctrlc</span>()<span class="question-mark">?</span>;
 
-            <span class="ident">Engine</span>::<span class="ident">new</span>(<span class="ident">targets</span>, <span class="ident">arg_matches</span>.<span class="ident">is_present</span>(<span class="ident">cli</span>::<span class="ident">arg</span>::<span class="ident">WATCH</span>).<span class="ident">into</span>())
-                .<span class="ident">run</span>(<span class="ident">root_target_ids</span>, <span class="ident">termination_events</span>)
-                .<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">let</span> (<span class="ident">target_actor_output_sender</span>, <span class="ident">target_actor_output_events</span>) <span class="op">=</span>
+                <span class="ident">sync</span>::<span class="ident">channel</span>(<span class="kw">crate</span>::<span class="ident">DEFAULT_CHANNEL_CAP</span>);
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">target_actors</span> <span class="op">=</span>
+                <span class="ident">TargetActors</span>::<span class="ident">new</span>(<span class="ident">targets</span>, <span class="ident">target_actor_output_sender</span>, <span class="ident">watch_option</span>);
+
+            <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">engine</span>::<span class="ident">run</span>(
+                <span class="ident">root_target_ids</span>,
+                <span class="ident">watch_option</span>,
+                <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">target_actors</span>,
+                <span class="ident">termination_events</span>,
+                <span class="ident">target_actor_output_events</span>,
+            )
+            .<span class="kw">await</span>;
+
+            <span class="ident">target_actors</span>.<span class="ident">terminate</span>().<span class="kw">await</span>;
+
+            <span class="ident">result</span><span class="question-mark">?</span>;
         }
 
         <span class="prelude-val">Ok</span>(())
