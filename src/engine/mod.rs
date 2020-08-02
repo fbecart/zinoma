@@ -1,189 +1,132 @@
-pub mod builder;
+mod builder;
 pub mod incremental;
 mod target_actor;
+mod target_actors;
 mod watcher;
 
-use crate::domain::{Target, TargetId};
+use crate::domain::TargetId;
 use crate::TerminationMessage;
 use anyhow::{Context, Result};
 use async_std::prelude::*;
-use async_std::sync::{self, Receiver};
-use futures::{future, FutureExt};
-use std::collections::{HashMap, HashSet};
-use target_actor::{
-    ActorId, ActorInputMessage, ExecutionKind, TargetActorHandleSet, TargetActorOutputMessage,
-};
+use async_std::sync::Receiver;
+use futures::FutureExt;
+use std::collections::HashSet;
+use target_actor::{ActorId, ActorInputMessage, ExecutionKind, TargetActorOutputMessage};
+pub use target_actors::TargetActors;
 
-pub struct Engine {
-    targets: HashMap<TargetId, Target>,
+pub async fn run(
+    root_target_ids: Vec<TargetId>,
     watch_option: WatchOption,
-}
-
-impl Engine {
-    pub fn new(targets: HashMap<TargetId, Target>, watch_option: WatchOption) -> Self {
-        Self {
-            targets,
-            watch_option,
-        }
+    mut target_actors: &mut TargetActors,
+    termination_events: Receiver<TerminationMessage>,
+    target_actor_output_events: Receiver<TargetActorOutputMessage>,
+) -> Result<()> {
+    for target_id in &root_target_ids {
+        target_actors.request_target(target_id).await?;
     }
 
-    pub async fn run(
-        self,
-        root_target_ids: Vec<TargetId>,
-        termination_events: Receiver<TerminationMessage>,
-    ) -> Result<()> {
-        let (target_actor_output_sender, target_actor_output_events) =
-            sync::channel(crate::DEFAULT_CHANNEL_CAP);
-
-        let watch_option = self.watch_option;
-        let launch_target_actor = |(target_id, target)| {
-            target_actor::launch_target_actor(
-                target,
-                watch_option,
-                target_actor_output_sender.clone(),
+    match watch_option {
+        WatchOption::Enabled => {
+            watch(
+                &mut target_actors,
+                termination_events,
+                target_actor_output_events,
             )
-            .map(|(join_handle, handles)| ((target_id, handles), join_handle))
-        };
-
-        let (target_actor_handles, target_actor_join_handles): (HashMap<_, _>, Vec<_>) = self
-            .targets
-            .into_iter()
-            .map(launch_target_actor)
-            .collect::<Result<Vec<_>>>()?
-            .into_iter()
-            .unzip();
-
-        for target_id in &root_target_ids {
-            Self::request_target(&target_actor_handles[target_id]).await
+            .await
         }
-
-        let result = match self.watch_option {
-            WatchOption::Enabled => {
-                Self::watch(
-                    termination_events,
-                    target_actor_output_events,
-                    &target_actor_handles,
-                )
-                .await;
-                Ok(())
-            }
-            WatchOption::Disabled => {
-                Self::execute_once(
-                    &root_target_ids,
-                    termination_events,
-                    target_actor_output_events,
-                    &target_actor_handles,
-                )
-                .await
-            }
-        };
-
-        Self::send_termination_message(&target_actor_handles).await;
-        future::join_all(target_actor_join_handles).await;
-
-        result
-    }
-
-    async fn watch(
-        mut termination_events: Receiver<TerminationMessage>,
-        mut target_actor_output_events: Receiver<TargetActorOutputMessage>,
-        target_actor_handles: &HashMap<TargetId, TargetActorHandleSet>,
-    ) {
-        loop {
-            futures::select! {
-                _ = termination_events.next().fuse() => break,
-                target_actor_output = target_actor_output_events.next().fuse() => {
-                    match target_actor_output.unwrap() {
-                        TargetActorOutputMessage::TargetExecutionError(target_id, e) => {
-                            log::warn!("{} - {}", target_id, e);
-                        },
-                        TargetActorOutputMessage::MessageActor { dest, msg } => {
-                            if let ActorId::Target(target_id) = dest {
-                                target_actor_handles[&target_id].target_actor_input_sender.send(msg).await
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    async fn execute_once(
-        root_target_ids: &[TargetId],
-        mut termination_events: Receiver<TerminationMessage>,
-        mut target_actor_output_events: Receiver<TargetActorOutputMessage>,
-        target_actor_handles: &HashMap<TargetId, TargetActorHandleSet>,
-    ) -> Result<()> {
-        let unavailable_root_targets = root_target_ids.iter().cloned().collect::<HashSet<_>>();
-        let mut unavailable_root_builds = unavailable_root_targets.clone();
-        let mut unavailable_root_services = unavailable_root_targets;
-        let mut service_root_targets = HashSet::new();
-        let mut termination_event_received = false;
-
-        while !(termination_event_received
-            || unavailable_root_services.is_empty() && unavailable_root_builds.is_empty())
-        {
-            futures::select! {
-                _ = termination_events.next().fuse() => termination_event_received = true,
-                target_actor_output = target_actor_output_events.next().fuse() => {
-                    match target_actor_output.unwrap() {
-                        TargetActorOutputMessage::TargetExecutionError(target_id, e) => {
-                            return Err(e.context(format!("An issue occurred with target {}", target_id)));
-                        },
-                        TargetActorOutputMessage::MessageActor { dest, msg } => match dest {
-                            ActorId::Target(target_id) => {
-                                target_actor_handles[&target_id].target_actor_input_sender.send(msg).await;
-                            }
-                            ActorId::Root => match msg {
-                                ActorInputMessage::Ok { kind: ExecutionKind::Build, target_id, .. } => {
-                                    unavailable_root_builds.remove(&target_id);
-                                },
-                                ActorInputMessage::Ok { kind: ExecutionKind::Service, target_id, actual } => {
-                                    unavailable_root_services.remove(&target_id);
-
-                                    if actual {
-                                        service_root_targets.insert(target_id);
-                                    }
-                                },
-                                _ => {},
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if !termination_event_received && !service_root_targets.is_empty() {
-            // Wait for termination event
-            termination_events
-                .recv()
-                .await
-                .with_context(|| "Failed to listen to termination event".to_string())?;
-        }
-
-        Ok(())
-    }
-
-    async fn send_termination_message(
-        target_actor_handles: &HashMap<TargetId, TargetActorHandleSet>,
-    ) {
-        log::debug!("Terminating all targets");
-        for handles in target_actor_handles.values() {
-            handles.termination_sender.send(TerminationMessage).await;
-        }
-    }
-
-    async fn request_target(handles: &TargetActorHandleSet) {
-        for &kind in &[ExecutionKind::Build, ExecutionKind::Service] {
-            let build_msg = ActorInputMessage::Requested {
-                kind,
-                requester: ActorId::Root,
-            };
-            handles.target_actor_input_sender.send(build_msg).await;
+        WatchOption::Disabled => {
+            execute_once(
+                &root_target_ids,
+                &mut target_actors,
+                termination_events,
+                target_actor_output_events,
+            )
+            .await
         }
     }
 }
 
+async fn watch(
+    target_actors: &mut TargetActors,
+    mut termination_events: Receiver<TerminationMessage>,
+    mut target_actor_output_events: Receiver<TargetActorOutputMessage>,
+) -> Result<()> {
+    loop {
+        futures::select! {
+            _ = termination_events.next().fuse() => break,
+            target_actor_output = target_actor_output_events.next().fuse() => {
+                match target_actor_output.unwrap() {
+                    TargetActorOutputMessage::TargetExecutionError(target_id, e) => {
+                        log::warn!("{} - {}", target_id, e);
+                    },
+                    TargetActorOutputMessage::MessageActor { dest, msg } => {
+                        if let ActorId::Target(target_id) = dest {
+                            target_actors.send(&target_id, msg).await?;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+async fn execute_once(
+    root_target_ids: &[TargetId],
+    target_actors: &mut TargetActors,
+    mut termination_events: Receiver<TerminationMessage>,
+    mut target_actor_output_events: Receiver<TargetActorOutputMessage>,
+) -> Result<()> {
+    let unavailable_root_targets = root_target_ids.iter().cloned().collect::<HashSet<_>>();
+    let mut unavailable_root_builds = unavailable_root_targets.clone();
+    let mut unavailable_root_services = unavailable_root_targets;
+    let mut service_root_targets = HashSet::new();
+    let mut termination_event_received = false;
+
+    while !(termination_event_received
+        || unavailable_root_services.is_empty() && unavailable_root_builds.is_empty())
+    {
+        futures::select! {
+            _ = termination_events.next().fuse() => termination_event_received = true,
+            target_actor_output = target_actor_output_events.next().fuse() => {
+                match target_actor_output.unwrap() {
+                    TargetActorOutputMessage::TargetExecutionError(target_id, e) => {
+                        return Err(e.context(format!("An issue occurred with target {}", target_id)));
+                    },
+                    TargetActorOutputMessage::MessageActor { dest, msg } => match dest {
+                        ActorId::Target(target_id) => {
+                            target_actors.send(&target_id, msg).await?;
+                        }
+                        ActorId::Root => match msg {
+                            ActorInputMessage::Ok { kind: ExecutionKind::Build, target_id, .. } => {
+                                unavailable_root_builds.remove(&target_id);
+                            },
+                            ActorInputMessage::Ok { kind: ExecutionKind::Service, target_id, actual } => {
+                                unavailable_root_services.remove(&target_id);
+
+                                if actual {
+                                    service_root_targets.insert(target_id);
+                                }
+                            },
+                            _ => {},
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if !termination_event_received && !service_root_targets.is_empty() {
+        // Wait for termination event
+        termination_events
+            .recv()
+            .await
+            .with_context(|| "Failed to listen to termination event".to_string())?;
+    }
+
+    Ok(())
+}
 #[derive(Copy, Clone)]
 pub enum WatchOption {
     Enabled,
