@@ -2,6 +2,10 @@
 
 ## TBD
 
+Bug fixes:
+
+- [BUG #35](https://github.com/fbecart/zinoma/issues/35) Fix formatting of descriptions in the Yaml schema.
+
 ## 0.19.0 (2020-07-24)
 
 Feature enhancements:
