@@ -119,12 +119,20 @@
 <span id="119">119</span>
 <span id="120">120</span>
 <span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">ActorInputMessage</span>, <span class="ident">ExecutionKind</span>, <span class="ident">TargetActorHelper</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::<span class="ident">BuildTarget</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">engine</span>::{<span class="ident">builder</span>, <span class="ident">incremental</span>};
 <span class="kw">use</span> <span class="ident">async_std</span>::{<span class="ident">prelude</span>::<span class="kw-2">*</span>, <span class="ident">sync</span>};
-<span class="kw">use</span> <span class="ident">builder</span>::{<span class="ident">BuildCancellationMessage</span>, <span class="ident">BuildCompletionReport</span>};
+<span class="kw">use</span> <span class="ident">builder</span>::<span class="ident">BuildCancellationMessage</span>;
 <span class="kw">use</span> <span class="ident">futures</span>::<span class="ident">future</span>::<span class="ident">Fuse</span>;
 <span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">pin_mut</span>, <span class="ident">FutureExt</span>};
 <span class="kw">use</span> <span class="ident">incremental</span>::<span class="ident">IncrementalRunResult</span>;
@@ -143,6 +151,7 @@
     }
 
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run</span>(<span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">termination_event_received</span> <span class="op">=</span> <span class="bool-val">false</span>;
         <span class="kw">let</span> <span class="ident">ongoing_build_fuse</span> <span class="op">=</span> <span class="ident">Fuse</span>::<span class="ident">terminated</span>();
         <span class="macro">pin_mut</span><span class="macro">!</span>(<span class="ident">ongoing_build_fuse</span>);
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ongoing_build_cancellation_sender</span> <span class="op">=</span> <span class="prelude-val">None</span>;
@@ -169,6 +178,7 @@
 
             <span class="ident">futures</span>::<span class="macro">select</span><span class="macro">!</span> {
                 <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">termination_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="ident">termination_event_received</span> <span class="op">=</span> <span class="bool-val">true</span>;
                     <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">ongoing_build_cancellation_sender</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">ongoing_build_cancellation_sender</span> {
                         <span class="kw">if</span> <span class="ident">ongoing_build_cancellation_sender</span>.<span class="ident">try_send</span>(<span class="ident">BuildCancellationMessage</span>).<span class="ident">is_err</span>() {
                             <span class="ident">log</span>::<span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;{} - Build already cancelled. Skipping.&quot;</span>, <span class="self">self</span>.<span class="ident">target</span>);
@@ -223,18 +233,24 @@
                     <span class="ident">ongoing_build_cancellation_sender</span> <span class="op">=</span> <span class="prelude-val">None</span>;
 
                     <span class="kw">match</span> <span class="ident">build_result</span> {
-                        <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">|</span> <span class="prelude-val">Ok</span>(<span class="ident">IncrementalRunResult</span>::<span class="ident">Run</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">notify_execution_failed</span>(<span class="ident">e</span>).<span class="kw">await</span>,
+                        <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">notify_execution_failed</span>(<span class="ident">e</span>).<span class="kw">await</span>,
                         <span class="prelude-val">Ok</span>(<span class="ident">IncrementalRunResult</span>::<span class="ident">Skipped</span>) <span class="op">=</span><span class="op">&gt;</span> {
                             <span class="ident">log</span>::<span class="macro">info</span><span class="macro">!</span>(<span class="string">&quot;{} - Build skipped (Not Modified)&quot;</span>, <span class="self">self</span>.<span class="ident">target</span>);
                             <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">notify_success</span>(<span class="ident">ExecutionKind</span>::<span class="ident">Build</span>).<span class="kw">await</span>;
                         }
-                        <span class="prelude-val">Ok</span>(<span class="ident">IncrementalRunResult</span>::<span class="ident">Run</span>(<span class="prelude-val">Ok</span>(<span class="ident">BuildCompletionReport</span>::<span class="ident">Completed</span>))) <span class="op">=</span><span class="op">&gt;</span> {
+                        <span class="prelude-val">Ok</span>(<span class="ident">IncrementalRunResult</span>::<span class="ident">Completed</span>) <span class="op">=</span><span class="op">&gt;</span> {
                             <span class="comment">// TODO Why spreading logs between here and builder?</span>
                             <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">notify_success</span>(<span class="ident">ExecutionKind</span>::<span class="ident">Build</span>).<span class="kw">await</span>;
 
                             <span class="comment">// TODO Eventually, unrequest dependency services</span>
                         }
-                        <span class="prelude-val">Ok</span>(<span class="ident">IncrementalRunResult</span>::<span class="ident">Run</span>(<span class="prelude-val">Ok</span>(<span class="ident">BuildCompletionReport</span>::<span class="ident">Aborted</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">break</span>,
+                        <span class="prelude-val">Ok</span>(<span class="ident">IncrementalRunResult</span>::<span class="ident">Cancelled</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                            <span class="comment">// As termination_event_received == true, we will exit the loop</span>
+                        },
+                    }
+
+                    <span class="kw">if</span> <span class="ident">termination_event_received</span> {
+                        <span class="kw">break</span>
                     }
                 },
             }

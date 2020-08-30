@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["BuildCompletionReport",""]],"fn":[["build_target",""]],"struct":[["BuildCancellationMessage",""]]});
+initSidebarItems({"enum":[["BuildTerminationReport",""]],"fn":[["build_target",""]],"struct":[["BuildCancellationMessage",""]]});
