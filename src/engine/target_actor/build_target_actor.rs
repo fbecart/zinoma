@@ -2,7 +2,7 @@ use super::{ActorInputMessage, ExecutionKind, TargetActorHelper};
 use crate::domain::BuildTarget;
 use crate::engine::{builder, incremental};
 use async_std::{prelude::*, sync};
-use builder::{BuildCancellationMessage, BuildCompletionReport};
+use builder::BuildCancellationMessage;
 use futures::future::Fuse;
 use futures::{pin_mut, FutureExt};
 use incremental::IncrementalRunResult;
@@ -21,6 +21,7 @@ impl BuildTargetActor {
     }
 
     pub async fn run(mut self) {
+        let mut termination_event_received = false;
         let ongoing_build_fuse = Fuse::terminated();
         pin_mut!(ongoing_build_fuse);
         let mut ongoing_build_cancellation_sender = None;
@@ -47,6 +48,7 @@ impl BuildTargetActor {
 
             futures::select! {
                 _ = self.helper.termination_events.next().fuse() => {
+                    termination_event_received = true;
                     if let Some(ongoing_build_cancellation_sender) = &mut ongoing_build_cancellation_sender {
                         if ongoing_build_cancellation_sender.try_send(BuildCancellationMessage).is_err() {
                             log::trace!("{} - Build already cancelled. Skipping.", self.target);
@@ -101,18 +103,24 @@ impl BuildTargetActor {
                     ongoing_build_cancellation_sender = None;
 
                     match build_result {
-                        Err(e) | Ok(IncrementalRunResult::Run(Err(e))) => self.helper.notify_execution_failed(e).await,
+                        Err(e) => self.helper.notify_execution_failed(e).await,
                         Ok(IncrementalRunResult::Skipped) => {
                             log::info!("{} - Build skipped (Not Modified)", self.target);
                             self.helper.notify_success(ExecutionKind::Build).await;
                         }
-                        Ok(IncrementalRunResult::Run(Ok(BuildCompletionReport::Completed))) => {
+                        Ok(IncrementalRunResult::Completed) => {
                             // TODO Why spreading logs between here and builder?
                             self.helper.notify_success(ExecutionKind::Build).await;
 
                             // TODO Eventually, unrequest dependency services
                         }
-                        Ok(IncrementalRunResult::Run(Ok(BuildCompletionReport::Aborted))) => break,
+                        Ok(IncrementalRunResult::Cancelled) => {
+                            // As termination_event_received == true, we will exit the loop
+                        },
+                    }
+
+                    if termination_event_received {
+                        break
                     }
                 },
             }

@@ -10,7 +10,7 @@ use std::time::Instant;
 pub async fn build_target(
     target: &BuildTarget,
     mut build_cancellation_events: Receiver<BuildCancellationMessage>,
-) -> Result<BuildCompletionReport> {
+) -> Result<BuildTerminationReport> {
     let target_start = Instant::now();
     log::info!("{} - Building", target);
 
@@ -30,7 +30,7 @@ pub async fn build_target(
             if let Err(e) = build_process.status().await {
                 log::error!("{} - Failed to await build process: {}", target, e)
             }
-            Ok(BuildCompletionReport::Aborted)
+            Ok(BuildTerminationReport::Cancelled)
         },
         result = build_process.status().fuse() => {
             let exit_status = result?;
@@ -43,14 +43,14 @@ pub async fn build_target(
                 target,
                 target_build_duration.as_millis()
             );
-            Ok(BuildCompletionReport::Completed)
+            Ok(BuildTerminationReport::Completed)
         },
     }
 }
 
-pub enum BuildCompletionReport {
+pub enum BuildTerminationReport {
     Completed,
-    Aborted,
+    Cancelled,
 }
 
 pub struct BuildCancellationMessage;

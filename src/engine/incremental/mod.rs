@@ -1,6 +1,7 @@
 mod resources_state;
 pub mod storage;
 
+use super::builder::BuildTerminationReport;
 use crate::async_utils::both;
 use crate::domain::{Resources, TargetMetadata};
 use anyhow::Result;
@@ -9,19 +10,20 @@ use resources_state::ResourcesState;
 use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq)]
-pub enum IncrementalRunResult<T> {
+pub enum IncrementalRunResult {
     Skipped,
-    Run(T),
+    Completed,
+    Cancelled,
 }
 
-pub async fn run<T, F>(
+pub async fn run<F>(
     target: &TargetMetadata,
     target_input: &Resources,
     target_output: Option<&Resources>,
     future: F,
-) -> Result<IncrementalRunResult<F::Output>>
+) -> Result<IncrementalRunResult>
 where
-    F: Future<Output = Result<T>>,
+    F: Future<Output = Result<BuildTerminationReport>>,
 {
     if env_state_has_not_changed_since_last_successful_execution(
         target,
@@ -35,29 +37,32 @@ where
 
     storage::delete_saved_env_state(target).await?;
 
-    let result = future.await;
+    let build_report = future.await?;
 
-    if result.is_ok() {
-        match TargetEnvState::current(target_input, target_output).await {
-            Ok(Some(env_state)) => {
-                if let Err(e) = storage::save_env_state(target, env_state).await {
-                    log::warn!(
-                        "{} - Failed to save state of inputs and outputs: {}",
-                        target,
-                        e
-                    )
+    match build_report {
+        BuildTerminationReport::Cancelled => Ok(IncrementalRunResult::Cancelled),
+        BuildTerminationReport::Completed => {
+            match TargetEnvState::current(target_input, target_output).await {
+                Ok(Some(env_state)) => {
+                    if let Err(e) = storage::save_env_state(target, env_state).await {
+                        log::warn!(
+                            "{} - Failed to save state of inputs and outputs: {}",
+                            target,
+                            e
+                        )
+                    }
                 }
+                Ok(None) => {}
+                Err(e) => log::warn!(
+                    "{} - Failed to compute state of inputs and outputs: {}",
+                    target,
+                    e
+                ),
             }
-            Ok(None) => {}
-            Err(e) => log::warn!(
-                "{} - Failed to compute state of inputs and outputs: {}",
-                target,
-                e
-            ),
+
+            Ok(IncrementalRunResult::Completed)
         }
     }
-
-    Ok(IncrementalRunResult::Run(result))
 }
 
 async fn env_state_has_not_changed_since_last_successful_execution(
