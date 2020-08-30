@@ -3,7 +3,7 @@ use predicate::str::contains;
 use predicates::prelude::*;
 use std::ffi;
 use std::fs;
-use std::process::Command;
+use std::{path::Path, process::Command};
 
 #[test]
 fn circular_dependency() {
@@ -253,6 +253,36 @@ fn paths_input_resource_with_extensions() {
 
     fs::write(csv_src_file_name, "1,2,3").unwrap();
     fs::write(txt_src_file_name, "Hello Žinoma!").unwrap();
+}
+
+#[test]
+fn paths_output_resource_with_extensions() {
+    let out_file_name = "tests/integ/paths_output_resource_with_extensions/src/a.out.csv";
+
+    fs::write(out_file_name, "").unwrap();
+
+    zinoma_command("paths_output_resource_with_extensions", &["--clean"])
+        .assert()
+        .success();
+
+    assert_eq!(false, Path::new(out_file_name).exists());
+
+    zinoma_command("paths_output_resource_with_extensions", &["cp_in_to_out"])
+        .assert()
+        .success()
+        .stderr(contains("cp_in_to_out - Build success"));
+
+    zinoma_command("paths_output_resource_with_extensions", &["cp_in_to_out"])
+        .assert()
+        .success()
+        .stderr(contains("cp_in_to_out - Build skipped"));
+
+    fs::write(out_file_name, "a,b,c").unwrap();
+
+    zinoma_command("paths_output_resource_with_extensions", &["cp_in_to_out"])
+        .assert()
+        .success()
+        .stderr(contains("cp_in_to_out - Build success"));
 }
 
 fn zinoma_command<I, S>(integ_test_dir_name: &str, args: I) -> Command

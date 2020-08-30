@@ -6,6 +6,7 @@ mod cli;
 mod config;
 mod domain;
 mod engine;
+mod fs;
 mod run_script;
 mod work_dir;
 

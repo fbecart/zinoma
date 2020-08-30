@@ -2,6 +2,10 @@
 
 ## TBD
 
+Feature enhancements:
+
+- [FEATURE #67](https://github.com/fbecart/zinoma/issues/67) Filter output files resources by extensions.
+
 ## 0.19.0 (2020-07-24)
 
 Feature enhancements:

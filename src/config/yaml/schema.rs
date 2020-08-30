@@ -402,6 +402,27 @@ pub enum OutputResource {
         /// - the command `zinoma --clean` will delete `node_modules`;
         /// - the command `zinoma --clean npm_install` will delete `node_modules`, then run `npm install`.
         paths: Vec<String>,
+        /// Filter files resource by file extensions.
+        ///
+        /// It should be an array of strings.
+        ///
+        /// If `extensions` are specified, only files matching at least one of the extensions will be included in the resource.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   protoc:
+        ///     input:
+        ///       - paths: [protos]
+        ///         extensions: [proto]
+        ///     output:
+        ///       - paths: [protos]
+        ///         extensions: [go]
+        ///     build: |
+        ///       cd protos
+        ///       docker run -v `pwd`:/defs namely/protoc-all -d . -o . -l go
+        extensions: Option<Vec<String>>,
     },
     CmdStdout {
         /// Shell script whose output identifies the state of a resource.

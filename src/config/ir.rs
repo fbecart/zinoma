@@ -218,32 +218,18 @@ fn transform_input(
         |acc, resource| {
             let (mut input, mut dependencies_from_input) = acc?;
 
-            use yaml::InputResource::*;
             match resource {
-                Files { paths, extensions } => {
-                    let paths = paths.iter().map(|path| project_dir.join(path)).collect();
-                    let extensions = extensions
-                        .map(|extensions| {
-                            extensions
-                                .into_iter()
-                                .filter(|ext| !ext.is_empty())
-                                .map(|ext| {
-                                    if ext.starts_with('.') {
-                                        ext
-                                    } else {
-                                        format!(".{}", ext)
-                                    }
-                                })
-                                .collect::<BTreeSet<_>>()
-                        })
-                        .filter(|extensions| !extensions.is_empty());
-                    input.files.push(FilesResource { paths, extensions })
+                yaml::InputResource::Files { paths, extensions } => {
+                    input.files.push(FilesResource {
+                        paths: paths.iter().map(|path| project_dir.join(path)).collect(),
+                        extensions: transform_extensions(extensions),
+                    })
                 }
-                CmdStdout { cmd_stdout } => input.cmds.push(CmdResource {
+                yaml::InputResource::CmdStdout { cmd_stdout } => input.cmds.push(CmdResource {
                     cmd: cmd_stdout,
                     dir: project_dir.to_owned(),
                 }),
-                DependencyOutput(id) => {
+                yaml::InputResource::DependencyOutput(id) => {
                     lazy_static! {
                         static ref RE: Regex =
                             Regex::new(r"^((\w[-\w]*::)?\w[-\w]*)\.output$").unwrap();
@@ -270,19 +256,38 @@ fn transform_output(output: yaml::OutputResources, project_dir: &Path) -> domain
         .0
         .into_iter()
         .fold(domain::Resources::new(), |mut acc, resource| {
-            use yaml::OutputResource::*;
             match resource {
-                Files { paths } => acc.files.push(FilesResource {
-                    paths: paths.iter().map(|path| project_dir.join(path)).collect(),
-                    extensions: None,
-                }),
-                CmdStdout { cmd_stdout } => acc.cmds.push(CmdResource {
+                yaml::OutputResource::Files { paths, extensions } => {
+                    acc.files.push(FilesResource {
+                        paths: paths.iter().map(|path| project_dir.join(path)).collect(),
+                        extensions: transform_extensions(extensions),
+                    })
+                }
+                yaml::OutputResource::CmdStdout { cmd_stdout } => acc.cmds.push(CmdResource {
                     cmd: cmd_stdout,
                     dir: project_dir.to_owned(),
                 }),
             }
             acc
         })
+}
+
+fn transform_extensions(extensions: Option<Vec<String>>) -> Option<BTreeSet<String>> {
+    extensions
+        .map(|extensions| {
+            extensions
+                .into_iter()
+                .filter(|ext| !ext.is_empty())
+                .map(|ext| {
+                    if ext.starts_with('.') {
+                        ext
+                    } else {
+                        format!(".{}", ext)
+                    }
+                })
+                .collect::<BTreeSet<_>>()
+        })
+        .filter(|extensions| !extensions.is_empty())
 }
 
 #[cfg(test)]
@@ -323,7 +328,8 @@ mod tests {
             (
                 "target_1",
                 build_target_with_output(vec![yaml::OutputResource::Files {
-                    paths: vec!["output.txt".to_string()],
+                    paths: vec!["protos".to_string()],
+                    extensions: Some(vec!["go".to_string()]),
                 }]),
             ),
             (
