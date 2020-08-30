@@ -6,8 +6,18 @@ use async_std::path::Path;
 pub async fn clean_target_output_paths(target: &Target) -> Result<()> {
     if let Some(output) = target.output() {
         for resource in &output.files {
-            for output_path in &resource.paths {
-                clean_path(output_path).await?;
+            if resource.extensions.is_some() {
+                let resource_files =
+                    crate::fs::list_files_in_paths(&resource.paths, &resource.extensions).await;
+                for file in resource_files {
+                    fs::remove_file(&file)
+                        .await
+                        .with_context(|| format!("Failed to remove file {}", file.display()))?;
+                }
+            } else {
+                for output_path in &resource.paths {
+                    clean_path(output_path).await?;
+                }
             }
         }
     }

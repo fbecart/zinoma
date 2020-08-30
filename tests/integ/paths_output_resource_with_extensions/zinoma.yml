@@ -1,0 +1,9 @@
+targets:
+  cp_in_to_out:
+    input:
+      - paths: [src]
+        extensions: [in.csv]
+    output:
+      - paths: [src]
+        extensions: [out.csv]
+    build: cp src/a.in.csv src/a.out.csv
