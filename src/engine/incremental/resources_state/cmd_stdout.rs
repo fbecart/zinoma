@@ -1,7 +1,6 @@
 use crate::async_utils;
 use crate::{domain::CmdResource, run_script};
 use anyhow::{anyhow, Context, Result};
-use async_std::task;
 use futures::future;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -38,7 +37,8 @@ impl ResourcesState {
 
 async fn get_cmd_stdout(resource: &CmdResource) -> Result<String> {
     let mut command = run_script::build_command(&resource.cmd, &resource.dir);
-    let output = task::spawn_blocking(move || command.output())
+    let output = command
+        .output()
         .await
         .with_context(|| format!("Failed to run command {}", resource.cmd))?;
 

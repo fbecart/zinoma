@@ -2,11 +2,11 @@ use super::{ActorInputMessage, ExecutionKind, TargetActorHelper};
 use crate::domain::ServiceTarget;
 use crate::run_script;
 use anyhow::{Context, Result};
+use async_process::Child;
 use async_std::prelude::*;
-use async_std::task;
 use futures::FutureExt;
 use std::mem;
-use std::process::{Child, Stdio};
+use std::process::Stdio;
 
 pub struct ServiceTargetActor {
     target: ServiceTarget,
@@ -88,12 +88,12 @@ impl ServiceTargetActor {
             let target_id = self.target.metadata.id.clone();
             let mut running_service = mem::replace(&mut self.service_process, None).unwrap();
             log::trace!("{} - Stopping service", target_id);
-            task::spawn_blocking(move || {
-                if let Err(e) = running_service.kill().and_then(|_| running_service.wait()) {
-                    log::warn!("{} - Failed to stop service: {}", target_id, e);
-                }
-            })
-            .await;
+            if let Err(e) = running_service.kill() {
+                log::warn!("{} - Failed to kill service: {}", target_id, e);
+            }
+            if let Err(e) = running_service.status().await {
+                log::warn!("{} - Failed to await killed service: {}", target_id, e);
+            }
         }
     }
 
@@ -106,8 +106,8 @@ impl ServiceTargetActor {
             run_script::build_command(&self.target.run_script, &self.target.metadata.project_dir);
         command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
 
-        let service_process = task::spawn_blocking(move || command.spawn())
-            .await
+        let service_process = command
+            .spawn()
             .with_context(|| "Failed to start service".to_string())?;
 
         self.service_process = Some(service_process);
