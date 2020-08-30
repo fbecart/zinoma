@@ -69,7 +69,7 @@ The full documentation of the expected schema can be found [on this page](https:
 
 ```shell script
 USAGE:
-    zinoma [FLAGS] [OPTIONS] [--] [TARGETS]...
+    zinoma [FLAGS] [OPTIONS] [TARGETS]...
 
 ARGS:
     <TARGETS>...    Targets to build
@@ -77,12 +77,12 @@ ARGS:
 FLAGS:
         --clean      Start by cleaning the target outputs
     -h, --help       Prints help information
+    -v               Increases message verbosity
     -V, --version    Prints version information
     -w, --watch      Enable watch mode: rebuild targets and restart services on file system changes
 
 OPTIONS:
     -p, --project <PROJECT_DIR>    Directory of the project to build (in which 'zinoma.yml' is located)
-    -v <verbosity>...              Increases message verbosity
 ```
 
 ### Additional information
@@ -101,7 +101,7 @@ By looking at the resources declared in the `input` and `output` of your targets
 Žinoma can tell if a target needs to run again, or can be skipped.
 
 Žinoma identifies file updates by looking at their modified timestamp and checksum.
-These informations are stored in the `.zinoma` directory, located next to `zinoma.yml`.
+This information is stored in the `.zinoma` directory, located next to `zinoma.yml`.
 This directory should be ignored in your version control.
 
 #### Watch mode (`--watch`)
@@ -195,7 +195,7 @@ $ git clone git@github.com:fbecart/zinoma.git
 $ cd zinoma
 $ cargo build --release
 $ ./target/release/zinoma --version
-Žinoma 0.14.1
+Žinoma 0.19.0
 ```
 
 To run the test suite, use:
