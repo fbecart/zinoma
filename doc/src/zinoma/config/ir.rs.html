@@ -455,6 +455,12 @@
 <span id="455">455</span>
 <span id="456">456</span>
 <span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">yaml</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::{<span class="self">self</span>, <span class="ident">TargetId</span>};
@@ -676,32 +682,18 @@
         <span class="op">|</span><span class="ident">acc</span>, <span class="ident">resource</span><span class="op">|</span> {
             <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">input</span>, <span class="kw-2">mut</span> <span class="ident">dependencies_from_input</span>) <span class="op">=</span> <span class="ident">acc</span><span class="question-mark">?</span>;
 
-            <span class="kw">use</span> <span class="ident">yaml</span>::<span class="ident">InputResource</span>::<span class="kw-2">*</span>;
             <span class="kw">match</span> <span class="ident">resource</span> {
-                <span class="ident">Files</span> { <span class="ident">paths</span>, <span class="ident">extensions</span> } <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="kw">let</span> <span class="ident">paths</span> <span class="op">=</span> <span class="ident">paths</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">path</span><span class="op">|</span> <span class="ident">project_dir</span>.<span class="ident">join</span>(<span class="ident">path</span>)).<span class="ident">collect</span>();
-                    <span class="kw">let</span> <span class="ident">extensions</span> <span class="op">=</span> <span class="ident">extensions</span>
-                        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">extensions</span><span class="op">|</span> {
-                            <span class="ident">extensions</span>
-                                .<span class="ident">into_iter</span>()
-                                .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">ext</span><span class="op">|</span> <span class="op">!</span><span class="ident">ext</span>.<span class="ident">is_empty</span>())
-                                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ext</span><span class="op">|</span> {
-                                    <span class="kw">if</span> <span class="ident">ext</span>.<span class="ident">starts_with</span>(<span class="string">&#39;.&#39;</span>) {
-                                        <span class="ident">ext</span>
-                                    } <span class="kw">else</span> {
-                                        <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;.{}&quot;</span>, <span class="ident">ext</span>)
-                                    }
-                                })
-                                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
-                        })
-                        .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">extensions</span><span class="op">|</span> <span class="op">!</span><span class="ident">extensions</span>.<span class="ident">is_empty</span>());
-                    <span class="ident">input</span>.<span class="ident">files</span>.<span class="ident">push</span>(<span class="ident">FilesResource</span> { <span class="ident">paths</span>, <span class="ident">extensions</span> })
+                <span class="ident">yaml</span>::<span class="ident">InputResource</span>::<span class="ident">Files</span> { <span class="ident">paths</span>, <span class="ident">extensions</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="ident">input</span>.<span class="ident">files</span>.<span class="ident">push</span>(<span class="ident">FilesResource</span> {
+                        <span class="ident">paths</span>: <span class="ident">paths</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">path</span><span class="op">|</span> <span class="ident">project_dir</span>.<span class="ident">join</span>(<span class="ident">path</span>)).<span class="ident">collect</span>(),
+                        <span class="ident">extensions</span>: <span class="ident">transform_extensions</span>(<span class="ident">extensions</span>),
+                    })
                 }
-                <span class="ident">CmdStdout</span> { <span class="ident">cmd_stdout</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">input</span>.<span class="ident">cmds</span>.<span class="ident">push</span>(<span class="ident">CmdResource</span> {
+                <span class="ident">yaml</span>::<span class="ident">InputResource</span>::<span class="ident">CmdStdout</span> { <span class="ident">cmd_stdout</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">input</span>.<span class="ident">cmds</span>.<span class="ident">push</span>(<span class="ident">CmdResource</span> {
                     <span class="ident">cmd</span>: <span class="ident">cmd_stdout</span>,
                     <span class="ident">dir</span>: <span class="ident">project_dir</span>.<span class="ident">to_owned</span>(),
                 }),
-                <span class="ident">DependencyOutput</span>(<span class="ident">id</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="ident">yaml</span>::<span class="ident">InputResource</span>::<span class="ident">DependencyOutput</span>(<span class="ident">id</span>) <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="macro">lazy_static</span><span class="macro">!</span> {
                         <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">RE</span>: <span class="ident">Regex</span> <span class="op">=</span>
                             <span class="ident">Regex</span>::<span class="ident">new</span>(<span class="string">r&quot;^((\w[-\w]*::)?\w[-\w]*)\.output$&quot;</span>).<span class="ident">unwrap</span>();
@@ -728,19 +720,38 @@
         .<span class="number">0</span>
         .<span class="ident">into_iter</span>()
         .<span class="ident">fold</span>(<span class="ident">domain</span>::<span class="ident">Resources</span>::<span class="ident">new</span>(), <span class="op">|</span><span class="kw-2">mut</span> <span class="ident">acc</span>, <span class="ident">resource</span><span class="op">|</span> {
-            <span class="kw">use</span> <span class="ident">yaml</span>::<span class="ident">OutputResource</span>::<span class="kw-2">*</span>;
             <span class="kw">match</span> <span class="ident">resource</span> {
-                <span class="ident">Files</span> { <span class="ident">paths</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">acc</span>.<span class="ident">files</span>.<span class="ident">push</span>(<span class="ident">FilesResource</span> {
-                    <span class="ident">paths</span>: <span class="ident">paths</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">path</span><span class="op">|</span> <span class="ident">project_dir</span>.<span class="ident">join</span>(<span class="ident">path</span>)).<span class="ident">collect</span>(),
-                    <span class="ident">extensions</span>: <span class="prelude-val">None</span>,
-                }),
-                <span class="ident">CmdStdout</span> { <span class="ident">cmd_stdout</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">acc</span>.<span class="ident">cmds</span>.<span class="ident">push</span>(<span class="ident">CmdResource</span> {
+                <span class="ident">yaml</span>::<span class="ident">OutputResource</span>::<span class="ident">Files</span> { <span class="ident">paths</span>, <span class="ident">extensions</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="ident">acc</span>.<span class="ident">files</span>.<span class="ident">push</span>(<span class="ident">FilesResource</span> {
+                        <span class="ident">paths</span>: <span class="ident">paths</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">path</span><span class="op">|</span> <span class="ident">project_dir</span>.<span class="ident">join</span>(<span class="ident">path</span>)).<span class="ident">collect</span>(),
+                        <span class="ident">extensions</span>: <span class="ident">transform_extensions</span>(<span class="ident">extensions</span>),
+                    })
+                }
+                <span class="ident">yaml</span>::<span class="ident">OutputResource</span>::<span class="ident">CmdStdout</span> { <span class="ident">cmd_stdout</span> } <span class="op">=</span><span class="op">&gt;</span> <span class="ident">acc</span>.<span class="ident">cmds</span>.<span class="ident">push</span>(<span class="ident">CmdResource</span> {
                     <span class="ident">cmd</span>: <span class="ident">cmd_stdout</span>,
                     <span class="ident">dir</span>: <span class="ident">project_dir</span>.<span class="ident">to_owned</span>(),
                 }),
             }
             <span class="ident">acc</span>
         })
+}
+
+<span class="kw">fn</span> <span class="ident">transform_extensions</span>(<span class="ident">extensions</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="ident">extensions</span>
+        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">extensions</span><span class="op">|</span> {
+            <span class="ident">extensions</span>
+                .<span class="ident">into_iter</span>()
+                .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">ext</span><span class="op">|</span> <span class="op">!</span><span class="ident">ext</span>.<span class="ident">is_empty</span>())
+                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ext</span><span class="op">|</span> {
+                    <span class="kw">if</span> <span class="ident">ext</span>.<span class="ident">starts_with</span>(<span class="string">&#39;.&#39;</span>) {
+                        <span class="ident">ext</span>
+                    } <span class="kw">else</span> {
+                        <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;.{}&quot;</span>, <span class="ident">ext</span>)
+                    }
+                })
+                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+        })
+        .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">extensions</span><span class="op">|</span> <span class="op">!</span><span class="ident">extensions</span>.<span class="ident">is_empty</span>())
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
@@ -781,7 +792,8 @@
             (
                 <span class="string">&quot;target_1&quot;</span>,
                 <span class="ident">build_target_with_output</span>(<span class="macro">vec</span><span class="macro">!</span>[<span class="ident">yaml</span>::<span class="ident">OutputResource</span>::<span class="ident">Files</span> {
-                    <span class="ident">paths</span>: <span class="macro">vec</span><span class="macro">!</span>[<span class="string">&quot;output.txt&quot;</span>.<span class="ident">to_string</span>()],
+                    <span class="ident">paths</span>: <span class="macro">vec</span><span class="macro">!</span>[<span class="string">&quot;protos&quot;</span>.<span class="ident">to_string</span>()],
+                    <span class="ident">extensions</span>: <span class="prelude-val">Some</span>(<span class="macro">vec</span><span class="macro">!</span>[<span class="string">&quot;go&quot;</span>.<span class="ident">to_string</span>()]),
                 }]),
             ),
             (

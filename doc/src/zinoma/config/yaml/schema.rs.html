@@ -509,6 +509,27 @@
 <span id="509">509</span>
 <span id="510">510</span>
 <span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">schemars</span>::<span class="ident">JsonSchema</span>;
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
@@ -914,6 +935,27 @@
         <span class="doccomment">/// - the command `zinoma --clean` will delete `node_modules`;</span>
         <span class="doccomment">/// - the command `zinoma --clean npm_install` will delete `node_modules`, then run `npm install`.</span>
         <span class="ident">paths</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
+        <span class="doccomment">/// Filter files resource by file extensions.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// It should be an array of strings.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// If `extensions` are specified, only files matching at least one of the extensions will be included in the resource.</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// __Example__</span>
+        <span class="doccomment">///</span>
+        <span class="doccomment">/// ```yaml</span>
+        <span class="doccomment">/// targets:</span>
+        <span class="doccomment">///   protoc:</span>
+        <span class="doccomment">///     input:</span>
+        <span class="doccomment">///       - paths: [protos]</span>
+        <span class="doccomment">///         extensions: [proto]</span>
+        <span class="doccomment">///     output:</span>
+        <span class="doccomment">///       - paths: [protos]</span>
+        <span class="doccomment">///         extensions: [go]</span>
+        <span class="doccomment">///     build: |</span>
+        <span class="doccomment">///       cd protos</span>
+        <span class="doccomment">///       docker run -v `pwd`:/defs namely/protoc-all -d . -o . -l go</span>
+        <span class="ident">extensions</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     },
     <span class="ident">CmdStdout</span> {
         <span class="doccomment">/// Shell script whose output identifies the state of a resource.</span>
