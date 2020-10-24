@@ -1,3 +1,0 @@
-(function() {var implementors = {};
-implementors["zinoma"] = [{"text":"impl <a class=\"trait\" href=\"https://docs.rs/futures-core/0.3.5/futures_core/stream/trait.Stream.html\" title=\"trait futures_core::stream::Stream\">Stream</a> for <a class=\"struct\" href=\"zinoma/async_utils/exponential_backoff/struct.ExponentialBackoff.html\" title=\"struct zinoma::async_utils::exponential_backoff::ExponentialBackoff\">ExponentialBackoff</a>","synthetic":false,"types":["zinoma::async_utils::exponential_backoff::ExponentialBackoff"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
