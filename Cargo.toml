@@ -21,7 +21,7 @@ walkdir = "2"
 notify = { version = "=5.0.0-pre.3", features = ["serde"] }
 clap = "3.0.0-beta.1"
 log = "0.4"
-stderrlog = "0.4.3"
+stderrlog = "0.5"
 anyhow = "1.0"
 regex = "1"
 lazy_static = "1.4.0"
