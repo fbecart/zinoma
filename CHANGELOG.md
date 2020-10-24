@@ -2,6 +2,10 @@
 
 ## TBD
 
+## 0.19.2 (2020-10-24)
+
+Minor version with dependency updates.
+
 ## 0.19.1 (2020-09-04)
 
 Feature enhancements:
