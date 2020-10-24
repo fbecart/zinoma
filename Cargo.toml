@@ -34,7 +34,7 @@ itertools = "0.9"
 async-std = { version = "1.6", features = ["unstable"] }
 futures = "0.3"
 pin-project-lite = "0.1"
-async-process = "0.1"
+async-process = "1.0"
 
 [target.'cfg(all(not(target_env = "msvc"), target_pointer_width = "64"))'.dependencies]
 jemallocator = "0.3.2"

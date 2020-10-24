@@ -86,30 +86,30 @@ dependencies = [
  "libc",
  "once_cell",
  "parking 2.0.0",
- "polling",
+ "polling 0.1.8",
  "socket2",
- "vec-arena",
+ "vec-arena 0.5.2",
  "wepoll-sys-stjepang",
  "winapi 0.3.9",
 ]
 
 [[package]]
 name = "async-io"
-version = "0.2.7"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9424bb88867b003ca32a1d99cf64595c5a310c7322891795f38aa061860d0af"
+checksum = "38628c78a34f111c5a6b98fc87dfc056cd1590b61afe748b145be4623c56d194"
 dependencies = [
  "cfg-if",
  "concurrent-queue",
  "fastrand",
- "futures-lite 1.0.0",
+ "futures-lite 1.11.2",
  "libc",
  "log",
  "once_cell",
  "parking 2.0.0",
- "polling",
+ "polling 1.0.2",
  "socket2",
- "vec-arena",
+ "vec-arena 1.0.0",
  "waker-fn",
  "wepoll-sys-stjepang",
  "winapi 0.3.9",
@@ -126,15 +126,15 @@ dependencies = [
 
 [[package]]
 name = "async-process"
-version = "0.1.3"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23d510baf319291a41e6c3363df4408a3b196ad18fcb1305ae4e500f2eabe260"
+checksum = "4c8cea09c1fb10a317d1b5af8024eeba256d6554763e85ecd90ff8df31c7bbda"
 dependencies = [
- "async-io 0.2.7",
- "blocking 0.6.1",
+ "async-io 1.1.0",
+ "blocking 1.0.2",
  "cfg-if",
  "event-listener",
- "futures-lite 1.0.0",
+ "futures-lite 1.11.2",
  "once_cell",
  "signal-hook",
  "winapi 0.3.9",
@@ -149,7 +149,7 @@ dependencies = [
  "async-executor",
  "async-io 0.1.11",
  "async-mutex",
- "async-task",
+ "async-task 3.0.0",
  "blocking 0.5.2",
  "crossbeam-utils",
  "futures-channel",
@@ -173,6 +173,12 @@ name = "async-task"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c17772156ef2829aadc587461c7753af20b7e8db1529bc66855add962a3b35d3"
+
+[[package]]
+name = "async-task"
+version = "4.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e91831deabf0d6d7ec49552e489aed63b7456a7a3c46cff62adad428110b0af0"
 
 [[package]]
 name = "atomic-waker"
@@ -228,16 +234,16 @@ dependencies = [
 
 [[package]]
 name = "blocking"
-version = "0.6.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f30e08a950487f80d2de5cbb72772c8bbaed6002dc8d979722dabd034ede18d"
+checksum = "c5e170dbede1f740736619b776d7251cb1b9095c435c34d8ca9f57fcd2f335e9"
 dependencies = [
  "async-channel",
+ "async-task 4.0.3",
  "atomic-waker",
  "fastrand",
- "futures-lite 1.0.0",
+ "futures-lite 1.11.2",
  "once_cell",
- "waker-fn",
 ]
 
 [[package]]
@@ -537,9 +543,9 @@ dependencies = [
 
 [[package]]
 name = "futures-lite"
-version = "1.0.0"
+version = "1.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dfd8ccee4974dccf68838bb2b9c90439238090061c82454af83866ac059eb9f"
+checksum = "5e6c079abfac3ab269e2927ec048dabc89d009ebfdda6b8ee86624f30c689658"
 dependencies = [
  "fastrand",
  "futures-core",
@@ -838,7 +844,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c09c35271e7dcdb5f709779111f2c8e8ab8e06c1b587c1c6a9e179d865aaa5b4"
 dependencies = [
- "async-task",
+ "async-task 3.0.0",
  "concurrent-queue",
  "fastrand",
 ]
@@ -990,6 +996,19 @@ name = "polling"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1e9fa0ab21ed700cf0c4ebec57ae5496bec942a0aef9545562979a9f75b97aa"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "log",
+ "wepoll-sys-stjepang",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "polling"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a5388c2f19adcd6c462b8ca7db12b2c67e4c11c3d084361d1f5203d4389d990"
 dependencies = [
  "cfg-if",
  "libc",
@@ -1385,6 +1404,12 @@ name = "vec-arena"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8cb18268690309760d59ee1a9b21132c126ba384f374c59a94db4bc03adeb561"
+
+[[package]]
+name = "vec-arena"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eafc1b9b2dfc6f5529177b62cf806484db55b32dc7c9658a118e11bbeb33061d"
 
 [[package]]
 name = "vec_map"
