@@ -3,7 +3,7 @@ use crate::domain::{TargetId, TargetMetadata};
 use crate::engine::watcher::TargetInvalidatedMessage;
 use crate::TerminationMessage;
 use anyhow::Error;
-use async_std::sync::{Receiver, Sender};
+use async_std::channel::{Receiver, Sender};
 use std::collections::{HashMap, HashSet};
 
 pub struct TargetActorHelper {
@@ -78,13 +78,14 @@ impl TargetActorHelper {
     pub async fn notify_execution_failed(&mut self, e: Error) {
         self.executed = false;
         let msg = TargetActorOutputMessage::TargetExecutionError(self.target_id.clone(), e);
-        self.target_actor_output_sender.send(msg).await;
+        self.target_actor_output_sender.send(msg).await.unwrap()
     }
 
     pub async fn send_to_actor(&self, dest: ActorId, msg: ActorInputMessage) {
         self.target_actor_output_sender
             .send(TargetActorOutputMessage::MessageActor { dest, msg })
             .await
+            .unwrap()
     }
 
     pub async fn send_to_dependencies(&self, msg: ActorInputMessage) {

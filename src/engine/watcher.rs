@@ -1,8 +1,8 @@
 use crate::domain::{self, Resources, TargetId};
 use crate::work_dir;
 use anyhow::{Context, Error, Result};
+use async_std::channel::Sender;
 use async_std::path::{Path, PathBuf};
-use async_std::sync::Sender;
 use domain::FileExtensions;
 use notify::{ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::{HashMap, HashSet};

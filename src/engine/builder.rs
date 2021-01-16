@@ -1,8 +1,8 @@
 use crate::domain::BuildTarget;
 use crate::run_script;
 use anyhow::{anyhow, Context, Result};
+use async_std::channel::Receiver;
 use async_std::prelude::*;
-use async_std::sync::Receiver;
 use futures::FutureExt;
 use std::process::Stdio;
 use std::time::Instant;

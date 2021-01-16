@@ -5,11 +5,10 @@ use super::WatchOption;
 use crate::domain::{Target, TargetId};
 use crate::TerminationMessage;
 use anyhow::Result;
-use async_std::sync;
+use async_std::channel::Sender;
 use async_std::task::JoinHandle;
 use futures::future;
 use std::collections::HashMap;
-use sync::Sender;
 
 pub struct TargetActors {
     targets: HashMap<TargetId, Target>,
@@ -56,7 +55,8 @@ impl TargetActors {
         self.get_target_actor_handles(target_id)?
             .target_actor_input_sender
             .send(msg)
-            .await;
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -68,7 +68,11 @@ impl TargetActors {
                 kind,
                 requester: ActorId::Root,
             };
-            handles.target_actor_input_sender.send(build_msg).await;
+            handles
+                .target_actor_input_sender
+                .send(build_msg)
+                .await
+                .unwrap();
         }
 
         Ok(())
@@ -84,7 +88,11 @@ impl TargetActors {
     ) {
         log::debug!("Terminating all targets");
         for handles in target_actor_handles.values() {
-            handles.termination_sender.send(TerminationMessage).await;
+            handles
+                .termination_sender
+                .send(TerminationMessage)
+                .await
+                .unwrap();
         }
     }
 }

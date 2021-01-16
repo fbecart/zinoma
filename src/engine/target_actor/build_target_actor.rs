@@ -1,7 +1,7 @@
 use super::{ActorInputMessage, ExecutionKind, TargetActorHelper};
 use crate::domain::BuildTarget;
 use crate::engine::{builder, incremental};
-use async_std::{prelude::*, sync};
+use async_std::{channel, prelude::*};
 use builder::BuildCancellationMessage;
 use futures::future::Fuse;
 use futures::{pin_mut, FutureExt};
@@ -30,7 +30,7 @@ impl BuildTargetActor {
             if self.helper.should_execute(ExecutionKind::Build)
                 && ongoing_build_cancellation_sender.is_none()
             {
-                let (build_cancellation_sender, build_cancellation_events) = sync::channel(1);
+                let (build_cancellation_sender, build_cancellation_events) = channel::bounded(1);
                 ongoing_build_cancellation_sender = Some(build_cancellation_sender);
                 let build_future = builder::build_target(&self.target, build_cancellation_events);
                 ongoing_build_fuse.set(

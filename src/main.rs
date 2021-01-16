@@ -12,8 +12,8 @@ mod work_dir;
 
 use anyhow::{Context, Result};
 use async_ctrlc::CtrlC;
+use async_std::channel::{self, Receiver};
 use async_std::path::PathBuf;
-use async_std::sync::{self, Receiver};
 use async_std::task;
 use clean::clean_target_output_paths;
 use config::{ir, yaml};
@@ -92,7 +92,7 @@ fn main() -> Result<()> {
             let termination_events = terminate_on_ctrlc()?;
 
             let (target_actor_output_sender, target_actor_output_events) =
-                sync::channel(crate::DEFAULT_CHANNEL_CAP);
+                channel::bounded(crate::DEFAULT_CHANNEL_CAP);
             let mut target_actors =
                 TargetActors::new(targets, target_actor_output_sender, watch_option);
 
@@ -115,13 +115,13 @@ fn main() -> Result<()> {
 }
 
 fn terminate_on_ctrlc() -> Result<Receiver<TerminationMessage>> {
-    let (termination_sender, termination_events) = sync::channel(1);
+    let (termination_sender, termination_events) = channel::bounded(1);
     let ctrlc = CtrlC::new().with_context(|| "Failed to set Ctrl-C handler")?;
 
     task::spawn(async move {
         ctrlc.await;
         log::debug!("Ctrl-C received");
-        termination_sender.send(TerminationMessage).await;
+        termination_sender.send(TerminationMessage).await.unwrap();
     });
 
     Ok(termination_events)
