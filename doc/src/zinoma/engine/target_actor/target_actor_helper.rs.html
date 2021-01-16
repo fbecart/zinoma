@@ -138,13 +138,14 @@
 <span id="135">135</span>
 <span id="136">136</span>
 <span id="137">137</span>
+<span id="138">138</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">ActorId</span>, <span class="ident">ActorInputMessage</span>, <span class="ident">ExecutionKind</span>, <span class="ident">TargetActorOutputMessage</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::{<span class="ident">TargetId</span>, <span class="ident">TargetMetadata</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">engine</span>::<span class="ident">watcher</span>::<span class="ident">TargetInvalidatedMessage</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">TerminationMessage</span>;
 <span class="kw">use</span> <span class="ident">anyhow</span>::<span class="ident">Error</span>;
-<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">sync</span>::{<span class="ident">Receiver</span>, <span class="ident">Sender</span>};
+<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">channel</span>::{<span class="ident">Receiver</span>, <span class="ident">Sender</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">collections</span>::{<span class="ident">HashMap</span>, <span class="ident">HashSet</span>};
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TargetActorHelper</span> {
@@ -219,13 +220,14 @@
     <span class="kw">pub</span> <span class="ident">async</span> <span class="kw">fn</span> <span class="ident">notify_execution_failed</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">e</span>: <span class="ident">Error</span>) {
         <span class="self">self</span>.<span class="ident">executed</span> <span class="op">=</span> <span class="bool-val">false</span>;
         <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="ident">TargetActorOutputMessage</span>::<span class="ident">TargetExecutionError</span>(<span class="self">self</span>.<span class="ident">target_id</span>.<span class="ident">clone</span>(), <span class="ident">e</span>);
-        <span class="self">self</span>.<span class="ident">target_actor_output_sender</span>.<span class="ident">send</span>(<span class="ident">msg</span>).<span class="ident">await</span>;
+        <span class="self">self</span>.<span class="ident">target_actor_output_sender</span>.<span class="ident">send</span>(<span class="ident">msg</span>).<span class="ident">await</span>.<span class="ident">unwrap</span>()
     }
 
     <span class="kw">pub</span> <span class="ident">async</span> <span class="kw">fn</span> <span class="ident">send_to_actor</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">dest</span>: <span class="ident">ActorId</span>, <span class="ident">msg</span>: <span class="ident">ActorInputMessage</span>) {
         <span class="self">self</span>.<span class="ident">target_actor_output_sender</span>
             .<span class="ident">send</span>(<span class="ident">TargetActorOutputMessage</span>::<span class="ident">MessageActor</span> { <span class="ident">dest</span>, <span class="ident">msg</span> })
             .<span class="ident">await</span>
+            .<span class="ident">unwrap</span>()
     }
 
     <span class="kw">pub</span> <span class="ident">async</span> <span class="kw">fn</span> <span class="ident">send_to_dependencies</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">ActorInputMessage</span>) {

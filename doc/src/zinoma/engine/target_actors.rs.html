@@ -91,6 +91,14 @@
 <span id="88">88</span>
 <span id="89">89</span>
 <span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">target_actor</span>::{
     <span class="self">self</span>, <span class="ident">ActorId</span>, <span class="ident">ActorInputMessage</span>, <span class="ident">ExecutionKind</span>, <span class="ident">TargetActorHandleSet</span>, <span class="ident">TargetActorOutputMessage</span>,
@@ -99,11 +107,10 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::{<span class="ident">Target</span>, <span class="ident">TargetId</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">TerminationMessage</span>;
 <span class="kw">use</span> <span class="ident">anyhow</span>::<span class="prelude-ty">Result</span>;
-<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">sync</span>;
+<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">channel</span>::<span class="ident">Sender</span>;
 <span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">task</span>::<span class="ident">JoinHandle</span>;
 <span class="kw">use</span> <span class="ident">futures</span>::<span class="ident">future</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">collections</span>::<span class="ident">HashMap</span>;
-<span class="kw">use</span> <span class="ident">sync</span>::<span class="ident">Sender</span>;
 
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TargetActors</span> {
     <span class="ident">targets</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">TargetId</span>, <span class="ident">Target</span><span class="op">&gt;</span>,
@@ -150,7 +157,8 @@
         <span class="self">self</span>.<span class="ident">get_target_actor_handles</span>(<span class="ident">target_id</span>)<span class="question-mark">?</span>
             .<span class="ident">target_actor_input_sender</span>
             .<span class="ident">send</span>(<span class="ident">msg</span>)
-            .<span class="ident">await</span>;
+            .<span class="ident">await</span>
+            .<span class="ident">unwrap</span>();
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -162,7 +170,11 @@
                 <span class="ident">kind</span>,
                 <span class="ident">requester</span>: <span class="ident">ActorId</span>::<span class="ident">Root</span>,
             };
-            <span class="ident">handles</span>.<span class="ident">target_actor_input_sender</span>.<span class="ident">send</span>(<span class="ident">build_msg</span>).<span class="ident">await</span>;
+            <span class="ident">handles</span>
+                .<span class="ident">target_actor_input_sender</span>
+                .<span class="ident">send</span>(<span class="ident">build_msg</span>)
+                .<span class="ident">await</span>
+                .<span class="ident">unwrap</span>();
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -178,7 +190,11 @@
     ) {
         <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Terminating all targets&quot;</span>);
         <span class="kw">for</span> <span class="ident">handles</span> <span class="kw">in</span> <span class="ident">target_actor_handles</span>.<span class="ident">values</span>() {
-            <span class="ident">handles</span>.<span class="ident">termination_sender</span>.<span class="ident">send</span>(<span class="ident">TerminationMessage</span>).<span class="ident">await</span>;
+            <span class="ident">handles</span>
+                .<span class="ident">termination_sender</span>
+                .<span class="ident">send</span>(<span class="ident">TerminationMessage</span>)
+                .<span class="ident">await</span>
+                .<span class="ident">unwrap</span>();
         }
     }
 }

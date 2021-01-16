@@ -156,8 +156,8 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::{<span class="self">self</span>, <span class="ident">Resources</span>, <span class="ident">TargetId</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">work_dir</span>;
 <span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">Context</span>, <span class="ident">Error</span>, <span class="prelude-ty">Result</span>};
+<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">channel</span>::<span class="ident">Sender</span>;
 <span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>};
-<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">sync</span>::<span class="ident">Sender</span>;
 <span class="kw">use</span> <span class="ident">domain</span>::<span class="ident">FileExtensions</span>;
 <span class="kw">use</span> <span class="ident">notify</span>::{<span class="ident">ErrorKind</span>, <span class="ident">RecommendedWatcher</span>, <span class="ident">RecursiveMode</span>, <span class="ident">Watcher</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">collections</span>::{<span class="ident">HashMap</span>, <span class="ident">HashSet</span>};

@@ -155,8 +155,8 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">domain</span>::<span class="ident">TargetId</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">TerminationMessage</span>;
 <span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">Context</span>, <span class="prelude-ty">Result</span>};
+<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">channel</span>::<span class="ident">Receiver</span>;
 <span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">sync</span>::<span class="ident">Receiver</span>;
 <span class="kw">use</span> <span class="ident">futures</span>::<span class="ident">FutureExt</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">collections</span>::<span class="ident">HashSet</span>;
 <span class="kw">use</span> <span class="ident">target_actor</span>::{<span class="ident">ActorId</span>, <span class="ident">ActorInputMessage</span>, <span class="ident">ExecutionKind</span>, <span class="ident">TargetActorOutputMessage</span>};

@@ -146,8 +146,8 @@
 
 <span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">Context</span>, <span class="prelude-ty">Result</span>};
 <span class="kw">use</span> <span class="ident">async_ctrlc</span>::<span class="ident">CtrlC</span>;
+<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">channel</span>::{<span class="self">self</span>, <span class="ident">Receiver</span>};
 <span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">path</span>::<span class="ident">PathBuf</span>;
-<span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">sync</span>::{<span class="self">self</span>, <span class="ident">Receiver</span>};
 <span class="kw">use</span> <span class="ident">async_std</span>::<span class="ident">task</span>;
 <span class="kw">use</span> <span class="ident">clean</span>::<span class="ident">clean_target_output_paths</span>;
 <span class="kw">use</span> <span class="ident">config</span>::{<span class="ident">ir</span>, <span class="ident">yaml</span>};
@@ -226,7 +226,7 @@
             <span class="kw">let</span> <span class="ident">termination_events</span> <span class="op">=</span> <span class="ident">terminate_on_ctrlc</span>()<span class="question-mark">?</span>;
 
             <span class="kw">let</span> (<span class="ident">target_actor_output_sender</span>, <span class="ident">target_actor_output_events</span>) <span class="op">=</span>
-                <span class="ident">sync</span>::<span class="ident">channel</span>(<span class="kw">crate</span>::<span class="ident">DEFAULT_CHANNEL_CAP</span>);
+                <span class="ident">channel</span>::<span class="ident">bounded</span>(<span class="kw">crate</span>::<span class="ident">DEFAULT_CHANNEL_CAP</span>);
             <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">target_actors</span> <span class="op">=</span>
                 <span class="ident">TargetActors</span>::<span class="ident">new</span>(<span class="ident">targets</span>, <span class="ident">target_actor_output_sender</span>, <span class="ident">watch_option</span>);
 
@@ -249,13 +249,13 @@
 }
 
 <span class="kw">fn</span> <span class="ident">terminate_on_ctrlc</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">TerminationMessage</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> (<span class="ident">termination_sender</span>, <span class="ident">termination_events</span>) <span class="op">=</span> <span class="ident">sync</span>::<span class="ident">channel</span>(<span class="number">1</span>);
+    <span class="kw">let</span> (<span class="ident">termination_sender</span>, <span class="ident">termination_events</span>) <span class="op">=</span> <span class="ident">channel</span>::<span class="ident">bounded</span>(<span class="number">1</span>);
     <span class="kw">let</span> <span class="ident">ctrlc</span> <span class="op">=</span> <span class="ident">CtrlC</span>::<span class="ident">new</span>().<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="string">&quot;Failed to set Ctrl-C handler&quot;</span>)<span class="question-mark">?</span>;
 
     <span class="ident">task</span>::<span class="ident">spawn</span>(<span class="ident">async</span> <span class="kw">move</span> {
         <span class="ident">ctrlc</span>.<span class="ident">await</span>;
         <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Ctrl-C received&quot;</span>);
-        <span class="ident">termination_sender</span>.<span class="ident">send</span>(<span class="ident">TerminationMessage</span>).<span class="ident">await</span>;
+        <span class="ident">termination_sender</span>.<span class="ident">send</span>(<span class="ident">TerminationMessage</span>).<span class="ident">await</span>.<span class="ident">unwrap</span>();
     });
 
     <span class="prelude-val">Ok</span>(<span class="ident">termination_events</span>)
