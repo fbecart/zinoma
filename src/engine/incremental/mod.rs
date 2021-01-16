@@ -118,7 +118,7 @@ impl TargetEnvState {
             } else {
                 true
             }
-        };
+        }
 
         both(
             eq(Some(&self.input), Some(target_input)),

@@ -5,7 +5,6 @@ use crate::TerminationMessage;
 use anyhow::Error;
 use async_std::sync::{Receiver, Sender};
 use std::collections::{HashMap, HashSet};
-use std::iter::FromIterator;
 
 pub struct TargetActorHelper {
     pub target_id: TargetId,
@@ -31,7 +30,7 @@ impl TargetActorHelper {
         let dependencies = target_metadata.dependencies.clone();
 
         let mut unavailable_dependencies = HashMap::new();
-        let dependencies_set = HashSet::from_iter(dependencies.iter().cloned());
+        let dependencies_set: HashSet<_> = dependencies.iter().cloned().collect();
         unavailable_dependencies.insert(ExecutionKind::Build, dependencies_set.clone());
         unavailable_dependencies.insert(ExecutionKind::Service, dependencies_set);
 
