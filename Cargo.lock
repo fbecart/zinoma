@@ -1530,7 +1530,6 @@ dependencies = [
  "lazy_static",
  "log",
  "notify",
- "pin-project-lite 0.1.11",
  "predicates",
  "regex",
  "schemars",
