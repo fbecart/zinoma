@@ -21,8 +21,8 @@ impl ResourcesState {
     }
 
     pub async fn eq_current_state(&self, cmds: &[CmdResource]) -> bool {
-        let futures = cmds.iter().map(|resource| async move {
-            match get_cmd_stdout(resource).await {
+        let futures = cmds.iter().cloned().map(|resource| async move {
+            match get_cmd_stdout(&resource).await {
                 Ok(stdout) => self.0.get(&resource.cmd) == Some(&stdout),
                 Err(e) => {
                     log::error!("Command {} failed to execute: {}", resource.cmd, e);
