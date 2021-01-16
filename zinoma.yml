@@ -5,7 +5,7 @@ targets:
         extensions: [rs]
     build: |
       touch src/main.rs
-      exec cargo clippy -- -Dwarnings
+      exec cargo clippy # -- -Dwarnings
 
   test:
     dependencies: [clippy]
