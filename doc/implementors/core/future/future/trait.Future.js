@@ -1,3 +1,0 @@
-(function() {var implementors = {};
-implementors["zinoma"] = [{"text":"impl&lt;L, R&gt; Future for Both&lt;L, R&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;L: Future&lt;Output = bool&gt;,<br>&nbsp;&nbsp;&nbsp;&nbsp;R: Future&lt;Output = bool&gt;,&nbsp;</span>","synthetic":false,"types":[]},{"text":"impl&lt;F:&nbsp;Future&lt;Output = bool&gt;&gt; Future for MaybeDone&lt;F&gt;","synthetic":false,"types":[]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
