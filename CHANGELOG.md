@@ -2,6 +2,10 @@
 
 ## TBD
 
+## 0.19.3 (2021-01-17)
+
+Minor version with dependency updates and code simplification (incl. removal of all unsafe blocks).
+
 ## 0.19.2 (2020-10-24)
 
 Minor version with dependency updates.

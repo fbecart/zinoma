@@ -1,6 +1,6 @@
 [package]
 name = "zinoma"
-version = "0.19.2"
+version = "0.19.3"
 authors = ["Florent Bécart <florent.becart@gmail.com>"]
 edition = "2018"
 
