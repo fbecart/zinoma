@@ -220,14 +220,14 @@
     <span class="kw">pub</span> <span class="ident">async</span> <span class="kw">fn</span> <span class="ident">notify_execution_failed</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">e</span>: <span class="ident">Error</span>) {
         <span class="self">self</span>.<span class="ident">executed</span> <span class="op">=</span> <span class="bool-val">false</span>;
         <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="ident">TargetActorOutputMessage</span>::<span class="ident">TargetExecutionError</span>(<span class="self">self</span>.<span class="ident">target_id</span>.<span class="ident">clone</span>(), <span class="ident">e</span>);
-        <span class="self">self</span>.<span class="ident">target_actor_output_sender</span>.<span class="ident">send</span>(<span class="ident">msg</span>).<span class="ident">await</span>.<span class="ident">unwrap</span>()
+        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">target_actor_output_sender</span>.<span class="ident">send</span>(<span class="ident">msg</span>).<span class="ident">await</span>;
     }
 
     <span class="kw">pub</span> <span class="ident">async</span> <span class="kw">fn</span> <span class="ident">send_to_actor</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">dest</span>: <span class="ident">ActorId</span>, <span class="ident">msg</span>: <span class="ident">ActorInputMessage</span>) {
-        <span class="self">self</span>.<span class="ident">target_actor_output_sender</span>
+        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>
+            .<span class="ident">target_actor_output_sender</span>
             .<span class="ident">send</span>(<span class="ident">TargetActorOutputMessage</span>::<span class="ident">MessageActor</span> { <span class="ident">dest</span>, <span class="ident">msg</span> })
-            .<span class="ident">await</span>
-            .<span class="ident">unwrap</span>()
+            .<span class="ident">await</span>;
     }
 
     <span class="kw">pub</span> <span class="ident">async</span> <span class="kw">fn</span> <span class="ident">send_to_dependencies</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">ActorInputMessage</span>) {
