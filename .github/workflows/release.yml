@@ -205,7 +205,8 @@ jobs:
       - name: Obtain asset path and name
         shell: bash
         run: |
-          echo "ASSET_PATH=$(ls target/${{ matrix.target }}/debian/*.deb)" >> $GITHUB_ENV
+          asset_path="$(ls target/${{ matrix.target }}/debian/*.deb)"
+          echo "ASSET_PATH=$asset_path" >> $GITHUB_ENV
           echo "ASSET_NAME=$(basename $asset_path)" >> $GITHUB_ENV
 
       - name: Upload release archive
