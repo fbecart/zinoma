@@ -52,11 +52,11 @@ impl TargetActors {
     }
 
     pub async fn send(&mut self, target_id: &TargetId, msg: ActorInputMessage) -> Result<()> {
-        self.get_target_actor_handles(target_id)?
+        let _ = self
+            .get_target_actor_handles(target_id)?
             .target_actor_input_sender
             .send(msg)
-            .await
-            .unwrap();
+            .await;
 
         Ok(())
     }
@@ -68,11 +68,7 @@ impl TargetActors {
                 kind,
                 requester: ActorId::Root,
             };
-            handles
-                .target_actor_input_sender
-                .send(build_msg)
-                .await
-                .unwrap();
+            let _ = handles.target_actor_input_sender.send(build_msg).await;
         }
 
         Ok(())
@@ -88,11 +84,7 @@ impl TargetActors {
     ) {
         log::debug!("Terminating all targets");
         for handles in target_actor_handles.values() {
-            handles
-                .termination_sender
-                .send(TerminationMessage)
-                .await
-                .unwrap();
+            let _ = handles.termination_sender.send(TerminationMessage).await;
         }
     }
 }

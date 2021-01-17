@@ -121,7 +121,7 @@ fn terminate_on_ctrlc() -> Result<Receiver<TerminationMessage>> {
     task::spawn(async move {
         ctrlc.await;
         log::debug!("Ctrl-C received");
-        termination_sender.send(TerminationMessage).await.unwrap();
+        let _ = termination_sender.send(TerminationMessage).await;
     });
 
     Ok(termination_events)
