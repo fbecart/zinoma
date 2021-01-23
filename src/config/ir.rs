@@ -192,10 +192,11 @@ fn transform_target(
         yaml::Target::Service { service, input, .. } => {
             let (input, dependencies_from_input) =
                 transform_input(input, &metadata.id, &metadata.project_dir)?;
+            let command = transform_command(service, &metadata.project_dir);
             Ok((
                 domain::Target::Service(domain::ServiceTarget {
                     metadata,
-                    run_script: service,
+                    command,
                     input,
                 }),
                 dependencies_from_input,
@@ -288,6 +289,31 @@ fn transform_extensions(extensions: Option<Vec<String>>) -> Option<BTreeSet<Stri
                 .collect::<BTreeSet<_>>()
         })
         .filter(|extensions| !extensions.is_empty())
+}
+
+fn transform_command(command: yaml::Command, project_dir: &PathBuf) -> domain::Command {
+    let yaml::Command {
+        cmd,
+        args,
+        dir,
+        env,
+    } = command;
+
+    let dir = dir
+        .map(|dir| project_dir.join(dir))
+        .unwrap_or(project_dir.clone());
+    let program = if Path::new(&cmd).components().count() > 1 {
+        dir.join(cmd).to_string_lossy().to_string()
+    } else {
+        cmd
+    };
+
+    domain::Command {
+        program,
+        args: args.unwrap_or(Vec::new()),
+        dir,
+        env: env.unwrap_or(HashMap::new()),
+    }
 }
 
 #[cfg(test)]

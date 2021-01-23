@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use async_std::path::PathBuf;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet,HashMap};
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -33,7 +33,7 @@ impl fmt::Display for BuildTarget {
 #[derive(Debug)]
 pub struct ServiceTarget {
     pub metadata: TargetMetadata,
-    pub run_script: String,
+    pub command: Command,
     pub input: Resources,
 }
 
@@ -41,6 +41,14 @@ impl fmt::Display for ServiceTarget {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "{}", self.metadata.id)
     }
+}
+
+#[derive(Debug)]
+pub struct Command {
+    pub program: String,
+    pub args: Vec<String>,
+    pub dir: PathBuf,
+    pub env: HashMap<String, String>,
 }
 
 #[derive(Debug)]

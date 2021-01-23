@@ -1,8 +1,8 @@
 use super::{ActorInputMessage, ExecutionKind, TargetActorHelper};
 use crate::domain::ServiceTarget;
-use crate::run_script;
 use anyhow::{Context, Result};
 use async_process::Child;
+use async_process::Command;
 use async_std::prelude::*;
 use futures::FutureExt;
 use std::mem;
@@ -102,8 +102,11 @@ impl ServiceTargetActor {
 
         log::info!("{} - Starting service", self.target.metadata.id);
 
-        let mut command =
-            run_script::build_command(&self.target.run_script, &self.target.metadata.project_dir);
+        let mut command = Command::new(&self.target.command.program);
+        command
+            .args(&self.target.command.args)
+            .current_dir(&self.target.command.dir)
+            .envs(&self.target.command.env);
         command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
 
         let service_process = command

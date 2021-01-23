@@ -1,6 +1,8 @@
 targets:
   my_service:
-    service: ":"
+    service:
+      cmd: date
+
   my_build_target:
     dependencies: [my_service]
     build: ":"

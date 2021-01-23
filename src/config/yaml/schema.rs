@@ -242,7 +242,7 @@ pub enum Target {
         ///
         /// In this example, `zinoma npm_server --watch` will run `npm start`,
         /// and will restart this process every time `package.json` or `index.js` are updated.
-        service: String,
+        service: Command,
 
         /// Input resources of the target.
         #[serde(default)]
@@ -305,7 +305,7 @@ pub enum InputResource {
     ///     output:
     ///       - paths: [dist]
     ///     build: tsc
-    ///      
+    ///
     ///   run:
     ///     input:
     ///       - node_dependencies.output
@@ -443,6 +443,15 @@ pub enum OutputResource {
         /// ```
         cmd_stdout: String,
     },
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Command {
+    pub cmd: String,
+    pub args: Option<Vec<String>>,
+    pub dir: Option<String>,
+    pub env: Option<HashMap<String, String>>,
 }
 
 /// List of [`targets`] that must complete successfully before this target can be built.
