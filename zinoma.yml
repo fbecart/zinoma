@@ -43,3 +43,9 @@ targets:
     input:
       - paths: [src]
     build: exec cargo doc
+
+  node_help:
+    service:
+      dir: ../Discontract/discontract-firebase-integration
+      cmd: node_modules/.bin/ts-node
+      args: [--help]

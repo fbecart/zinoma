@@ -448,10 +448,9 @@ pub enum OutputResource {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Command {
-    pub cmd: String,
-    pub args: Option<Vec<String>>,
-    pub dir: Option<String>,
     pub env: Option<HashMap<String, String>>,
+    pub dir: Option<String>,
+    pub cmd: String,
 }
 
 /// List of [`targets`] that must complete successfully before this target can be built.

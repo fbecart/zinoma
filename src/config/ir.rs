@@ -1,6 +1,6 @@
 use super::yaml;
 use crate::domain::{self, TargetId};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use async_std::path::{Path, PathBuf};
 use domain::{CmdResource, FilesResource};
 use lazy_static::lazy_static;
@@ -291,17 +291,16 @@ fn transform_extensions(extensions: Option<Vec<String>>) -> Option<BTreeSet<Stri
         .filter(|extensions| !extensions.is_empty())
 }
 
-fn transform_command(command: yaml::Command, project_dir: &PathBuf) -> domain::Command {
-    let yaml::Command {
-        cmd,
-        args,
-        dir,
-        env,
-    } = command;
+fn transform_command(command: yaml::Command, project_dir: &PathBuf) -> Result<domain::Command> {
+    let yaml::Command { env, dir, cmd } = command;
 
     let dir = dir
         .map(|dir| project_dir.join(dir))
         .unwrap_or(project_dir.clone());
+
+    let words = shellwords::split(&cmd)
+        .with_context(|| format!("Failed to parse shell command: {}", cmd))?;
+
     let program = if Path::new(&cmd).components().count() > 1 {
         dir.join(cmd).to_string_lossy().to_string()
     } else {
