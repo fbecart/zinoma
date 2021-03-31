@@ -23,26 +23,26 @@ brew install gradle fbecart/tap/zinoma
 
 Versions:
 
-- npm 6.14.5
-- Gradle 6.4.1 with JVM 1.8.0_101 (Oracle Corporation 25.101-b13)
-- Žinoma 0.18.2
+- npm 7.5.4
+- Gradle 6.8.3 with JVM 1.8.0_242-release (JetBrains s.r.o 25.242-b3-6222593)
+- Žinoma 0.19.4
 
 ```shell script
 $ hyperfine --warmup 1 'npm install' 'gradle npmInstall' 'zinoma npm_install'
 Benchmark #1: npm install
-  Time (mean ± σ):      7.417 s ±  0.359 s    [User: 6.868 s, System: 0.406 s]
-  Range (min … max):    6.748 s …  7.684 s    10 runs
+  Time (mean ± σ):      3.120 s ±  0.170 s    [User: 2.140 s, System: 0.153 s]
+  Range (min … max):    2.964 s …  3.463 s    10 runs
 
 Benchmark #2: gradle npmInstall
-  Time (mean ± σ):     860.1 ms ±  10.0 ms    [User: 890.8 ms, System: 92.6 ms]
-  Range (min … max):   848.4 ms … 876.7 ms    10 runs
+  Time (mean ± σ):      1.345 s ±  0.010 s    [User: 1.026 s, System: 0.143 s]
+  Range (min … max):    1.335 s …  1.367 s    10 runs
 
 Benchmark #3: zinoma npm_install
-  Time (mean ± σ):     525.0 ms ±   5.6 ms    [User: 273.0 ms, System: 540.1 ms]
-  Range (min … max):   515.5 ms … 532.7 ms    10 runs
+  Time (mean ± σ):      1.095 s ±  0.014 s    [User: 731.3 ms, System: 2400.1 ms]
+  Range (min … max):    1.077 s …  1.121 s    10 runs
 
 Summary
   'zinoma npm_install' ran
-    1.64 ± 0.03 times faster than 'gradle npmInstall'
-   14.13 ± 0.70 times faster than 'npm install'
+    1.23 ± 0.02 times faster than 'gradle npmInstall'
+    2.85 ± 0.16 times faster than 'npm install'
 ```

@@ -21,27 +21,25 @@ brew install make gradle fbecart/tap/zinoma
 Versions:
 
 - GNU Make 4.3
-- Gradle 6.4.1 with JVM 1.8.0_101 (Oracle Corporation 25.101-b13)
-- Žinoma 0.18.2
+- Gradle 6.8.3 with JVM 1.8.0_242-release (JetBrains s.r.o 25.242-b3-6222593)
+- Žinoma 0.19.4
 
 ```shell script
 $ hyperfine --warmup 2 'gmake sayhello' 'gradle sayHello' 'zinoma say_hello'
 Benchmark #1: gmake sayhello
-  Time (mean ± σ):       4.6 ms ±   0.8 ms    [User: 2.2 ms, System: 1.5 ms]
-  Range (min … max):     3.8 ms …   7.9 ms    460 runs
-
-  Warning: Command took less than 5 ms to complete. Results might be inaccurate.
+  Time (mean ± σ):       5.8 ms ±   0.5 ms    [User: 2.4 ms, System: 2.1 ms]
+  Range (min … max):     5.1 ms …   7.5 ms    359 runs
 
 Benchmark #2: gradle sayHello
-  Time (mean ± σ):     571.5 ms ±   7.0 ms    [User: 890.6 ms, System: 92.6 ms]
-  Range (min … max):   558.6 ms … 582.9 ms    10 runs
+  Time (mean ± σ):     691.4 ms ±   9.0 ms    [User: 1.025 s, System: 0.142 s]
+  Range (min … max):   674.3 ms … 701.0 ms    10 runs
 
 Benchmark #3: zinoma say_hello
-  Time (mean ± σ):      17.9 ms ±   1.8 ms    [User: 9.5 ms, System: 6.4 ms]
-  Range (min … max):    13.0 ms …  22.7 ms    154 runs
+  Time (mean ± σ):      12.4 ms ±   0.7 ms    [User: 7.1 ms, System: 6.6 ms]
+  Range (min … max):    11.0 ms …  16.7 ms    198 runs
 
 Summary
   'gmake sayhello' ran
-    3.88 ± 0.75 times faster than 'zinoma say_hello'
-  124.08 ± 20.41 times faster than 'gradle sayHello'
+    2.14 ± 0.22 times faster than 'zinoma say_hello'
+  118.90 ± 9.96 times faster than 'gradle sayHello'
 ```
