@@ -1,1 +1,1 @@
-initSidebarItems({"static":[["CLEAN",""],["GENERATE_ZSH_COMPLETION",""],["PROJECT_DIR",""],["TARGETS",""],["VERBOSITY",""],["WATCH",""]]});
+window.SIDEBAR_ITEMS = {"static":[["CLEAN",""],["GENERATE_ZSH_COMPLETION",""],["PROJECT_DIR",""],["TARGETS",""],["VERBOSITY",""],["WATCH",""]]};

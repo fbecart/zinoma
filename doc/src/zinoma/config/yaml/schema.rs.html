@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/config/yaml/schema.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>schema.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/config/yaml/schema.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>schema.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -535,538 +530,537 @@
 <span id="530">530</span>
 <span id="531">531</span>
 <span id="532">532</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">schemars::JsonSchema</span>;
-<span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
-<span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>schemars::JsonSchema;
+<span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>std::collections::HashMap;
 
-<span class="doccomment">/// Schema of the build flow configuration file `zinoma.yml`.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// In order to use Žinoma with your project, you need to create a file named `zinoma.yml`.</span>
-<span class="doccomment">/// We recommend putting this file in the root directory of your project.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This struct describes the schema expected for this file. It assumes prior knowledge of the Yaml format.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// __Example__</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// `zinoma.yml`:</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ```yaml</span>
-<span class="doccomment">/// targets:</span>
-<span class="doccomment">///   download_dependencies:</span>
-<span class="doccomment">///     input:</span>
-<span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
-<span class="doccomment">///     output:</span>
-<span class="doccomment">///       - paths: [node_modules]</span>
-<span class="doccomment">///     build: npm install</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///   test:</span>
-<span class="doccomment">///     input:</span>
-<span class="doccomment">///       - download_dependencies.output</span>
-<span class="doccomment">///       - paths: [package.json, src, test]</span>
-<span class="doccomment">///     build: npm test</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///   lint:</span>
-<span class="doccomment">///     input:</span>
-<span class="doccomment">///       - download_dependencies.output</span>
-<span class="doccomment">///       - paths: [package.json, src, test]</span>
-<span class="doccomment">///     build: npm run lint</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///   check:</span>
-<span class="doccomment">///     dependencies: [test, lint]</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///   start:</span>
-<span class="doccomment">///     input:</span>
-<span class="doccomment">///       - download_dependencies.output</span>
-<span class="doccomment">///       - paths: [package.json, src]</span>
-<span class="doccomment">///     service: exec npm run start</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///   build:</span>
-<span class="doccomment">///     dependencies: [check]</span>
-<span class="doccomment">///     input:</span>
-<span class="doccomment">///       - paths:</span>
-<span class="doccomment">///         - Dockerfile</span>
-<span class="doccomment">///         - package.json</span>
-<span class="doccomment">///         - package-lock.json</span>
-<span class="doccomment">///         - src</span>
-<span class="doccomment">///     output:</span>
-<span class="doccomment">///       - paths: [lambda.zip]</span>
-<span class="doccomment">///     build: |</span>
-<span class="doccomment">///       docker build -t build-my-project:latest .</span>
-<span class="doccomment">///       docker create -ti --name build-my-project build-my-project:latest bash</span>
-<span class="doccomment">///       docker cp build-my-project:/var/task/lambda.zip ./</span>
-<span class="doccomment">///       docker rm -f build-my-project</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// In this example:</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// - `zinoma check` will ensure the code complies to the test suites and the coding standards.</span>
-<span class="doccomment">/// - `zinoma start --watch` will run the application and restart it whenever the sources are updated.</span>
-<span class="doccomment">/// - `zinoma --clean build` will generate a clean artifact, ready to be deployed.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// A fully functional and more advanced example project is available in [fbecart/zinoma-node-example](https://github.com/fbecart/zinoma-node-example).</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
-<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Project</span> {
-    <span class="doccomment">/// Targets (aka tasks) of this project.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`Targets`] represent commands and scripts to execute in your build flow.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`Targets`]: struct.Target.html</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Targets run in parallel by default.</span>
-    <span class="doccomment">/// To force targets to run sequentially, you can define [`dependencies`] on other targets.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`dependencies`]: enum.Target.html#variant.Build.field.dependencies</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Each target must have a unique name inside the project.</span>
-    <span class="doccomment">/// The target name must be a string. It should start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// __Example__</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```yaml</span>
-    <span class="doccomment">/// targets:</span>
-    <span class="doccomment">///   speak_cow:</span>
-    <span class="doccomment">///     build: echo &#39;Moo&#39;</span>
-    <span class="doccomment">///   speak_dog:</span>
-    <span class="doccomment">///     build: echo &#39;Woof!&#39;</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// In this example:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// - `zinoma speak_cow` will print `Moo`</span>
-    <span class="doccomment">/// - `zinoma speak_dog` will print `Woof!`</span>
-    <span class="doccomment">/// - `zinoma speak_cow speak_dog` will print both `Moo` and `Woof!` (not necessarily in this order)</span>
-    <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">targets</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Target</span><span class="op">&gt;</span>,
+<span class="doccomment">/// Schema of the build flow configuration file `zinoma.yml`.
+///
+/// In order to use Žinoma with your project, you need to create a file named `zinoma.yml`.
+/// We recommend putting this file in the root directory of your project.
+///
+/// This struct describes the schema expected for this file. It assumes prior knowledge of the Yaml format.
+///
+/// __Example__
+///
+/// `zinoma.yml`:
+///
+/// ```yaml
+/// targets:
+///   download_dependencies:
+///     input:
+///       - paths: [package.json, package-lock.json]
+///     output:
+///       - paths: [node_modules]
+///     build: npm install
+///
+///   test:
+///     input:
+///       - download_dependencies.output
+///       - paths: [package.json, src, test]
+///     build: npm test
+///
+///   lint:
+///     input:
+///       - download_dependencies.output
+///       - paths: [package.json, src, test]
+///     build: npm run lint
+///
+///   check:
+///     dependencies: [test, lint]
+///
+///   start:
+///     input:
+///       - download_dependencies.output
+///       - paths: [package.json, src]
+///     service: exec npm run start
+///
+///   build:
+///     dependencies: [check]
+///     input:
+///       - paths:
+///         - Dockerfile
+///         - package.json
+///         - package-lock.json
+///         - src
+///     output:
+///       - paths: [lambda.zip]
+///     build: |
+///       docker build -t build-my-project:latest .
+///       docker create -ti --name build-my-project build-my-project:latest bash
+///       docker cp build-my-project:/var/task/lambda.zip ./
+///       docker rm -f build-my-project
+/// ```
+///
+/// In this example:
+///
+/// - `zinoma check` will ensure the code complies to the test suites and the coding standards.
+/// - `zinoma start --watch` will run the application and restart it whenever the sources are updated.
+/// - `zinoma --clean build` will generate a clean artifact, ready to be deployed.
+///
+/// A fully functional and more advanced example project is available in [fbecart/zinoma-node-example](https://github.com/fbecart/zinoma-node-example).
+</span><span class="attribute">#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+</span><span class="kw">pub struct </span>Project {
+    <span class="doccomment">/// Targets (aka tasks) of this project.
+    ///
+    /// [`Targets`] represent commands and scripts to execute in your build flow.
+    ///
+    /// [`Targets`]: struct.Target.html
+    ///
+    /// Targets run in parallel by default.
+    /// To force targets to run sequentially, you can define [`dependencies`] on other targets.
+    ///
+    /// [`dependencies`]: enum.Target.html#variant.Build.field.dependencies
+    ///
+    /// Each target must have a unique name inside the project.
+    /// The target name must be a string. It should start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.
+    ///
+    /// __Example__
+    ///
+    /// ```yaml
+    /// targets:
+    ///   speak_cow:
+    ///     build: echo &#39;Moo&#39;
+    ///   speak_dog:
+    ///     build: echo &#39;Woof!&#39;
+    /// ```
+    ///
+    /// In this example:
+    ///
+    /// - `zinoma speak_cow` will print `Moo`
+    /// - `zinoma speak_dog` will print `Woof!`
+    /// - `zinoma speak_cow speak_dog` will print both `Moo` and `Woof!` (not necessarily in this order)
+    </span><span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>targets: HashMap&lt;String, Target&gt;,
 
-    <span class="doccomment">/// Name of the project.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// A project name must be a string. It should start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Project names should be unique. Two projects cannot have the same name.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// __Example__</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```yaml</span>
-    <span class="doccomment">/// name: my_project</span>
-    <span class="doccomment">/// ```</span>
-    <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">name</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Name of the project.
+    ///
+    /// A project name must be a string. It should start with an alphanumeric character or `_` and contain only alphanumeric characters, `-`, or `_`.
+    ///
+    /// Project names should be unique. Two projects cannot have the same name.
+    ///
+    /// __Example__
+    ///
+    /// ```yaml
+    /// name: my_project
+    /// ```
+    </span><span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>name: <span class="prelude-ty">Option</span>&lt;String&gt;,
 
-    <span class="doccomment">/// Import definitions from other Žinoma projects.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// `imports` should be an object, the keys being the project names and the values their respective paths.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Before importing a project, you should make sure this project has its name defined.</span>
-    <span class="doccomment">/// You should use the same name as key in the `imports` object.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Once a project is imported, targets from that project can be referenced by specifying their fully qualified name: `imported_project_name::target_name`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// __Example__</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// `packages/api/zinoma.yml`:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```yaml</span>
-    <span class="doccomment">/// name: api</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// targets:</span>
-    <span class="doccomment">///   test:</span>
-    <span class="doccomment">///     build: cargo test</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// `packages/webapp/zinoma.yml`:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```yaml</span>
-    <span class="doccomment">/// name: webapp</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// targets:</span>
-    <span class="doccomment">///   test:</span>
-    <span class="doccomment">///     build: cargo test</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// `./zinoma.yml`:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```yaml</span>
-    <span class="doccomment">/// imports:</span>
-    <span class="doccomment">///   api: packages/api</span>
-    <span class="doccomment">///   webapp: packages/webapp</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// targets:</span>
-    <span class="doccomment">///   test_all:</span>
-    <span class="doccomment">///     dependencies: [api::test, webapp::test]</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// In this example, the target `test_all` depend from targets defined in different projects.</span>
-    <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">imports</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Import definitions from other Žinoma projects.
+    ///
+    /// `imports` should be an object, the keys being the project names and the values their respective paths.
+    ///
+    /// Before importing a project, you should make sure this project has its name defined.
+    /// You should use the same name as key in the `imports` object.
+    ///
+    /// Once a project is imported, targets from that project can be referenced by specifying their fully qualified name: `imported_project_name::target_name`.
+    ///
+    /// __Example__
+    ///
+    /// `packages/api/zinoma.yml`:
+    ///
+    /// ```yaml
+    /// name: api
+    ///
+    /// targets:
+    ///   test:
+    ///     build: cargo test
+    /// ```
+    ///
+    /// `packages/webapp/zinoma.yml`:
+    ///
+    /// ```yaml
+    /// name: webapp
+    ///
+    /// targets:
+    ///   test:
+    ///     build: cargo test
+    /// ```
+    ///
+    /// `./zinoma.yml`:
+    ///
+    /// ```yaml
+    /// imports:
+    ///   api: packages/api
+    ///   webapp: packages/webapp
+    ///
+    /// targets:
+    ///   test_all:
+    ///     dependencies: [api::test, webapp::test]
+    /// ```
+    ///
+    /// In this example, the target `test_all` depend from targets defined in different projects.
+    </span><span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>imports: HashMap&lt;String, String&gt;,
 }
 
-<span class="doccomment">/// A target is a command or a set of commands to run as part of your build flow.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Targets run in parallel by default.</span>
-<span class="doccomment">/// To force targets to run sequentially, you can define [`dependencies`] on other targets.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`dependencies`]: struct.Dependencies.html</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
-<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>, <span class="ident">untagged</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Target</span> {
-    <span class="doccomment">/// A build target represents a shell script to run as part of your build flow.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This build script is expected to eventually complete,</span>
-    <span class="doccomment">/// as opposed to the run script of a [`service`] target.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`service`]: #variant.Service.field.service</span>
-    <span class="ident">Build</span> {
-        <span class="doccomment">/// Dependencies of the target.</span>
-        <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-        <span class="ident">dependencies</span>: <span class="ident">Dependencies</span>,
+<span class="doccomment">/// A target is a command or a set of commands to run as part of your build flow.
+///
+/// Targets run in parallel by default.
+/// To force targets to run sequentially, you can define [`dependencies`] on other targets.
+///
+/// [`dependencies`]: struct.Dependencies.html
+</span><span class="attribute">#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields, untagged)]
+</span><span class="kw">pub enum </span>Target {
+    <span class="doccomment">/// A build target represents a shell script to run as part of your build flow.
+    ///
+    /// This build script is expected to eventually complete,
+    /// as opposed to the run script of a [`service`] target.
+    ///
+    /// [`service`]: #variant.Service.field.service
+    </span>Build {
+        <span class="doccomment">/// Dependencies of the target.
+        </span><span class="attribute">#[serde(default)]
+        </span>dependencies: Dependencies,
 
-        <span class="doccomment">/// The shell script to run in order to build this target.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// It should be a string. This string can be multi-line, in case of scripts with multiple commands.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// __Example__</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// ```yaml</span>
-        <span class="doccomment">/// targets:</span>
-        <span class="doccomment">///   create_file_deep:</span>
-        <span class="doccomment">///     build: |</span>
-        <span class="doccomment">///       mkdir -p deep/dir</span>
-        <span class="doccomment">///       touch deep/dir/file</span>
-        <span class="doccomment">///     output:</span>
-        <span class="doccomment">///       - paths: [deep/dir/file]</span>
-        <span class="doccomment">/// ```</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// In this example, running `zinoma create_file_deep` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.</span>
-        <span class="ident">build</span>: <span class="ident">String</span>,
+        <span class="doccomment">/// The shell script to run in order to build this target.
+        ///
+        /// It should be a string. This string can be multi-line, in case of scripts with multiple commands.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   create_file_deep:
+        ///     build: |
+        ///       mkdir -p deep/dir
+        ///       touch deep/dir/file
+        ///     output:
+        ///       - paths: [deep/dir/file]
+        /// ```
+        ///
+        /// In this example, running `zinoma create_file_deep` will execute the commands `mkdir -p deep/dir` and `touch deep/dir/my_file` sequentially.
+        </span>build: String,
 
-        <span class="doccomment">/// Input resources of the target.</span>
-        <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-        <span class="ident">input</span>: <span class="ident">InputResources</span>,
+        <span class="doccomment">/// Input resources of the target.
+        </span><span class="attribute">#[serde(default)]
+        </span>input: InputResources,
 
-        <span class="doccomment">/// Output resources of the target.</span>
-        <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-        <span class="ident">output</span>: <span class="ident">OutputResources</span>,
+        <span class="doccomment">/// Output resources of the target.
+        </span><span class="attribute">#[serde(default)]
+        </span>output: OutputResources,
     },
 
-    <span class="doccomment">/// Service targets are useful to run scripts that do not complete.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// They enable the execution of long-lasting commands, such as servers.</span>
-    <span class="ident">Service</span> {
-        <span class="doccomment">/// Dependencies of the target.</span>
-        <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-        <span class="ident">dependencies</span>: <span class="ident">Dependencies</span>,
+    <span class="doccomment">/// Service targets are useful to run scripts that do not complete.
+    ///
+    /// They enable the execution of long-lasting commands, such as servers.
+    </span>Service {
+        <span class="doccomment">/// Dependencies of the target.
+        </span><span class="attribute">#[serde(default)]
+        </span>dependencies: Dependencies,
 
-        <span class="doccomment">/// Shell script starting a long-lasting service.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// It should be a string.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// If `zinoma` has no service target to run, it will automatically exit after all build targets ran to completion.</span>
-        <span class="doccomment">/// On the contrary, if at least one service target is specified in the command line,</span>
-        <span class="doccomment">/// `zinoma` will keep running even after all build targets completed, so that the services can remain alive.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// In watch mode (when the `--watch` flag is passed to `zinoma`), services are restarted when the relevant paths are modified.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// __Example__</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// ```yaml</span>
-        <span class="doccomment">/// targets:</span>
-        <span class="doccomment">///   npm_server:</span>
-        <span class="doccomment">///     input:</span>
-        <span class="doccomment">///       - paths: [package.json, index.js]</span>
-        <span class="doccomment">///     service: npm start</span>
-        <span class="doccomment">/// ```</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// In this example, `zinoma npm_server --watch` will run `npm start`,</span>
-        <span class="doccomment">/// and will restart this process every time `package.json` or `index.js` are updated.</span>
-        <span class="ident">service</span>: <span class="ident">String</span>,
+        <span class="doccomment">/// Shell script starting a long-lasting service.
+        ///
+        /// It should be a string.
+        ///
+        /// If `zinoma` has no service target to run, it will automatically exit after all build targets ran to completion.
+        /// On the contrary, if at least one service target is specified in the command line,
+        /// `zinoma` will keep running even after all build targets completed, so that the services can remain alive.
+        ///
+        /// In watch mode (when the `--watch` flag is passed to `zinoma`), services are restarted when the relevant paths are modified.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   npm_server:
+        ///     input:
+        ///       - paths: [package.json, index.js]
+        ///     service: npm start
+        /// ```
+        ///
+        /// In this example, `zinoma npm_server --watch` will run `npm start`,
+        /// and will restart this process every time `package.json` or `index.js` are updated.
+        </span>service: String,
 
-        <span class="doccomment">/// Input resources of the target.</span>
-        <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span>
-        <span class="ident">input</span>: <span class="ident">InputResources</span>,
+        <span class="doccomment">/// Input resources of the target.
+        </span><span class="attribute">#[serde(default)]
+        </span>input: InputResources,
     },
 
-    <span class="doccomment">/// Aggregates other targets.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// __Example__</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```yaml</span>
-    <span class="doccomment">/// targets:</span>
-    <span class="doccomment">///   fmt:</span>
-    <span class="doccomment">///     build: cargo fmt -- --check</span>
-    <span class="doccomment">///   lint:</span>
-    <span class="doccomment">///     build: cargo clippy</span>
-    <span class="doccomment">///   test:</span>
-    <span class="doccomment">///     build: cargo test</span>
-    <span class="doccomment">///   check:</span>
-    <span class="doccomment">///     dependencies: [fmt, lint, test]</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// In this example, the target named `check` aggregates the 3 other targets.</span>
-    <span class="doccomment">/// `zinoma check` is equivalent to running `zinoma fmt lint test`.</span>
-    <span class="ident">Aggregate</span> {
-        <span class="doccomment">/// Dependencies of the target.</span>
-        <span class="ident">dependencies</span>: <span class="ident">Dependencies</span>,
-    },
-}
-
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
-<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>, <span class="ident">untagged</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">InputResource</span> {
-    <span class="doccomment">/// Output resources of another target.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// It should be a string with the format `&lt;project_name&gt;::&lt;target_name&gt;.output`.</span>
-    <span class="doccomment">/// If the other target is located in the same project, the project name can be skipped.</span>
-    <span class="doccomment">/// The `input` would then have this format: `&lt;target_name&gt;.output`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// When such an input is used:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// - all the output resources of the other target become input resources for this target;</span>
-    <span class="doccomment">/// - the other target implicitly becomes a dependency to this target.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// __Example__</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```yaml</span>
-    <span class="doccomment">/// targets:</span>
-    <span class="doccomment">///   node_dependencies:</span>
-    <span class="doccomment">///     input:</span>
-    <span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
-    <span class="doccomment">///     output:</span>
-    <span class="doccomment">///       - paths: [node_modules]</span>
-    <span class="doccomment">///     build: npm install</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///   compile:</span>
-    <span class="doccomment">///     input:</span>
-    <span class="doccomment">///       - node_dependencies.output</span>
-    <span class="doccomment">///       - paths: [package.json, tsconfig.json, src]</span>
-    <span class="doccomment">///     output:</span>
-    <span class="doccomment">///       - paths: [dist]</span>
-    <span class="doccomment">///     build: tsc</span>
-    <span class="doccomment">///      </span>
-    <span class="doccomment">///   run:</span>
-    <span class="doccomment">///     input:</span>
-    <span class="doccomment">///       - node_dependencies.output</span>
-    <span class="doccomment">///       - paths: [package.json]</span>
-    <span class="doccomment">///       - compile.output</span>
-    <span class="doccomment">///     service: node dist/index.js</span>
-    <span class="doccomment">/// ```</span>
-    <span class="ident">DependencyOutput</span>(<span class="ident">String</span>),
-    <span class="ident">Files</span> {
-        <span class="doccomment">/// Paths to files or directories.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// It should be an array of strings.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// Each element of the array should be a path to a file or directory.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// __Example__</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// ```yaml</span>
-        <span class="doccomment">/// targets:</span>
-        <span class="doccomment">///   npm_install:</span>
-        <span class="doccomment">///     input:</span>
-        <span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
-        <span class="doccomment">///     output:</span>
-        <span class="doccomment">///       - paths: [node_modules]</span>
-        <span class="doccomment">///     build: npm install</span>
-        <span class="doccomment">/// ```</span>
-        <span class="ident">paths</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
-        <span class="doccomment">/// Filter files resource by file extensions.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// It should be an array of strings.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// If `extensions` are specified, only files matching at least one of the extensions will be included in the resource.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// __Example__</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// ```yaml</span>
-        <span class="doccomment">/// targets:</span>
-        <span class="doccomment">///   fmt:</span>
-        <span class="doccomment">///     input:</span>
-        <span class="doccomment">///       - paths: [src, tests]</span>
-        <span class="doccomment">///         extensions: [rs]</span>
-        <span class="doccomment">///     build: exec cargo fmt --all -- --check</span>
-        <span class="ident">extensions</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    },
-    <span class="ident">CmdStdout</span> {
-        <span class="doccomment">/// Shell script whose output identifies the state of a resource.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// It should be a string.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// __Example__</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// ```yaml</span>
-        <span class="doccomment">/// targets:</span>
-        <span class="doccomment">///   build_docker_image:</span>
-        <span class="doccomment">///     input:</span>
-        <span class="doccomment">///       - paths: [Dockerfile, src]</span>
-        <span class="doccomment">///       - cmd_stdout: &#39;docker image ls base:latest --format &quot;{{.ID}}&quot;&#39;</span>
-        <span class="doccomment">///     output:</span>
-        <span class="doccomment">///       - cmd_stdout: &#39;docker image ls webapp:latest --format &quot;{{.ID}}&quot;&#39;</span>
-        <span class="doccomment">///     build: docker build -t webapp .</span>
-        <span class="doccomment">/// ```</span>
-        <span class="ident">cmd_stdout</span>: <span class="ident">String</span>,
+    <span class="doccomment">/// Aggregates other targets.
+    ///
+    /// __Example__
+    ///
+    /// ```yaml
+    /// targets:
+    ///   fmt:
+    ///     build: cargo fmt -- --check
+    ///   lint:
+    ///     build: cargo clippy
+    ///   test:
+    ///     build: cargo test
+    ///   check:
+    ///     dependencies: [fmt, lint, test]
+    /// ```
+    ///
+    /// In this example, the target named `check` aggregates the 3 other targets.
+    /// `zinoma check` is equivalent to running `zinoma fmt lint test`.
+    </span>Aggregate {
+        <span class="doccomment">/// Dependencies of the target.
+        </span>dependencies: Dependencies,
     },
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
-<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>, <span class="ident">untagged</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">OutputResource</span> {
-    <span class="ident">Files</span> {
-        <span class="doccomment">/// Paths to files or directories.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// It should be an array of strings.</span>
-        <span class="doccomment">/// Each element of the array should be a path to a file or directory.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// If the `--clean` flag is provided to `zinoma`, the files or directories specified in `paths` will be deleted before running the build flow.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// __Example__</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// ```yaml</span>
-        <span class="doccomment">/// targets:</span>
-        <span class="doccomment">///   npm_install:</span>
-        <span class="doccomment">///     input:</span>
-        <span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
-        <span class="doccomment">///     output:</span>
-        <span class="doccomment">///       - paths: [node_modules]</span>
-        <span class="doccomment">///     build: npm install</span>
-        <span class="doccomment">/// ```</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// In this example, as the target specifies an `input`, `zinoma npm_install` is incremental.</span>
-        <span class="doccomment">/// The script `npm install` will be skipped until `package.json`, `package-lock.json` or `node_modules` are modified.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// Additionally:</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// - the command `zinoma --clean` will delete `node_modules`;</span>
-        <span class="doccomment">/// - the command `zinoma --clean npm_install` will delete `node_modules`, then run `npm install`.</span>
-        <span class="ident">paths</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
-        <span class="doccomment">/// Filter files resource by file extensions.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// It should be an array of strings.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// If `extensions` are specified, only files matching at least one of the extensions will be included in the resource.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// __Example__</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// ```yaml</span>
-        <span class="doccomment">/// targets:</span>
-        <span class="doccomment">///   protoc:</span>
-        <span class="doccomment">///     input:</span>
-        <span class="doccomment">///       - paths: [protos]</span>
-        <span class="doccomment">///         extensions: [proto]</span>
-        <span class="doccomment">///     output:</span>
-        <span class="doccomment">///       - paths: [protos]</span>
-        <span class="doccomment">///         extensions: [go]</span>
-        <span class="doccomment">///     build: |</span>
-        <span class="doccomment">///       cd protos</span>
-        <span class="doccomment">///       docker run -v `pwd`:/defs namely/protoc-all -d . -o . -l go</span>
-        <span class="ident">extensions</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields, untagged)]
+</span><span class="kw">pub enum </span>InputResource {
+    <span class="doccomment">/// Output resources of another target.
+    ///
+    /// It should be a string with the format `&lt;project_name&gt;::&lt;target_name&gt;.output`.
+    /// If the other target is located in the same project, the project name can be skipped.
+    /// The `input` would then have this format: `&lt;target_name&gt;.output`.
+    ///
+    /// When such an input is used:
+    ///
+    /// - all the output resources of the other target become input resources for this target;
+    /// - the other target implicitly becomes a dependency to this target.
+    ///
+    /// __Example__
+    ///
+    /// ```yaml
+    /// targets:
+    ///   node_dependencies:
+    ///     input:
+    ///       - paths: [package.json, package-lock.json]
+    ///     output:
+    ///       - paths: [node_modules]
+    ///     build: npm install
+    ///
+    ///   compile:
+    ///     input:
+    ///       - node_dependencies.output
+    ///       - paths: [package.json, tsconfig.json, src]
+    ///     output:
+    ///       - paths: [dist]
+    ///     build: tsc
+    ///      
+    ///   run:
+    ///     input:
+    ///       - node_dependencies.output
+    ///       - paths: [package.json]
+    ///       - compile.output
+    ///     service: node dist/index.js
+    /// ```
+    </span>DependencyOutput(String),
+    Files {
+        <span class="doccomment">/// Paths to files or directories.
+        ///
+        /// It should be an array of strings.
+        ///
+        /// Each element of the array should be a path to a file or directory.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   npm_install:
+        ///     input:
+        ///       - paths: [package.json, package-lock.json]
+        ///     output:
+        ///       - paths: [node_modules]
+        ///     build: npm install
+        /// ```
+        </span>paths: Vec&lt;String&gt;,
+        <span class="doccomment">/// Filter files resource by file extensions.
+        ///
+        /// It should be an array of strings.
+        ///
+        /// If `extensions` are specified, only files matching at least one of the extensions will be included in the resource.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   fmt:
+        ///     input:
+        ///       - paths: [src, tests]
+        ///         extensions: [rs]
+        ///     build: exec cargo fmt --all -- --check
+        </span>extensions: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     },
-    <span class="ident">CmdStdout</span> {
-        <span class="doccomment">/// Shell script whose output identifies the state of a resource.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// It should be a string.</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// __Example__</span>
-        <span class="doccomment">///</span>
-        <span class="doccomment">/// ```yaml</span>
-        <span class="doccomment">/// targets:</span>
-        <span class="doccomment">///   build_docker_image:</span>
-        <span class="doccomment">///     input:</span>
-        <span class="doccomment">///       - paths: [Dockerfile, src]</span>
-        <span class="doccomment">///       - cmd_stdout: &#39;docker image ls base:latest --format &quot;{{.ID}}&quot;&#39;</span>
-        <span class="doccomment">///     output:</span>
-        <span class="doccomment">///       - cmd_stdout: &#39;docker image ls webapp:latest --format &quot;{{.ID}}&quot;&#39;</span>
-        <span class="doccomment">///     build: docker build -t webapp .</span>
-        <span class="doccomment">/// ```</span>
-        <span class="ident">cmd_stdout</span>: <span class="ident">String</span>,
+    CmdStdout {
+        <span class="doccomment">/// Shell script whose output identifies the state of a resource.
+        ///
+        /// It should be a string.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   build_docker_image:
+        ///     input:
+        ///       - paths: [Dockerfile, src]
+        ///       - cmd_stdout: &#39;docker image ls base:latest --format &quot;{{.ID}}&quot;&#39;
+        ///     output:
+        ///       - cmd_stdout: &#39;docker image ls webapp:latest --format &quot;{{.ID}}&quot;&#39;
+        ///     build: docker build -t webapp .
+        /// ```
+        </span>cmd_stdout: String,
     },
 }
 
-<span class="doccomment">/// List of [`targets`] that must complete successfully before this target can be built.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`targets`]: enum.Target.html</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// It should be an array of strings.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// If any of the dependencies fails to complete, this target will not be executed.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// __Example__</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ```yaml</span>
-<span class="doccomment">/// targets:</span>
-<span class="doccomment">///   target1:</span>
-<span class="doccomment">///     dependencies: []</span>
-<span class="doccomment">///   target2:</span>
-<span class="doccomment">///     dependencies: [target1]</span>
-<span class="doccomment">///   target3:</span>
-<span class="doccomment">///     dependencies: [target2]</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// In this example, `target1` must complete successfully before `target2` begins, while `target3` waits for `target2` to complete.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// `zinoma target2` will run sequentially `target1` and `target2`.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// `zinoma target3` will run sequentially `target1`, `target2` and `target3`.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
-<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Dependencies</span>(<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span> <span class="kw">pub</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>);
+<span class="attribute">#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields, untagged)]
+</span><span class="kw">pub enum </span>OutputResource {
+    Files {
+        <span class="doccomment">/// Paths to files or directories.
+        ///
+        /// It should be an array of strings.
+        /// Each element of the array should be a path to a file or directory.
+        ///
+        /// If the `--clean` flag is provided to `zinoma`, the files or directories specified in `paths` will be deleted before running the build flow.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   npm_install:
+        ///     input:
+        ///       - paths: [package.json, package-lock.json]
+        ///     output:
+        ///       - paths: [node_modules]
+        ///     build: npm install
+        /// ```
+        ///
+        /// In this example, as the target specifies an `input`, `zinoma npm_install` is incremental.
+        /// The script `npm install` will be skipped until `package.json`, `package-lock.json` or `node_modules` are modified.
+        ///
+        /// Additionally:
+        ///
+        /// - the command `zinoma --clean` will delete `node_modules`;
+        /// - the command `zinoma --clean npm_install` will delete `node_modules`, then run `npm install`.
+        </span>paths: Vec&lt;String&gt;,
+        <span class="doccomment">/// Filter files resource by file extensions.
+        ///
+        /// It should be an array of strings.
+        ///
+        /// If `extensions` are specified, only files matching at least one of the extensions will be included in the resource.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   protoc:
+        ///     input:
+        ///       - paths: [protos]
+        ///         extensions: [proto]
+        ///     output:
+        ///       - paths: [protos]
+        ///         extensions: [go]
+        ///     build: |
+        ///       cd protos
+        ///       docker run -v `pwd`:/defs namely/protoc-all -d . -o . -l go
+        </span>extensions: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+    },
+    CmdStdout {
+        <span class="doccomment">/// Shell script whose output identifies the state of a resource.
+        ///
+        /// It should be a string.
+        ///
+        /// __Example__
+        ///
+        /// ```yaml
+        /// targets:
+        ///   build_docker_image:
+        ///     input:
+        ///       - paths: [Dockerfile, src]
+        ///       - cmd_stdout: &#39;docker image ls base:latest --format &quot;{{.ID}}&quot;&#39;
+        ///     output:
+        ///       - cmd_stdout: &#39;docker image ls webapp:latest --format &quot;{{.ID}}&quot;&#39;
+        ///     build: docker build -t webapp .
+        /// ```
+        </span>cmd_stdout: String,
+    },
+}
 
-<span class="doccomment">/// List of artifacts that this target depends on.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// `input` should be an array of [`resources`].</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`resources`]: enum.InputResource.html</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Specifying a target&#39;s `input` enables the incremental build for this target.</span>
-<span class="doccomment">/// This means that, at the time of executing the target, Žinoma will skip its build if its input resources (and [`output`] resources, if any) have not changed since its last successful completion.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`output`]: struct.OutputResources.html</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// __Example__</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ```yaml</span>
-<span class="doccomment">/// targets:</span>
-<span class="doccomment">///   npm_install:</span>
-<span class="doccomment">///     input:</span>
-<span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
-<span class="doccomment">///     build: npm install</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// In this example, running `zinoma npm_install` once will execute `npm install`.</span>
-<span class="doccomment">/// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
-<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InputResources</span>(<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span> <span class="kw">pub</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">InputResource</span><span class="op">&gt;</span>);
+<span class="doccomment">/// List of [`targets`] that must complete successfully before this target can be built.
+///
+/// [`targets`]: enum.Target.html
+///
+/// It should be an array of strings.
+///
+/// If any of the dependencies fails to complete, this target will not be executed.
+///
+/// __Example__
+///
+/// ```yaml
+/// targets:
+///   target1:
+///     dependencies: []
+///   target2:
+///     dependencies: [target1]
+///   target3:
+///     dependencies: [target2]
+/// ```
+///
+/// In this example, `target1` must complete successfully before `target2` begins, while `target3` waits for `target2` to complete.
+///
+/// `zinoma target2` will run sequentially `target1` and `target2`.
+///
+/// `zinoma target3` will run sequentially `target1`, `target2` and `target3`.
+</span><span class="attribute">#[derive(Debug, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+</span><span class="kw">pub struct </span>Dependencies(<span class="attribute">#[serde(default)] </span><span class="kw">pub </span>Vec&lt;String&gt;);
 
-<span class="doccomment">/// List of artifacts produced by this target.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// It should be an array of [`resources`].</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`resources`]: enum.OutputResource.html</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The incremental build takes in account the target `output`.</span>
-<span class="doccomment">/// Just like with [`input`], if any of the target output resources were altered since its previous successful execution, the target state will be invalidated and its build will be run again.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`input`]: struct.InputResources.html</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// __Example__</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ```yaml</span>
-<span class="doccomment">/// targets:</span>
-<span class="doccomment">///   npm_install:</span>
-<span class="doccomment">///     input:</span>
-<span class="doccomment">///       - paths: [package.json, package-lock.json]</span>
-<span class="doccomment">///     output:</span>
-<span class="doccomment">///       - paths: [node_modules]</span>
-<span class="doccomment">///     build: npm install</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// In this example, running `zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Default</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">JsonSchema</span>)]</span>
-<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">deny_unknown_fields</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OutputResources</span>(<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">default</span>)]</span> <span class="kw">pub</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">OutputResource</span><span class="op">&gt;</span>);
+<span class="doccomment">/// List of artifacts that this target depends on.
+///
+/// `input` should be an array of [`resources`].
+///
+/// [`resources`]: enum.InputResource.html
+///
+/// Specifying a target&#39;s `input` enables the incremental build for this target.
+/// This means that, at the time of executing the target, Žinoma will skip its build if its input resources (and [`output`] resources, if any) have not changed since its last successful completion.
+///
+/// [`output`]: struct.OutputResources.html
+///
+/// __Example__
+///
+/// ```yaml
+/// targets:
+///   npm_install:
+///     input:
+///       - paths: [package.json, package-lock.json]
+///     build: npm install
+/// ```
+///
+/// In this example, running `zinoma npm_install` once will execute `npm install`.
+/// Subsequent runs of `zinoma npm_install` will return immediately — until the content of `package.json` or `package-lock.json` is modified.
+</span><span class="attribute">#[derive(Debug, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+</span><span class="kw">pub struct </span>InputResources(<span class="attribute">#[serde(default)] </span><span class="kw">pub </span>Vec&lt;InputResource&gt;);
+
+<span class="doccomment">/// List of artifacts produced by this target.
+///
+/// It should be an array of [`resources`].
+///
+/// [`resources`]: enum.OutputResource.html
+///
+/// The incremental build takes in account the target `output`.
+/// Just like with [`input`], if any of the target output resources were altered since its previous successful execution, the target state will be invalidated and its build will be run again.
+///
+/// [`input`]: struct.InputResources.html
+///
+/// __Example__
+///
+/// ```yaml
+/// targets:
+///   npm_install:
+///     input:
+///       - paths: [package.json, package-lock.json]
+///     output:
+///       - paths: [node_modules]
+///     build: npm install
+/// ```
+///
+/// In this example, running `zinoma npm_install` will return immediately in case `package.json`, `package-lock.json` and `node_modules` were not modified since the last completion of the target.
+///
+/// Running `zinoma --clean npm_install` will start by deleting `node_modules`, then will run `npm install`.
+</span><span class="attribute">#[derive(Debug, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+</span><span class="kw">pub struct </span>OutputResources(<span class="attribute">#[serde(default)] </span><span class="kw">pub </span>Vec&lt;OutputResource&gt;);
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

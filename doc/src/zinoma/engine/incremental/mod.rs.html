@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/incremental/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/incremental/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -132,135 +127,134 @@
 <span id="127">127</span>
 <span id="128">128</span>
 <span id="129">129</span>
-</pre><pre class="rust"><code><span class="kw">mod</span> <span class="ident">resources_state</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">storage</span>;
+</pre><pre class="rust"><code><span class="kw">mod </span>resources_state;
+<span class="kw">pub mod </span>storage;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::builder::BuildTerminationReport</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::async_utils::both</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::domain</span>::{<span class="ident">Resources</span>, <span class="ident">TargetMetadata</span>};
-<span class="kw">use</span> <span class="ident">anyhow::Result</span>;
-<span class="kw">use</span> <span class="ident">futures::Future</span>;
-<span class="kw">use</span> <span class="ident">resources_state::ResourcesState</span>;
-<span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
+<span class="kw">use </span><span class="kw">super</span>::builder::BuildTerminationReport;
+<span class="kw">use </span><span class="kw">crate</span>::async_utils::both;
+<span class="kw">use </span><span class="kw">crate</span>::domain::{Resources, TargetMetadata};
+<span class="kw">use </span>anyhow::Result;
+<span class="kw">use </span>futures::Future;
+<span class="kw">use </span>resources_state::ResourcesState;
+<span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">IncrementalRunResult</span> {
-    <span class="ident">Skipped</span>,
-    <span class="ident">Completed</span>,
-    <span class="ident">Cancelled</span>,
+<span class="attribute">#[derive(PartialEq)]
+</span><span class="kw">pub enum </span>IncrementalRunResult {
+    Skipped,
+    Completed,
+    Cancelled,
 }
 
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(
-    <span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">TargetMetadata</span>,
-    <span class="ident">target_input</span>: <span class="kw-2">&amp;</span><span class="ident">Resources</span>,
-    <span class="ident">target_output</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Resources</span><span class="op">&gt;</span>,
-    <span class="ident">future</span>: <span class="ident">F</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">IncrementalRunResult</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">BuildTerminationReport</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">pub async fn </span>run&lt;F&gt;(
+    target: <span class="kw-2">&amp;</span>TargetMetadata,
+    target_input: <span class="kw-2">&amp;</span>Resources,
+    target_output: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Resources&gt;,
+    future: F,
+) -&gt; <span class="prelude-ty">Result</span>&lt;IncrementalRunResult&gt;
+<span class="kw">where
+    </span>F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;BuildTerminationReport&gt;&gt;,
 {
-    <span class="kw">if</span> <span class="ident">env_state_has_not_changed_since_last_successful_execution</span>(
-        <span class="ident">target</span>,
-        <span class="ident">target_input</span>,
-        <span class="ident">target_output</span>,
+    <span class="kw">if </span>env_state_has_not_changed_since_last_successful_execution(
+        target,
+        target_input,
+        target_output,
     )
-    .<span class="kw">await</span>
-    {
-        <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">IncrementalRunResult::Skipped</span>);
+    .<span class="kw">await
+    </span>{
+        <span class="kw">return </span><span class="prelude-val">Ok</span>(IncrementalRunResult::Skipped);
     }
 
-    <span class="ident">storage::delete_saved_env_state</span>(<span class="ident">target</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    storage::delete_saved_env_state(target).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">build_report</span> <span class="op">=</span> <span class="ident">future</span>.<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>build_report = future.<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">match</span> <span class="ident">build_report</span> {
-        <span class="ident">BuildTerminationReport::Cancelled</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">IncrementalRunResult::Cancelled</span>),
-        <span class="ident">BuildTerminationReport::Completed</span> =&gt; {
-            <span class="kw">match</span> <span class="ident">TargetEnvState::current</span>(<span class="ident">target_input</span>, <span class="ident">target_output</span>).<span class="kw">await</span> {
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">env_state</span>)) =&gt; {
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">storage::save_env_state</span>(<span class="ident">target</span>, <span class="ident">env_state</span>).<span class="kw">await</span> {
+    <span class="kw">match </span>build_report {
+        BuildTerminationReport::Cancelled =&gt; <span class="prelude-val">Ok</span>(IncrementalRunResult::Cancelled),
+        BuildTerminationReport::Completed =&gt; {
+            <span class="kw">match </span>TargetEnvState::current(target_input, target_output).<span class="kw">await </span>{
+                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(env_state)) =&gt; {
+                    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = storage::save_env_state(target, env_state).<span class="kw">await </span>{
                         <span class="macro">log::warn!</span>(
                             <span class="string">&quot;{} - Failed to save state of inputs and outputs: {}&quot;</span>,
-                            <span class="ident">target</span>,
-                            <span class="ident">e</span>
+                            target,
+                            e
                         )
                     }
                 }
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {}
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="macro">log::warn!</span>(
+                <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">log::warn!</span>(
                     <span class="string">&quot;{} - Failed to compute state of inputs and outputs: {}&quot;</span>,
-                    <span class="ident">target</span>,
-                    <span class="ident">e</span>
+                    target,
+                    e
                 ),
             }
 
-            <span class="prelude-val">Ok</span>(<span class="ident">IncrementalRunResult::Completed</span>)
+            <span class="prelude-val">Ok</span>(IncrementalRunResult::Completed)
         }
     }
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">env_state_has_not_changed_since_last_successful_execution</span>(
-    <span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">TargetMetadata</span>,
-    <span class="ident">target_input</span>: <span class="kw-2">&amp;</span><span class="ident">Resources</span>,
-    <span class="ident">target_output</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Resources</span><span class="op">&gt;</span>,
-) -&gt; <span class="ident">bool</span> {
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">saved_state</span>) <span class="op">=</span> <span class="ident">storage::read_saved_target_env_state</span>(<span class="ident">target</span>).<span class="kw">await</span> {
-        <span class="ident">saved_state</span>
-            .<span class="ident">eq_current_state</span>(<span class="ident">target_input</span>, <span class="ident">target_output</span>)
-            .<span class="kw">await</span>
-    } <span class="kw">else</span> {
-        <span class="bool-val">false</span>
-    }
+<span class="kw">async fn </span>env_state_has_not_changed_since_last_successful_execution(
+    target: <span class="kw-2">&amp;</span>TargetMetadata,
+    target_input: <span class="kw-2">&amp;</span>Resources,
+    target_output: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Resources&gt;,
+) -&gt; bool {
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(saved_state) = storage::read_saved_target_env_state(target).<span class="kw">await </span>{
+        saved_state
+            .eq_current_state(target_input, target_output)
+            .<span class="kw">await
+    </span>} <span class="kw">else </span>{
+        <span class="bool-val">false
+    </span>}
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TargetEnvState</span> {
-    <span class="ident">input</span>: <span class="ident">ResourcesState</span>,
-    <span class="ident">output</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ResourcesState</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Serialize, Deserialize, PartialEq)]
+</span><span class="kw">pub struct </span>TargetEnvState {
+    input: ResourcesState,
+    output: <span class="prelude-ty">Option</span>&lt;ResourcesState&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">TargetEnvState</span> {
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">current</span>(
-        <span class="ident">target_input</span>: <span class="kw-2">&amp;</span><span class="ident">Resources</span>,
-        <span class="ident">target_output</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Resources</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="ident">target_input</span>.<span class="ident">is_empty</span>() {
+<span class="kw">impl </span>TargetEnvState {
+    <span class="kw">pub async fn </span>current(
+        target_input: <span class="kw-2">&amp;</span>Resources,
+        target_output: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Resources&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
+        <span class="kw">if </span>target_input.is_empty() {
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
-        } <span class="kw">else</span> {
-            <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">ResourcesState::current</span>(<span class="ident">target_input</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">target_output</span> {
-                <span class="prelude-val">Some</span>(<span class="ident">target_output</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">ResourcesState::current</span>(<span class="ident">target_output</span>).<span class="kw">await</span><span class="question-mark">?</span>),
-                <span class="prelude-val">None</span> =&gt; <span class="prelude-val">None</span>,
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>input = ResourcesState::current(target_input).<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">let </span>output = <span class="kw">match </span>target_output {
+                <span class="prelude-val">Some</span>(target_output) =&gt; <span class="prelude-val">Some</span>(ResourcesState::current(target_output).<span class="kw">await</span><span class="question-mark">?</span>),
+                <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
             };
 
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">TargetEnvState</span> { <span class="ident">input</span>, <span class="ident">output</span> }))
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(TargetEnvState { input, output }))
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">eq_current_state</span>(
+    <span class="kw">pub async fn </span>eq_current_state(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">target_input</span>: <span class="kw-2">&amp;</span><span class="ident">Resources</span>,
-        <span class="ident">target_output</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Resources</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">bool</span> {
-        <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">eq</span>(<span class="ident">env_state</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">ResourcesState</span><span class="op">&gt;</span>, <span class="ident">resources</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Resources</span><span class="op">&gt;</span>) -&gt; <span class="ident">bool</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">resources</span>) <span class="op">=</span> <span class="ident">resources</span> {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">env_state</span>) <span class="op">=</span> <span class="ident">env_state</span> {
-                    <span class="ident">env_state</span>.<span class="ident">eq_current_state</span>(<span class="ident">resources</span>).<span class="kw">await</span>
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
-            } <span class="kw">else</span> {
-                <span class="bool-val">true</span>
-            }
+        target_input: <span class="kw-2">&amp;</span>Resources,
+        target_output: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Resources&gt;,
+    ) -&gt; bool {
+        <span class="kw">async fn </span>eq(env_state: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>ResourcesState&gt;, resources: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Resources&gt;) -&gt; bool {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(resources) = resources {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(env_state) = env_state {
+                    env_state.eq_current_state(resources).<span class="kw">await
+                </span>} <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
+            } <span class="kw">else </span>{
+                <span class="bool-val">true
+            </span>}
         }
 
-        <span class="ident">both</span>(
-            <span class="ident">eq</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">input</span>), <span class="prelude-val">Some</span>(<span class="ident">target_input</span>)),
-            <span class="ident">eq</span>(<span class="self">self</span>.<span class="ident">output</span>.<span class="ident">as_ref</span>(), <span class="ident">target_output</span>),
+        both(
+            eq(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.input), <span class="prelude-val">Some</span>(target_input)),
+            eq(<span class="self">self</span>.output.as_ref(), target_output),
         )
-        .<span class="kw">await</span>
-    }
+        .<span class="kw">await
+    </span>}
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

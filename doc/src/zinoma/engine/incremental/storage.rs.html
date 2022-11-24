@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/incremental/storage.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>storage.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/incremental/storage.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>storage.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -83,64 +78,64 @@
 <span id="78">78</span>
 <span id="79">79</span>
 <span id="80">80</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::TargetEnvState</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::domain::TargetMetadata</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::work_dir</span>;
-<span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">Context</span>, <span class="prelude-ty">Result</span>};
-<span class="kw">use</span> <span class="ident">async_std::fs</span>;
-<span class="kw">use</span> <span class="ident">async_std</span>::{<span class="ident">path::PathBuf</span>, <span class="ident">task</span>};
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::TargetEnvState;
+<span class="kw">use </span><span class="kw">crate</span>::domain::TargetMetadata;
+<span class="kw">use </span><span class="kw">crate</span>::work_dir;
+<span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>async_std::fs;
+<span class="kw">use </span>async_std::{path::PathBuf, task};
 
-<span class="doccomment">/// File where the state of the target inputs and outputs are stored upon successful build.</span>
-<span class="kw">fn</span> <span class="ident">get_checksums_file_path</span>(<span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">TargetMetadata</span>) -&gt; <span class="ident">PathBuf</span> {
-    <span class="ident">work_dir::get_work_dir_path</span>(<span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">project_dir</span>).<span class="ident">join</span>(<span class="macro">format!</span>(<span class="string">&quot;{}.checksums&quot;</span>, <span class="ident">target</span>))
+<span class="doccomment">/// File where the state of the target inputs and outputs are stored upon successful build.
+</span><span class="kw">fn </span>get_checksums_file_path(target: <span class="kw-2">&amp;</span>TargetMetadata) -&gt; PathBuf {
+    work_dir::get_work_dir_path(<span class="kw-2">&amp;</span>target.project_dir).join(<span class="macro">format!</span>(<span class="string">&quot;{}.checksums&quot;</span>, target))
 }
 
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">read_saved_target_env_state</span>(<span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">TargetMetadata</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">TargetEnvState</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">get_checksums_file_path</span>(<span class="ident">target</span>);
-    <span class="kw">if</span> <span class="op">!</span><span class="kw-2">&amp;</span><span class="ident">file_path</span>.<span class="ident">exists</span>().<span class="kw">await</span> {
-        <span class="kw">return</span> <span class="prelude-val">None</span>;
+<span class="kw">pub async fn </span>read_saved_target_env_state(target: <span class="kw-2">&amp;</span>TargetMetadata) -&gt; <span class="prelude-ty">Option</span>&lt;TargetEnvState&gt; {
+    <span class="kw">let </span>file_path = get_checksums_file_path(target);
+    <span class="kw">if </span>!<span class="kw-2">&amp;</span>file_path.exists().<span class="kw">await </span>{
+        <span class="kw">return </span><span class="prelude-val">None</span>;
     }
 
-    <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> {
-        <span class="kw">let</span> <span class="ident">target_id</span> <span class="op">=</span> <span class="ident">target</span>.<span class="ident">id</span>.<span class="ident">clone</span>();
-        <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">file_path</span>.<span class="ident">clone</span>();
+    <span class="kw">let </span>result = {
+        <span class="kw">let </span>target_id = target.id.clone();
+        <span class="kw">let </span>file_path = file_path.clone();
 
-        <span class="ident">task::spawn_blocking</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">std::fs::File::open</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>).<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> {
-                <span class="macro">format!</span>(<span class="string">&quot;Failed to open checksums file {}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">file_path</span>.<span class="ident">display</span>())
+        task::spawn_blocking(<span class="kw">move </span>|| {
+            <span class="kw">let </span>file = std::fs::File::open(<span class="kw-2">&amp;</span>file_path).with_context(|| {
+                <span class="macro">format!</span>(<span class="string">&quot;Failed to open checksums file {}&quot;</span>, <span class="kw-2">&amp;</span>file_path.display())
             })<span class="question-mark">?</span>;
-            <span class="ident">bincode::deserialize_from</span>(<span class="ident">file</span>)
-                .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format!</span>(<span class="string">&quot;Failed to deserialize checksums for {}&quot;</span>, <span class="ident">target_id</span>))
+            bincode::deserialize_from(file)
+                .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to deserialize checksums for {}&quot;</span>, target_id))
         })
-        .<span class="kw">await</span>
-    };
+        .<span class="kw">await
+    </span>};
 
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">result</span> {
+    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = <span class="kw-2">&amp;</span>result {
         <span class="macro">log::debug!</span>(
             <span class="string">&quot;{} - Dropping corrupted checksums file (Error: {})&quot;</span>,
-            <span class="ident">target</span>,
-            <span class="ident">e</span>
+            target,
+            e
         );
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">delete_saved_env_state</span>(<span class="kw-2">&amp;</span><span class="ident">target</span>).<span class="kw">await</span> {
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = delete_saved_env_state(<span class="kw-2">&amp;</span>target).<span class="kw">await </span>{
             <span class="macro">log::error!</span>(
                 <span class="string">&quot;{} - Failed to drop corrupted checksum file: {} (Error: {})&quot;</span>,
-                <span class="ident">target</span>,
-                <span class="ident">file_path</span>.<span class="ident">display</span>(),
-                <span class="ident">e</span>
+                target,
+                file_path.display(),
+                e
             )
         }
     }
 
-    <span class="ident">result</span>.<span class="ident">ok</span>()
+    result.ok()
 }
 
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">delete_saved_env_state</span>(<span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">TargetMetadata</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">checksums_file</span> <span class="op">=</span> <span class="ident">get_checksums_file_path</span>(<span class="ident">target</span>);
-    <span class="kw">if</span> <span class="ident">checksums_file</span>.<span class="ident">exists</span>().<span class="kw">await</span> {
-        <span class="ident">fs::remove_file</span>(<span class="kw-2">&amp;</span><span class="ident">checksums_file</span>).<span class="kw">await</span>.<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> {
+<span class="kw">pub async fn </span>delete_saved_env_state(target: <span class="kw-2">&amp;</span>TargetMetadata) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>checksums_file = get_checksums_file_path(target);
+    <span class="kw">if </span>checksums_file.exists().<span class="kw">await </span>{
+        fs::remove_file(<span class="kw-2">&amp;</span>checksums_file).<span class="kw">await</span>.with_context(|| {
             <span class="macro">format!</span>(
                 <span class="string">&quot;Failed to delete checksums file {}&quot;</span>,
-                <span class="ident">checksums_file</span>.<span class="ident">display</span>()
+                checksums_file.display()
             )
         })<span class="question-mark">?</span>;
     }
@@ -148,21 +143,20 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">save_env_state</span>(<span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">TargetMetadata</span>, <span class="ident">env_state</span>: <span class="ident">TargetEnvState</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="ident">fs::create_dir</span>(<span class="ident">work_dir::get_work_dir_path</span>(<span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">project_dir</span>))
-        .<span class="kw">await</span>
-        .<span class="ident">ok</span>();
+<span class="kw">pub async fn </span>save_env_state(target: <span class="kw-2">&amp;</span>TargetMetadata, env_state: TargetEnvState) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    fs::create_dir(work_dir::get_work_dir_path(<span class="kw-2">&amp;</span>target.project_dir))
+        .<span class="kw">await
+        </span>.ok();
 
-    <span class="kw">let</span> <span class="ident">file_path</span> <span class="op">=</span> <span class="ident">get_checksums_file_path</span>(<span class="ident">target</span>);
-    <span class="kw">let</span> <span class="ident">target_id</span> <span class="op">=</span> <span class="ident">target</span>.<span class="ident">id</span>.<span class="ident">clone</span>();
-    <span class="ident">task::spawn_blocking</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-        <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">std::fs::File::create</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>)
-            .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format!</span>(<span class="string">&quot;Failed to create checksums file {}&quot;</span>, <span class="ident">file_path</span>.<span class="ident">display</span>()))<span class="question-mark">?</span>;
-        <span class="ident">bincode::serialize_into</span>(<span class="ident">file</span>, <span class="kw-2">&amp;</span><span class="ident">env_state</span>)
-            .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format!</span>(<span class="string">&quot;Failed to serialize checksums for {}&quot;</span>, <span class="ident">target_id</span>))
+    <span class="kw">let </span>file_path = get_checksums_file_path(target);
+    <span class="kw">let </span>target_id = target.id.clone();
+    task::spawn_blocking(<span class="kw">move </span>|| {
+        <span class="kw">let </span>file = std::fs::File::create(<span class="kw-2">&amp;</span>file_path)
+            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to create checksums file {}&quot;</span>, file_path.display()))<span class="question-mark">?</span>;
+        bincode::serialize_into(file, <span class="kw-2">&amp;</span>env_state)
+            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to serialize checksums for {}&quot;</span>, target_id))
     })
-    .<span class="kw">await</span>
-}
+    .<span class="kw">await
+</span>}
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

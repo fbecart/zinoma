@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/config/yaml/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/config/yaml/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -153,156 +148,155 @@
 <span id="148">148</span>
 <span id="149">149</span>
 <span id="150">150</span>
-</pre><pre class="rust"><code><span class="kw">mod</span> <span class="ident">schema</span>;
+</pre><pre class="rust"><code><span class="kw">mod </span>schema;
 
-<span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">anyhow</span>, <span class="ident">Context</span>, <span class="ident">Error</span>, <span class="prelude-ty">Result</span>};
-<span class="kw">use</span> <span class="ident">lazy_static::lazy_static</span>;
-<span class="kw">use</span> <span class="ident">regex::Regex</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">schema</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
-<span class="kw">use</span> <span class="ident">std::fs::File</span>;
-<span class="kw">use</span> <span class="ident">std::io::ErrorKind</span>;
-<span class="kw">use</span> <span class="ident">std::path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>};
+<span class="kw">use </span>anyhow::{anyhow, Context, Error, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>lazy_static::lazy_static;
+<span class="kw">use </span>regex::Regex;
+<span class="kw">pub use </span>schema::<span class="kw-2">*</span>;
+<span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::fs::File;
+<span class="kw">use </span>std::io::ErrorKind;
+<span class="kw">use </span>std::path::{Path, PathBuf};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Config</span> {
-    <span class="kw">pub</span> <span class="ident">root_project_dir</span>: <span class="ident">PathBuf</span>,
-    <span class="kw">pub</span> <span class="ident">projects</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">PathBuf</span>, <span class="ident">Project</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>Config {
+    <span class="kw">pub </span>root_project_dir: PathBuf,
+    <span class="kw">pub </span>projects: HashMap&lt;PathBuf, Project&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">Config</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">load</span>(<span class="ident">root_project_dir</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">root_project_dir</span> <span class="op">=</span> <span class="ident">canonicalize_dir</span>(<span class="ident">root_project_dir</span>)<span class="question-mark">?</span>;
+<span class="kw">impl </span>Config {
+    <span class="kw">pub fn </span>load(root_project_dir: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>root_project_dir = canonicalize_dir(root_project_dir)<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">projects</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
+        <span class="kw">let </span><span class="kw-2">mut </span>projects = HashMap::new();
 
-        <span class="kw">fn</span> <span class="ident">add_project</span>(
-            <span class="ident">project_dir</span>: <span class="ident">PathBuf</span>,
-            <span class="ident">projects</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">PathBuf</span>, <span class="ident">Project</span><span class="op">&gt;</span>,
-        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-            <span class="kw">if</span> <span class="ident">projects</span>.<span class="ident">contains_key</span>(<span class="kw-2">&amp;</span><span class="ident">project_dir</span>) {
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+        <span class="kw">fn </span>add_project(
+            project_dir: PathBuf,
+            projects: <span class="kw-2">&amp;mut </span>HashMap&lt;PathBuf, Project&gt;,
+        ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+            <span class="kw">if </span>projects.contains_key(<span class="kw-2">&amp;</span>project_dir) {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(());
             }
 
-            <span class="kw">let</span> <span class="ident">project</span> <span class="op">=</span> <span class="ident">Config::load_project</span>(<span class="kw-2">&amp;</span><span class="ident">project_dir</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>project = Config::load_project(<span class="kw-2">&amp;</span>project_dir)<span class="question-mark">?</span>;
 
-            <span class="kw">let</span> <span class="ident">import_paths</span> <span class="op">=</span> <span class="ident">project</span>
-                .<span class="ident">imports</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">import_name</span>, <span class="ident">import_dir</span>)<span class="op">|</span> {
-                    <span class="ident">canonicalize_dir</span>(<span class="kw-2">&amp;</span><span class="ident">project_dir</span>.<span class="ident">join</span>(<span class="ident">import_dir</span>))
-                        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">dir</span><span class="op">|</span> (<span class="ident">import_name</span>.<span class="ident">clone</span>(), <span class="ident">dir</span>))
+            <span class="kw">let </span>import_paths = project
+                .imports
+                .iter()
+                .map(|(import_name, import_dir)| {
+                    canonicalize_dir(<span class="kw-2">&amp;</span>project_dir.join(import_dir))
+                        .map(|dir| (import_name.clone(), dir))
                 })
-                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
-            <span class="ident">projects</span>.<span class="ident">insert</span>(<span class="ident">project_dir</span>, <span class="ident">project</span>);
+                .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+            projects.insert(project_dir, project);
 
-            <span class="kw">for</span> (<span class="ident">import_name</span>, <span class="ident">import_dir</span>) <span class="kw">in</span> <span class="ident">import_paths</span> {
-                <span class="ident">add_project</span>(<span class="ident">import_dir</span>.<span class="ident">clone</span>(), <span class="ident">projects</span>)
-                    .<span class="ident">and_then</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">projects</span>[<span class="kw-2">&amp;</span><span class="ident">import_dir</span>].<span class="ident">name</span> {
-                        <span class="prelude-val">None</span> =&gt; <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Project cannot be imported as it has no name&quot;</span>)),
-                        <span class="prelude-val">Some</span>(<span class="ident">name</span>) <span class="kw">if</span> <span class="ident">name</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">import_name</span> =&gt; {
-                            <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;The project should be imported with name {}&quot;</span>, <span class="ident">name</span>))
+            <span class="kw">for </span>(import_name, import_dir) <span class="kw">in </span>import_paths {
+                add_project(import_dir.clone(), projects)
+                    .and_then(|<span class="kw">_</span>| <span class="kw">match </span><span class="kw-2">&amp;</span>projects[<span class="kw-2">&amp;</span>import_dir].name {
+                        <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Project cannot be imported as it has no name&quot;</span>)),
+                        <span class="prelude-val">Some</span>(name) <span class="kw">if </span>name != <span class="kw-2">&amp;</span>import_name =&gt; {
+                            <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;The project should be imported with name {}&quot;</span>, name))
                         }
-                        <span class="kw">_</span> =&gt; <span class="prelude-val">Ok</span>(()),
+                        <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(()),
                     })
-                    .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format!</span>(<span class="string">&quot;Failed to import {}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">import_name</span>))<span class="question-mark">?</span>;
+                    .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to import {}&quot;</span>, <span class="kw-2">&amp;</span>import_name))<span class="question-mark">?</span>;
             }
 
             <span class="prelude-val">Ok</span>(())
         }
 
-        <span class="ident">add_project</span>(<span class="ident">root_project_dir</span>.<span class="ident">clone</span>(), <span class="kw-2">&amp;mut</span> <span class="ident">projects</span>)<span class="question-mark">?</span>;
+        add_project(root_project_dir.clone(), <span class="kw-2">&amp;mut </span>projects)<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
-            <span class="ident">root_project_dir</span>,
-            <span class="ident">projects</span>,
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            root_project_dir,
+            projects,
         })
     }
 
-    <span class="kw">fn</span> <span class="ident">load_project</span>(<span class="ident">project_dir</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Project</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">config_file_path</span> <span class="op">=</span> <span class="ident">project_dir</span>.<span class="ident">join</span>(<span class="string">&quot;zinoma.yml&quot;</span>);
-        <span class="kw">let</span> <span class="ident">config_file</span> <span class="op">=</span> <span class="ident">File::open</span>(<span class="kw-2">&amp;</span><span class="ident">config_file_path</span>).<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> {
-            <span class="macro">format!</span>(<span class="string">&quot;Failed to open config file {}&quot;</span>, <span class="ident">config_file_path</span>.<span class="ident">display</span>())
+    <span class="kw">fn </span>load_project(project_dir: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;Project&gt; {
+        <span class="kw">let </span>config_file_path = project_dir.join(<span class="string">&quot;zinoma.yml&quot;</span>);
+        <span class="kw">let </span>config_file = File::open(<span class="kw-2">&amp;</span>config_file_path).with_context(|| {
+            <span class="macro">format!</span>(<span class="string">&quot;Failed to open config file {}&quot;</span>, config_file_path.display())
         })<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">project</span>: <span class="ident">Project</span> <span class="op">=</span> <span class="ident">serde_yaml::from_reader</span>(<span class="ident">config_file</span>)
-            .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format!</span>(<span class="string">&quot;Invalid format for {}&quot;</span>, <span class="ident">config_file_path</span>.<span class="ident">display</span>()))<span class="question-mark">?</span>;
+        <span class="kw">let </span>project: Project = serde_yaml::from_reader(config_file)
+            .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Invalid format for {}&quot;</span>, config_file_path.display()))<span class="question-mark">?</span>;
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">project_name</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">project</span>.<span class="ident">name</span> {
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">is_valid_project_name</span>(<span class="kw-2">&amp;</span><span class="ident">project_name</span>) {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;{} is not a valid project name&quot;</span>, <span class="ident">project_name</span>));
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(project_name) = <span class="kw-2">&amp;</span>project.name {
+            <span class="kw">if </span>!is_valid_project_name(<span class="kw-2">&amp;</span>project_name) {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;{} is not a valid project name&quot;</span>, project_name));
             }
         }
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">invalid_target_name</span>) <span class="op">=</span> <span class="ident">project</span>
-            .<span class="ident">targets</span>
-            .<span class="ident">keys</span>()
-            .<span class="ident">find</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">target_name</span><span class="op">|</span> <span class="op">!</span><span class="ident">is_valid_target_name</span>(<span class="ident">target_name</span>))
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(invalid_target_name) = project
+            .targets
+            .keys()
+            .find(|<span class="kw-2">&amp;</span>target_name| !is_valid_target_name(target_name))
         {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
                 <span class="string">&quot;{} is not a valid target name&quot;</span>,
-                <span class="ident">invalid_target_name</span>
+                invalid_target_name
             ));
         }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">project</span>)
+        <span class="prelude-val">Ok</span>(project)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_project_dirs</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">projects</span>.<span class="ident">keys</span>().<span class="ident">cloned</span>().<span class="ident">collect</span>()
+    <span class="kw">pub fn </span>get_project_dirs(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PathBuf&gt; {
+        <span class="self">self</span>.projects.keys().cloned().collect()
     }
 }
 
-<span class="kw">fn</span> <span class="ident">canonicalize_dir</span>(<span class="ident">dir</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">PathBuf</span><span class="op">&gt;</span> {
-    <span class="ident">dunce::canonicalize</span>(<span class="ident">dir</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">ErrorKind::NotFound</span> {
-            <span class="macro">format!</span>(<span class="string">&quot;Directory {} does not exist&quot;</span>, <span class="ident">dir</span>.<span class="ident">display</span>())
-        } <span class="kw">else</span> {
-            <span class="macro">format!</span>(<span class="string">&quot;Invalid directory: {}&quot;</span>, <span class="ident">dir</span>.<span class="ident">display</span>())
+<span class="kw">fn </span>canonicalize_dir(dir: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;PathBuf&gt; {
+    dunce::canonicalize(dir).map_err(|e| {
+        <span class="kw">let </span>context = <span class="kw">if </span>e.kind() == ErrorKind::NotFound {
+            <span class="macro">format!</span>(<span class="string">&quot;Directory {} does not exist&quot;</span>, dir.display())
+        } <span class="kw">else </span>{
+            <span class="macro">format!</span>(<span class="string">&quot;Invalid directory: {}&quot;</span>, dir.display())
         };
-        <span class="ident">Error::new</span>(<span class="ident">e</span>).<span class="ident">context</span>(<span class="ident">context</span>)
+        Error::new(e).context(context)
     })
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_valid_target_name</span>(<span class="ident">target_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">bool</span> {
-    <span class="macro">lazy_static!</span> {
-        <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">RE</span>: <span class="ident">Regex</span> <span class="op">=</span> <span class="ident">Regex::new</span>(<span class="string">r&quot;^\w[-\w]*$&quot;</span>).<span class="ident">unwrap</span>();
+<span class="kw">pub fn </span>is_valid_target_name(target_name: <span class="kw-2">&amp;</span>str) -&gt; bool {
+    <span class="macro">lazy_static! </span>{
+        <span class="kw">static </span><span class="kw-2">ref </span>RE: Regex = Regex::new(<span class="string">r&quot;^\w[-\w]*$&quot;</span>).unwrap();
     }
-    <span class="ident">RE</span>.<span class="ident">is_match</span>(<span class="ident">target_name</span>)
+    RE.is_match(target_name)
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_valid_project_name</span>(<span class="ident">project_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="ident">bool</span> {
-    <span class="macro">lazy_static!</span> {
-        <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">RE</span>: <span class="ident">Regex</span> <span class="op">=</span> <span class="ident">Regex::new</span>(<span class="string">r&quot;^\w[-\w]*$&quot;</span>).<span class="ident">unwrap</span>();
+<span class="kw">pub fn </span>is_valid_project_name(project_name: <span class="kw-2">&amp;</span>str) -&gt; bool {
+    <span class="macro">lazy_static! </span>{
+        <span class="kw">static </span><span class="kw-2">ref </span>RE: Regex = Regex::new(<span class="string">r&quot;^\w[-\w]*$&quot;</span>).unwrap();
     }
-    <span class="ident">RE</span>.<span class="ident">is_match</span>(<span class="ident">project_name</span>)
+    RE.is_match(project_name)
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::is_valid_target_name</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use </span><span class="kw">super</span>::is_valid_target_name;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_is_valid_target_name</span>() {
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_is_valid_target_name() {
         <span class="macro">assert!</span>(
-            <span class="ident">is_valid_target_name</span>(<span class="string">&quot;my-target&quot;</span>),
-            <span class="string">&quot;A target name can contain letters and hyphens&quot;</span>
-        );
+            is_valid_target_name(<span class="string">&quot;my-target&quot;</span>),
+            <span class="string">&quot;A target name can contain letters and hyphens&quot;
+        </span>);
         <span class="macro">assert!</span>(
-            <span class="ident">is_valid_target_name</span>(<span class="string">&quot;007&quot;</span>),
-            <span class="string">&quot;A target name can contain numbers&quot;</span>
-        );
+            is_valid_target_name(<span class="string">&quot;007&quot;</span>),
+            <span class="string">&quot;A target name can contain numbers&quot;
+        </span>);
         <span class="macro">assert!</span>(
-            <span class="ident">is_valid_target_name</span>(<span class="string">&quot;_hidden_target&quot;</span>),
-            <span class="string">&quot;A target name can start with underscore&quot;</span>
-        );
+            is_valid_target_name(<span class="string">&quot;_hidden_target&quot;</span>),
+            <span class="string">&quot;A target name can start with underscore&quot;
+        </span>);
 
         <span class="macro">assert!</span>(
-            <span class="op">!</span><span class="ident">is_valid_target_name</span>(<span class="string">&quot;-&quot;</span>),
-            <span class="string">&quot;A target name cannot start with an hyphen&quot;</span>
-        );
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">is_valid_target_name</span>(<span class="string">&quot;&quot;</span>), <span class="string">&quot;A target name cannot be empty&quot;</span>);
+            !is_valid_target_name(<span class="string">&quot;-&quot;</span>),
+            <span class="string">&quot;A target name cannot start with an hyphen&quot;
+        </span>);
+        <span class="macro">assert!</span>(!is_valid_target_name(<span class="string">&quot;&quot;</span>), <span class="string">&quot;A target name cannot be empty&quot;</span>);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["get_cmd_stdout",""]],"struct":[["ResourcesState",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["get_cmd_stdout",""]],"struct":[["ResourcesState",""]]};

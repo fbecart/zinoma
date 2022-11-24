@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["ServiceTargetActor",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["ServiceTargetActor",""]]};

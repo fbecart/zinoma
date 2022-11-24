@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["get_app",""]],"mod":[["arg",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["get_app",""]],"mod":[["arg",""]]};

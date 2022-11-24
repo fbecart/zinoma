@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["WatchOption",""]],"fn":[["execute_once",""],["run",""],["watch",""]],"mod":[["builder",""],["incremental",""],["target_actor",""],["target_actors",""],["watcher",""]]});
+window.SIDEBAR_ITEMS = {"enum":[["WatchOption",""]],"fn":[["execute_once",""],["run",""],["watch",""]],"mod":[["builder",""],["incremental",""],["target_actor",""],["target_actors",""],["watcher",""]]};

@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/incremental/resources_state/fs.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>fs.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script src="../../../../../crates.js"></script><script defer src="../../../../../main.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../zinoma/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/incremental/resources_state/fs.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>fs.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../zinoma/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -114,117 +109,116 @@
 <span id="109">109</span>
 <span id="110">110</span>
 <span id="111">111</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::async_utils::all</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::domain::FilesResource</span>;
-<span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">Context</span>, <span class="prelude-ty">Result</span>};
-<span class="kw">use</span> <span class="ident">async_std::fs::File</span>;
-<span class="kw">use</span> <span class="ident">async_std::io::BufReader</span>;
-<span class="kw">use</span> <span class="ident">async_std::path::Path</span>;
-<span class="kw">use</span> <span class="ident">async_std::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">seahash::SeaHasher</span>;
-<span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
-<span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
-<span class="kw">use</span> <span class="ident">std::hash::Hasher</span>;
-<span class="kw">use</span> <span class="ident">std::time</span>::{<span class="ident">Duration</span>, <span class="ident">SystemTime</span>};
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::async_utils::all;
+<span class="kw">use </span><span class="kw">crate</span>::domain::FilesResource;
+<span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>async_std::fs::File;
+<span class="kw">use </span>async_std::io::BufReader;
+<span class="kw">use </span>async_std::path::Path;
+<span class="kw">use </span>async_std::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>seahash::SeaHasher;
+<span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::hash::Hasher;
+<span class="kw">use </span>std::time::{Duration, SystemTime};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourcesState</span>(<span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">std::path::PathBuf</span>, (<span class="ident">Duration</span>, <span class="ident">u64</span>)<span class="op">&gt;</span>);
+<span class="attribute">#[derive(Serialize, Deserialize, PartialEq)]
+</span><span class="kw">pub struct </span>ResourcesState(HashMap&lt;std::path::PathBuf, (Duration, u64)&gt;);
 
-<span class="kw">impl</span> <span class="ident">ResourcesState</span> {
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">current</span>(<span class="ident">resources</span>: <span class="kw-2">&amp;</span>[<span class="ident">FilesResource</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">files</span> <span class="op">=</span> <span class="ident"><span class="kw">crate</span>::fs::list_files_in_resources</span>(<span class="ident">resources</span>).<span class="kw">await</span>;
+<span class="kw">impl </span>ResourcesState {
+    <span class="kw">pub async fn </span>current(resources: <span class="kw-2">&amp;</span>[FilesResource]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>files = <span class="kw">crate</span>::fs::list_files_in_resources(resources).<span class="kw">await</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">HashMap::with_capacity</span>(<span class="ident">files</span>.<span class="ident">len</span>());
+        <span class="kw">let </span><span class="kw-2">mut </span>state = HashMap::with_capacity(files.len());
 
-        <span class="kw">for</span> <span class="ident">file</span> <span class="kw">in</span> <span class="ident">files</span> {
-            <span class="kw">let</span> <span class="ident">modified</span> <span class="op">=</span> <span class="ident">get_file_modified</span>(<span class="kw-2">&amp;</span><span class="ident">file</span>).<span class="kw">await</span>.<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> {
-                <span class="macro">format!</span>(<span class="string">&quot;Failed to obtain file modified date: {}&quot;</span>, <span class="ident">file</span>.<span class="ident">display</span>())
+        <span class="kw">for </span>file <span class="kw">in </span>files {
+            <span class="kw">let </span>modified = get_file_modified(<span class="kw-2">&amp;</span>file).<span class="kw">await</span>.with_context(|| {
+                <span class="macro">format!</span>(<span class="string">&quot;Failed to obtain file modified date: {}&quot;</span>, file.display())
             })<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">file_hash</span> <span class="op">=</span> <span class="ident">compute_file_hash</span>(<span class="kw-2">&amp;</span><span class="ident">file</span>)
-                .<span class="kw">await</span>
-                .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format!</span>(<span class="string">&quot;Failed to compute hash of {}&quot;</span>, <span class="ident">file</span>.<span class="ident">display</span>()))<span class="question-mark">?</span>;
-            <span class="ident">state</span>.<span class="ident">insert</span>(<span class="ident">file</span>.<span class="ident">into</span>(), (<span class="ident">modified</span>, <span class="ident">file_hash</span>));
+            <span class="kw">let </span>file_hash = compute_file_hash(<span class="kw-2">&amp;</span>file)
+                .<span class="kw">await
+                </span>.with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to compute hash of {}&quot;</span>, file.display()))<span class="question-mark">?</span>;
+            state.insert(file.into(), (modified, file_hash));
         }
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(<span class="ident">state</span>))
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(state))
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">eq_current_state</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">resources</span>: <span class="kw-2">&amp;</span>[<span class="ident">FilesResource</span>]) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> <span class="ident">files</span> <span class="op">=</span> <span class="ident"><span class="kw">crate</span>::fs::list_files_in_resources</span>(<span class="ident">resources</span>).<span class="kw">await</span>;
+    <span class="kw">pub async fn </span>eq_current_state(<span class="kw-2">&amp;</span><span class="self">self</span>, resources: <span class="kw-2">&amp;</span>[FilesResource]) -&gt; bool {
+        <span class="kw">let </span>files = <span class="kw">crate</span>::fs::list_files_in_resources(resources).<span class="kw">await</span>;
 
-        <span class="kw">if</span> <span class="ident">files</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">len</span>() {
-            <span class="kw">return</span> <span class="bool-val">false</span>;
+        <span class="kw">if </span>files.len() != <span class="self">self</span>.<span class="number">0</span>.len() {
+            <span class="kw">return </span><span class="bool-val">false</span>;
         }
 
-        <span class="kw">let</span> <span class="ident">futures</span> <span class="op">=</span> <span class="ident">files</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">file_path</span><span class="op">|</span> <span class="kw">async</span> <span class="kw">move</span> {
-            <span class="kw">let</span> <span class="ident">std_path</span>: <span class="kw-2">&amp;</span><span class="ident">std::path::Path</span> <span class="op">=</span> <span class="ident">file_path</span>.<span class="ident">as_path</span>().<span class="ident">into</span>();
-            <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">get</span>(<span class="ident">std_path</span>) {
-                <span class="prelude-val">None</span> =&gt; <span class="bool-val">false</span>,
-                <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(<span class="ident">saved_modified</span>, <span class="ident">saved_hash</span>)) =&gt; <span class="kw">match</span> <span class="ident">get_file_modified</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>).<span class="kw">await</span> {
-                    <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                        <span class="macro">log::error!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">e</span>);
-                        <span class="bool-val">false</span>
-                    }
-                    <span class="prelude-val">Ok</span>(<span class="ident">modified</span>) =&gt; {
-                        <span class="ident">modified</span> <span class="op">==</span> <span class="ident">saved_modified</span>
-                            <span class="op">|</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">compute_file_hash</span>(<span class="kw-2">&amp;</span><span class="ident">file_path</span>).<span class="kw">await</span> {
-                                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                                    <span class="macro">log::error!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">e</span>);
-                                    <span class="bool-val">false</span>
-                                }
-                                <span class="prelude-val">Ok</span>(<span class="ident">hash</span>) =&gt; <span class="ident">hash</span> <span class="op">==</span> <span class="ident">saved_hash</span>,
+        <span class="kw">let </span>futures = files.into_iter().map(|file_path| <span class="kw">async move </span>{
+            <span class="kw">let </span>std_path: <span class="kw-2">&amp;</span>std::path::Path = file_path.as_path().into();
+            <span class="kw">match </span><span class="self">self</span>.<span class="number">0</span>.get(std_path) {
+                <span class="prelude-val">None </span>=&gt; <span class="bool-val">false</span>,
+                <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(saved_modified, saved_hash)) =&gt; <span class="kw">match </span>get_file_modified(<span class="kw-2">&amp;</span>file_path).<span class="kw">await </span>{
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="macro">log::error!</span>(<span class="string">&quot;{:?}&quot;</span>, e);
+                        <span class="bool-val">false
+                    </span>}
+                    <span class="prelude-val">Ok</span>(modified) =&gt; {
+                        modified == saved_modified
+                            || <span class="kw">match </span>compute_file_hash(<span class="kw-2">&amp;</span>file_path).<span class="kw">await </span>{
+                                <span class="prelude-val">Err</span>(e) =&gt; {
+                                    <span class="macro">log::error!</span>(<span class="string">&quot;{:?}&quot;</span>, e);
+                                    <span class="bool-val">false
+                                </span>}
+                                <span class="prelude-val">Ok</span>(hash) =&gt; hash == saved_hash,
                             }
                     }
                 },
             }
         });
 
-        <span class="ident">all</span>(<span class="ident">futures</span>).<span class="kw">await</span>
-    }
+        all(futures).<span class="kw">await
+    </span>}
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get_file_modified</span>(<span class="ident">file</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Duration</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">metadata</span> <span class="op">=</span> <span class="ident">file</span>
-        .<span class="ident">metadata</span>()
-        .<span class="kw">await</span>
-        .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format!</span>(<span class="string">&quot;Failed to obtain metadata of file {}&quot;</span>, <span class="ident">file</span>.<span class="ident">display</span>()))<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">modified</span> <span class="op">=</span> <span class="ident">metadata</span>.<span class="ident">modified</span>().<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> {
+<span class="kw">async fn </span>get_file_modified(file: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;Duration&gt; {
+    <span class="kw">let </span>metadata = file
+        .metadata()
+        .<span class="kw">await
+        </span>.with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to obtain metadata of file {}&quot;</span>, file.display()))<span class="question-mark">?</span>;
+    <span class="kw">let </span>modified = metadata.modified().with_context(|| {
         <span class="macro">format!</span>(
             <span class="string">&quot;Failed to obtain modified timestamp of file {}&quot;</span>,
-            <span class="ident">file</span>.<span class="ident">display</span>()
+            file.display()
         )
     })<span class="question-mark">?</span>;
-    <span class="ident">modified</span>
-        .<span class="ident">duration_since</span>(<span class="ident">SystemTime::UNIX_EPOCH</span>)
-        .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> {
+    modified
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .with_context(|| {
             <span class="macro">format!</span>(
                 <span class="string">&quot;Failed to obtain duration between UNIX EPOCH and modified timestamp for file {}&quot;</span>,
-                <span class="ident">file</span>.<span class="ident">display</span>()
+                file.display()
             )
         })
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">compute_file_hash</span>(<span class="ident">file_path</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hasher</span> <span class="op">=</span> <span class="ident">SeaHasher::default</span>();
-    <span class="kw">let</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">File::open</span>(<span class="ident">file_path</span>)
-        .<span class="kw">await</span>
-        .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format!</span>(<span class="string">&quot;Failed to open file {}&quot;</span>, <span class="ident">file_path</span>.<span class="ident">display</span>()))<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader</span> <span class="op">=</span> <span class="ident">BufReader::new</span>(<span class="ident">file</span>);
+<span class="kw">async fn </span>compute_file_hash(file_path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;u64&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>hasher = SeaHasher::default();
+    <span class="kw">let </span>file = File::open(file_path)
+        .<span class="kw">await
+        </span>.with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to open file {}&quot;</span>, file_path.display()))<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>reader = BufReader::new(file);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffer</span> <span class="op">=</span> [<span class="number">0</span>; <span class="number">1024</span>];
-    <span class="kw">loop</span> {
-        <span class="kw">let</span> <span class="ident">count</span> <span class="op">=</span> <span class="ident">reader</span>
-            .<span class="ident">read</span>(<span class="kw-2">&amp;mut</span> <span class="ident">buffer</span>)
-            .<span class="kw">await</span>
-            .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format!</span>(<span class="string">&quot;Failed to read file {}&quot;</span>, <span class="ident">file_path</span>.<span class="ident">display</span>()))<span class="question-mark">?</span>;
-        <span class="kw">if</span> <span class="ident">count</span> <span class="op">==</span> <span class="number">0</span> {
+    <span class="kw">let </span><span class="kw-2">mut </span>buffer = [<span class="number">0</span>; <span class="number">1024</span>];
+    <span class="kw">loop </span>{
+        <span class="kw">let </span>count = reader
+            .read(<span class="kw-2">&amp;mut </span>buffer)
+            .<span class="kw">await
+            </span>.with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to read file {}&quot;</span>, file_path.display()))<span class="question-mark">?</span>;
+        <span class="kw">if </span>count == <span class="number">0 </span>{
             <span class="kw">break</span>;
         }
-        <span class="ident">Hasher::write</span>(<span class="kw-2">&amp;mut</span> <span class="ident">hasher</span>, <span class="kw-2">&amp;</span><span class="ident">buffer</span>[..<span class="ident">count</span>]);
+        Hasher::write(<span class="kw-2">&amp;mut </span>hasher, <span class="kw-2">&amp;</span>buffer[..count]);
     }
 
-    <span class="prelude-val">Ok</span>(<span class="ident">hasher</span>.<span class="ident">finish</span>())
+    <span class="prelude-val">Ok</span>(hasher.finish())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

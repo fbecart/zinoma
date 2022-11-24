@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/builder.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>builder.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../zinoma/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/builder.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>builder.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../zinoma/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -59,62 +54,61 @@
 <span id="54">54</span>
 <span id="55">55</span>
 <span id="56">56</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::domain::BuildTarget</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::run_script</span>;
-<span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">anyhow</span>, <span class="ident">Context</span>, <span class="prelude-ty">Result</span>};
-<span class="kw">use</span> <span class="ident">async_std::channel::Receiver</span>;
-<span class="kw">use</span> <span class="ident">async_std::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">futures::FutureExt</span>;
-<span class="kw">use</span> <span class="ident">std::process::Stdio</span>;
-<span class="kw">use</span> <span class="ident">std::time::Instant</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::domain::BuildTarget;
+<span class="kw">use </span><span class="kw">crate</span>::run_script;
+<span class="kw">use </span>anyhow::{anyhow, Context, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>async_std::channel::Receiver;
+<span class="kw">use </span>async_std::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>futures::FutureExt;
+<span class="kw">use </span>std::process::Stdio;
+<span class="kw">use </span>std::time::Instant;
 
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">build_target</span>(
-    <span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">BuildTarget</span>,
-    <span class="kw-2">mut</span> <span class="ident">build_cancellation_events</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">BuildCancellationMessage</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">BuildTerminationReport</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">target_start</span> <span class="op">=</span> <span class="ident">Instant::now</span>();
-    <span class="macro">log::info!</span>(<span class="string">&quot;{} - Building&quot;</span>, <span class="ident">target</span>);
+<span class="kw">pub async fn </span>build_target(
+    target: <span class="kw-2">&amp;</span>BuildTarget,
+    <span class="kw-2">mut </span>build_cancellation_events: Receiver&lt;BuildCancellationMessage&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;BuildTerminationReport&gt; {
+    <span class="kw">let </span>target_start = Instant::now();
+    <span class="macro">log::info!</span>(<span class="string">&quot;{} - Building&quot;</span>, target);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">command</span> <span class="op">=</span> <span class="ident">run_script::build_command</span>(<span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">build_script</span>, <span class="kw-2">&amp;</span><span class="ident">target</span>.<span class="ident">metadata</span>.<span class="ident">project_dir</span>);
-    <span class="ident">command</span>.<span class="ident">stdout</span>(<span class="ident">Stdio::inherit</span>()).<span class="ident">stderr</span>(<span class="ident">Stdio::inherit</span>());
+    <span class="kw">let </span><span class="kw-2">mut </span>command = run_script::build_command(<span class="kw-2">&amp;</span>target.build_script, <span class="kw-2">&amp;</span>target.metadata.project_dir);
+    command.stdout(Stdio::inherit()).stderr(Stdio::inherit());
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">build_process</span> <span class="op">=</span> <span class="ident">command</span>
-        .<span class="ident">spawn</span>()
-        .<span class="ident">with_context</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">format!</span>(<span class="string">&quot;Failed to spawn build command for {}&quot;</span>, <span class="ident">target</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>build_process = command
+        .spawn()
+        .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Failed to spawn build command for {}&quot;</span>, target))<span class="question-mark">?</span>;
 
-    <span class="macro">futures::select!</span> {
-        <span class="kw">_</span> <span class="op">=</span> <span class="ident">build_cancellation_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() =&gt; {
-            <span class="macro">log::debug!</span>(<span class="string">&quot;{} - Build cancelled&quot;</span>, <span class="ident">target</span>);
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">build_process</span>.<span class="ident">kill</span>() {
-                <span class="macro">log::error!</span>(<span class="string">&quot;{} - Failed to kill build process: {}&quot;</span>, <span class="ident">target</span>, <span class="ident">e</span>)
+    <span class="macro">futures::select! </span>{
+        <span class="kw">_ </span>= build_cancellation_events.next().fuse() =&gt; {
+            <span class="macro">log::debug!</span>(<span class="string">&quot;{} - Build cancelled&quot;</span>, target);
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = build_process.kill() {
+                <span class="macro">log::error!</span>(<span class="string">&quot;{} - Failed to kill build process: {}&quot;</span>, target, e)
             };
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span> <span class="ident">build_process</span>.<span class="ident">status</span>().<span class="kw">await</span> {
-                <span class="macro">log::error!</span>(<span class="string">&quot;{} - Failed to await build process: {}&quot;</span>, <span class="ident">target</span>, <span class="ident">e</span>)
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = build_process.status().<span class="kw">await </span>{
+                <span class="macro">log::error!</span>(<span class="string">&quot;{} - Failed to await build process: {}&quot;</span>, target, e)
             }
-            <span class="prelude-val">Ok</span>(<span class="ident">BuildTerminationReport::Cancelled</span>)
+            <span class="prelude-val">Ok</span>(BuildTerminationReport::Cancelled)
         },
-        <span class="ident">result</span> <span class="op">=</span> <span class="ident">build_process</span>.<span class="ident">status</span>().<span class="ident">fuse</span>() =&gt; {
-            <span class="kw">let</span> <span class="ident">exit_status</span> <span class="op">=</span> <span class="ident">result</span><span class="question-mark">?</span>;
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">exit_status</span>.<span class="ident">success</span>() {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Build failed with {}&quot;</span>, <span class="ident">exit_status</span>));
+        result = build_process.status().fuse() =&gt; {
+            <span class="kw">let </span>exit_status = result<span class="question-mark">?</span>;
+            <span class="kw">if </span>!exit_status.success() {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Build failed with {}&quot;</span>, exit_status));
             }
-            <span class="kw">let</span> <span class="ident">target_build_duration</span> <span class="op">=</span> <span class="ident">target_start</span>.<span class="ident">elapsed</span>();
+            <span class="kw">let </span>target_build_duration = target_start.elapsed();
             <span class="macro">log::info!</span>(
                 <span class="string">&quot;{} - Build success (took: {}ms)&quot;</span>,
-                <span class="ident">target</span>,
-                <span class="ident">target_build_duration</span>.<span class="ident">as_millis</span>()
+                target,
+                target_build_duration.as_millis()
             );
-            <span class="prelude-val">Ok</span>(<span class="ident">BuildTerminationReport::Completed</span>)
+            <span class="prelude-val">Ok</span>(BuildTerminationReport::Completed)
         },
     }
 }
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">BuildTerminationReport</span> {
-    <span class="ident">Completed</span>,
-    <span class="ident">Cancelled</span>,
+<span class="kw">pub enum </span>BuildTerminationReport {
+    Completed,
+    Cancelled,
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BuildCancellationMessage</span>;
+<span class="kw">pub struct </span>BuildCancellationMessage;
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["BuildTerminationReport",""]],"fn":[["build_target",""]],"struct":[["BuildCancellationMessage",""]]});
+window.SIDEBAR_ITEMS = {"enum":[["BuildTerminationReport",""]],"fn":[["build_target",""]],"struct":[["BuildCancellationMessage",""]]};

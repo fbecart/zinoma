@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["TargetActorHelper",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["TargetActorHelper",""]]};

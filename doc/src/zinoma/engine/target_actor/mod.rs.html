@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/target_actor/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/target_actor/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -147,150 +142,149 @@
 <span id="142">142</span>
 <span id="143">143</span>
 <span id="144">144</span>
-</pre><pre class="rust"><code><span class="kw">mod</span> <span class="ident">aggregate_target_actor</span>;
-<span class="kw">mod</span> <span class="ident">build_target_actor</span>;
-<span class="kw">mod</span> <span class="ident">service_target_actor</span>;
-<span class="kw">mod</span> <span class="ident">target_actor_helper</span>;
+</pre><pre class="rust"><code><span class="kw">mod </span>aggregate_target_actor;
+<span class="kw">mod </span>build_target_actor;
+<span class="kw">mod </span>service_target_actor;
+<span class="kw">mod </span>target_actor_helper;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::watcher</span>::{<span class="ident">TargetInvalidatedMessage</span>, <span class="ident">TargetWatcher</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::WatchOption</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::domain</span>::{<span class="ident">Target</span>, <span class="ident">TargetId</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::TerminationMessage</span>;
-<span class="kw">use</span> <span class="ident">aggregate_target_actor::AggregateTargetActor</span>;
-<span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">Error</span>, <span class="prelude-ty">Result</span>};
-<span class="kw">use</span> <span class="ident">async_std::channel</span>::{<span class="self">self</span>, <span class="ident">Sender</span>};
-<span class="kw">use</span> <span class="ident">async_std::task</span>::{<span class="self">self</span>, <span class="ident">JoinHandle</span>};
-<span class="kw">use</span> <span class="ident">build_target_actor::BuildTargetActor</span>;
-<span class="kw">use</span> <span class="ident">service_target_actor::ServiceTargetActor</span>;
-<span class="kw">use</span> <span class="ident">target_actor_helper::TargetActorHelper</span>;
+<span class="kw">use </span><span class="kw">super</span>::watcher::{TargetInvalidatedMessage, TargetWatcher};
+<span class="kw">use </span><span class="kw">super</span>::WatchOption;
+<span class="kw">use </span><span class="kw">crate</span>::domain::{Target, TargetId};
+<span class="kw">use </span><span class="kw">crate</span>::TerminationMessage;
+<span class="kw">use </span>aggregate_target_actor::AggregateTargetActor;
+<span class="kw">use </span>anyhow::{Error, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>async_std::channel::{<span class="self">self</span>, Sender};
+<span class="kw">use </span>async_std::task::{<span class="self">self</span>, JoinHandle};
+<span class="kw">use </span>build_target_actor::BuildTargetActor;
+<span class="kw">use </span>service_target_actor::ServiceTargetActor;
+<span class="kw">use </span>target_actor_helper::TargetActorHelper;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ActorInputMessage</span> {
-    <span class="doccomment">/// Indicates the execution of the build scripts or services behind this target are requested.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This message should only be sent to direct dependencies.</span>
-    <span class="ident">Requested</span> {
-        <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>,
-        <span class="ident">requester</span>: <span class="ident">ActorId</span>,
+<span class="attribute">#[derive(Debug, Clone)]
+</span><span class="kw">pub enum </span>ActorInputMessage {
+    <span class="doccomment">/// Indicates the execution of the build scripts or services behind this target are requested.
+    ///
+    /// This message should only be sent to direct dependencies.
+    </span>Requested {
+        kind: ExecutionKind,
+        requester: ActorId,
     },
-    <span class="doccomment">/// Indicates the execution of the build scripts or services behind this target are no more requested by the provided requester.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This message should only be sent to direct dependencies.</span>
-    <span class="ident">Unrequested</span> {
-        <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>,
-        <span class="ident">requester</span>: <span class="ident">ActorId</span>,
+    <span class="doccomment">/// Indicates the execution of the build scripts or services behind this target are no more requested by the provided requester.
+    ///
+    /// This message should only be sent to direct dependencies.
+    </span>Unrequested {
+        kind: ExecutionKind,
+        requester: ActorId,
     },
-    <span class="doccomment">/// Indicates the execution of the build scripts behind the provided target are Ok.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// If kind is [`Build`], Ok means one of the following:</span>
-    <span class="doccomment">/// - There is no build script behind this target;</span>
-    <span class="doccomment">/// - All build scripts have been executed or skipped, and therefore, their output resources are available.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`Build`]: enum.ExecutionKind.html#variant.Build</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// If kind is [`Service`], Ok means one of the following:</span>
-    <span class="doccomment">/// - There is no service behind this target;</span>
-    <span class="doccomment">/// - All services have been started and are currently running.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`Service`]: enum.ExecutionKind.html#variant.Service</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// `actual` should be `true` if there is an actual build/service behind this target.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This message should only be sent to build requesters.</span>
-    <span class="prelude-val">Ok</span> {
-        <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>,
-        <span class="ident">target_id</span>: <span class="ident">TargetId</span>,
-        <span class="ident">actual</span>: <span class="ident">bool</span>,
+    <span class="doccomment">/// Indicates the execution of the build scripts behind the provided target are Ok.
+    ///
+    /// If kind is [`Build`], Ok means one of the following:
+    /// - There is no build script behind this target;
+    /// - All build scripts have been executed or skipped, and therefore, their output resources are available.
+    ///
+    /// [`Build`]: enum.ExecutionKind.html#variant.Build
+    ///
+    /// If kind is [`Service`], Ok means one of the following:
+    /// - There is no service behind this target;
+    /// - All services have been started and are currently running.
+    ///
+    /// [`Service`]: enum.ExecutionKind.html#variant.Service
+    ///
+    /// `actual` should be `true` if there is an actual build/service behind this target.
+    ///
+    /// This message should only be sent to build requesters.
+    </span><span class="prelude-val">Ok </span>{
+        kind: ExecutionKind,
+        target_id: TargetId,
+        actual: bool,
     },
-    <span class="doccomment">/// Indicates the build scripts or services behind the target are not OK anymore.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The requester should invalidate the previously sent [`Ok`].</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// [`Ok`]: #variant.Ok</span>
-    <span class="ident">Invalidated</span> {
-        <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>,
-        <span class="ident">target_id</span>: <span class="ident">TargetId</span>,
-    },
-}
-
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">TargetActorOutputMessage</span> {
-    <span class="ident">TargetExecutionError</span>(<span class="ident">TargetId</span>, <span class="ident">Error</span>),
-    <span class="ident">MessageActor</span> {
-        <span class="ident">dest</span>: <span class="ident">ActorId</span>,
-        <span class="ident">msg</span>: <span class="ident">ActorInputMessage</span>,
+    <span class="doccomment">/// Indicates the build scripts or services behind the target are not OK anymore.
+    ///
+    /// The requester should invalidate the previously sent [`Ok`].
+    ///
+    /// [`Ok`]: #variant.Ok
+    </span>Invalidated {
+        kind: ExecutionKind,
+        target_id: TargetId,
     },
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ActorId</span> {
-    <span class="ident">Root</span>,
-    <span class="ident">Target</span>(<span class="ident">TargetId</span>),
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub enum </span>TargetActorOutputMessage {
+    TargetExecutionError(TargetId, Error),
+    MessageActor {
+        dest: ActorId,
+        msg: ActorInputMessage,
+    },
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">launch_target_actor</span>(
-    <span class="ident">target</span>: <span class="ident">Target</span>,
-    <span class="ident">watch_option</span>: <span class="ident">WatchOption</span>,
-    <span class="ident">target_actor_output_sender</span>: <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">TargetActorOutputMessage</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">JoinHandle</span><span class="op">&lt;</span>()<span class="op">&gt;</span>, <span class="ident">TargetActorHandleSet</span>)<span class="op">&gt;</span> {
-    <span class="kw">let</span> (<span class="ident">termination_sender</span>, <span class="ident">termination_events</span>) <span class="op">=</span> <span class="ident">channel::bounded</span>(<span class="number">1</span>);
-    <span class="kw">let</span> (<span class="ident">target_invalidated_sender</span>, <span class="ident">target_invalidated_events</span>) <span class="op">=</span> <span class="ident">channel::bounded</span>(<span class="number">1</span>);
-    <span class="kw">let</span> (<span class="ident">target_actor_input_sender</span>, <span class="ident">target_actor_input_receiver</span>) <span class="op">=</span>
-        <span class="ident">channel::bounded</span>(<span class="ident"><span class="kw">crate</span>::DEFAULT_CHANNEL_CAP</span>);
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+</span><span class="kw">pub enum </span>ActorId {
+    Root,
+    Target(TargetId),
+}
 
-    <span class="kw">let</span> <span class="ident">watcher</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">watch_option</span> {
-        <span class="ident">WatchOption::Enabled</span> =&gt; {
-            <span class="ident">TargetWatcher::new</span>(<span class="ident">target</span>.<span class="ident">id</span>(), <span class="ident">target</span>.<span class="ident">input</span>(), <span class="kw-2">&amp;</span><span class="ident">target_invalidated_sender</span>)<span class="question-mark">?</span>
-        }
-        <span class="ident">WatchOption::Disabled</span> =&gt; <span class="prelude-val">None</span>,
+<span class="kw">pub fn </span>launch_target_actor(
+    target: Target,
+    watch_option: WatchOption,
+    target_actor_output_sender: Sender&lt;TargetActorOutputMessage&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(JoinHandle&lt;()&gt;, TargetActorHandleSet)&gt; {
+    <span class="kw">let </span>(termination_sender, termination_events) = channel::bounded(<span class="number">1</span>);
+    <span class="kw">let </span>(target_invalidated_sender, target_invalidated_events) = channel::bounded(<span class="number">1</span>);
+    <span class="kw">let </span>(target_actor_input_sender, target_actor_input_receiver) =
+        channel::bounded(<span class="kw">crate</span>::DEFAULT_CHANNEL_CAP);
+
+    <span class="kw">let </span>watcher = <span class="kw">match </span>watch_option {
+        WatchOption::Enabled =&gt; {
+            TargetWatcher::new(target.id(), target.input(), <span class="kw-2">&amp;</span>target_invalidated_sender)<span class="question-mark">?
+        </span>}
+        WatchOption::Disabled =&gt; <span class="prelude-val">None</span>,
     };
 
-    <span class="kw">let</span> <span class="ident">target_actor_helper</span> <span class="op">=</span> <span class="ident">TargetActorHelper::new</span>(
-        <span class="ident">target</span>.<span class="ident">metadata</span>(),
-        <span class="ident">termination_events</span>,
-        <span class="ident">target_invalidated_events</span>,
-        <span class="ident">target_actor_input_receiver</span>,
-        <span class="ident">target_actor_output_sender</span>,
+    <span class="kw">let </span>target_actor_helper = TargetActorHelper::new(
+        target.metadata(),
+        termination_events,
+        target_invalidated_events,
+        target_actor_input_receiver,
+        target_actor_output_sender,
     );
 
-    <span class="kw">let</span> <span class="ident">join_handle</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">target</span> {
-        <span class="ident">Target::Build</span>(<span class="ident">build_target</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">target_actor</span> <span class="op">=</span> <span class="ident">BuildTargetActor::new</span>(<span class="ident">build_target</span>, <span class="ident">target_actor_helper</span>);
-            <span class="ident">task::spawn</span>(<span class="ident">target_actor</span>.<span class="ident">run</span>())
+    <span class="kw">let </span>join_handle = <span class="kw">match </span>target {
+        Target::Build(build_target) =&gt; {
+            <span class="kw">let </span>target_actor = BuildTargetActor::new(build_target, target_actor_helper);
+            task::spawn(target_actor.run())
         }
-        <span class="ident">Target::Service</span>(<span class="ident">service_target</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">target_actor</span> <span class="op">=</span> <span class="ident">ServiceTargetActor::new</span>(<span class="ident">service_target</span>, <span class="ident">target_actor_helper</span>);
-            <span class="ident">task::spawn</span>(<span class="ident">target_actor</span>.<span class="ident">run</span>())
+        Target::Service(service_target) =&gt; {
+            <span class="kw">let </span>target_actor = ServiceTargetActor::new(service_target, target_actor_helper);
+            task::spawn(target_actor.run())
         }
-        <span class="ident">Target::Aggregate</span>(<span class="ident">aggregate_target</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">target_actor</span> <span class="op">=</span> <span class="ident">AggregateTargetActor::new</span>(<span class="ident">aggregate_target</span>, <span class="ident">target_actor_helper</span>);
-            <span class="ident">task::spawn</span>(<span class="ident">target_actor</span>.<span class="ident">run</span>())
+        Target::Aggregate(aggregate_target) =&gt; {
+            <span class="kw">let </span>target_actor = AggregateTargetActor::new(aggregate_target, target_actor_helper);
+            task::spawn(target_actor.run())
         }
     };
 
     <span class="prelude-val">Ok</span>((
-        <span class="ident">join_handle</span>,
-        <span class="ident">TargetActorHandleSet</span> {
-            <span class="ident">termination_sender</span>,
-            <span class="ident">target_actor_input_sender</span>,
-            <span class="ident">_target_invalidated_sender</span>: <span class="ident">target_invalidated_sender</span>,
-            <span class="ident">_watcher</span>: <span class="ident">watcher</span>,
+        join_handle,
+        TargetActorHandleSet {
+            termination_sender,
+            target_actor_input_sender,
+            _target_invalidated_sender: target_invalidated_sender,
+            _watcher: watcher,
         },
     ))
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TargetActorHandleSet</span> {
-    <span class="kw">pub</span> <span class="ident">termination_sender</span>: <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">TerminationMessage</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">target_actor_input_sender</span>: <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">ActorInputMessage</span><span class="op">&gt;</span>,
-    <span class="ident">_target_invalidated_sender</span>: <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">TargetInvalidatedMessage</span><span class="op">&gt;</span>,
-    <span class="ident">_watcher</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">TargetWatcher</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>TargetActorHandleSet {
+    <span class="kw">pub </span>termination_sender: Sender&lt;TerminationMessage&gt;,
+    <span class="kw">pub </span>target_actor_input_sender: Sender&lt;ActorInputMessage&gt;,
+    _target_invalidated_sender: Sender&lt;TargetInvalidatedMessage&gt;,
+    _watcher: <span class="prelude-ty">Option</span>&lt;TargetWatcher&gt;,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ExecutionKind</span> {
-    <span class="ident">Build</span>,
-    <span class="ident">Service</span>,
+<span class="attribute">#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+</span><span class="kw">pub enum </span>ExecutionKind {
+    Build,
+    Service,
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

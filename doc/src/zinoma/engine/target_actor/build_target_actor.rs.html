@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/target_actor/build_target_actor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>build_target_actor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/target_actor/build_target_actor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>build_target_actor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -132,135 +127,134 @@
 <span id="127">127</span>
 <span id="128">128</span>
 <span id="129">129</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">ActorInputMessage</span>, <span class="ident">ExecutionKind</span>, <span class="ident">TargetActorHelper</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::domain::BuildTarget</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::{<span class="ident">builder</span>, <span class="ident">incremental</span>};
-<span class="kw">use</span> <span class="ident">async_std</span>::{<span class="ident">channel</span>, <span class="ident">prelude</span>::<span class="kw-2">*</span>};
-<span class="kw">use</span> <span class="ident">builder::BuildCancellationMessage</span>;
-<span class="kw">use</span> <span class="ident">futures::future::Fuse</span>;
-<span class="kw">use</span> <span class="ident">futures</span>::{<span class="ident">pin_mut</span>, <span class="ident">FutureExt</span>};
-<span class="kw">use</span> <span class="ident">incremental::IncrementalRunResult</span>;
+</pre><pre class="rust"><code><span class="kw">use super</span>::{ActorInputMessage, ExecutionKind, TargetActorHelper};
+<span class="kw">use </span><span class="kw">crate</span>::domain::BuildTarget;
+<span class="kw">use </span><span class="kw">crate</span>::engine::{builder, incremental};
+<span class="kw">use </span>async_std::{channel, prelude::<span class="kw-2">*</span>};
+<span class="kw">use </span>builder::BuildCancellationMessage;
+<span class="kw">use </span>futures::future::Fuse;
+<span class="kw">use </span>futures::{pin_mut, FutureExt};
+<span class="kw">use </span>incremental::IncrementalRunResult;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BuildTargetActor</span> {
-    <span class="ident">target</span>: <span class="ident">BuildTarget</span>,
-    <span class="ident">helper</span>: <span class="ident">TargetActorHelper</span>,
+<span class="kw">pub struct </span>BuildTargetActor {
+    target: BuildTarget,
+    helper: TargetActorHelper,
 }
 
-<span class="kw">impl</span> <span class="ident">BuildTargetActor</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">target</span>: <span class="ident">BuildTarget</span>, <span class="ident">target_actor_helper</span>: <span class="ident">TargetActorHelper</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">target</span>,
-            <span class="ident">helper</span>: <span class="ident">target_actor_helper</span>,
+<span class="kw">impl </span>BuildTargetActor {
+    <span class="kw">pub fn </span>new(target: BuildTarget, target_actor_helper: TargetActorHelper) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            target,
+            helper: target_actor_helper,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run</span>(<span class="kw-2">mut</span> <span class="self">self</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">termination_event_received</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">let</span> <span class="ident">ongoing_build_fuse</span> <span class="op">=</span> <span class="ident">Fuse::terminated</span>();
-        <span class="macro">pin_mut!</span>(<span class="ident">ongoing_build_fuse</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ongoing_build_cancellation_sender</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+    <span class="kw">pub async fn </span>run(<span class="kw-2">mut </span><span class="self">self</span>) {
+        <span class="kw">let </span><span class="kw-2">mut </span>termination_event_received = <span class="bool-val">false</span>;
+        <span class="kw">let </span>ongoing_build_fuse = Fuse::terminated();
+        <span class="macro">pin_mut!</span>(ongoing_build_fuse);
+        <span class="kw">let </span><span class="kw-2">mut </span>ongoing_build_cancellation_sender = <span class="prelude-val">None</span>;
 
-        <span class="kw">loop</span> {
-            <span class="kw">if</span> <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">should_execute</span>(<span class="ident">ExecutionKind::Build</span>)
-                <span class="op">&amp;&amp;</span> <span class="ident">ongoing_build_cancellation_sender</span>.<span class="ident">is_none</span>()
+        <span class="kw">loop </span>{
+            <span class="kw">if </span><span class="self">self</span>.helper.should_execute(ExecutionKind::Build)
+                &amp;&amp; ongoing_build_cancellation_sender.is_none()
             {
-                <span class="kw">let</span> (<span class="ident">build_cancellation_sender</span>, <span class="ident">build_cancellation_events</span>) <span class="op">=</span> <span class="ident">channel::bounded</span>(<span class="number">1</span>);
-                <span class="ident">ongoing_build_cancellation_sender</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">build_cancellation_sender</span>);
-                <span class="kw">let</span> <span class="ident">build_future</span> <span class="op">=</span> <span class="ident">builder::build_target</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">target</span>, <span class="ident">build_cancellation_events</span>);
-                <span class="ident">ongoing_build_fuse</span>.<span class="ident">set</span>(
-                    <span class="ident">incremental::run</span>(
-                        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">target</span>.<span class="ident">metadata</span>,
-                        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">target</span>.<span class="ident">input</span>,
-                        <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">target</span>.<span class="ident">output</span>),
-                        <span class="ident">build_future</span>,
+                <span class="kw">let </span>(build_cancellation_sender, build_cancellation_events) = channel::bounded(<span class="number">1</span>);
+                ongoing_build_cancellation_sender = <span class="prelude-val">Some</span>(build_cancellation_sender);
+                <span class="kw">let </span>build_future = builder::build_target(<span class="kw-2">&amp;</span><span class="self">self</span>.target, build_cancellation_events);
+                ongoing_build_fuse.set(
+                    incremental::run(
+                        <span class="kw-2">&amp;</span><span class="self">self</span>.target.metadata,
+                        <span class="kw-2">&amp;</span><span class="self">self</span>.target.input,
+                        <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.target.output),
+                        build_future,
                     )
-                    .<span class="ident">fuse</span>(),
+                    .fuse(),
                 );
 
-                <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">set_execution_started</span>();
+                <span class="self">self</span>.helper.set_execution_started();
             }
 
-            <span class="macro">futures::select!</span> {
-                <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">termination_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() =&gt; {
-                    <span class="ident">termination_event_received</span> <span class="op">=</span> <span class="bool-val">true</span>;
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">ongoing_build_cancellation_sender</span>) <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">ongoing_build_cancellation_sender</span> {
-                        <span class="kw">if</span> <span class="ident">ongoing_build_cancellation_sender</span>.<span class="ident">try_send</span>(<span class="ident">BuildCancellationMessage</span>).<span class="ident">is_err</span>() {
-                            <span class="macro">log::trace!</span>(<span class="string">&quot;{} - Build already cancelled. Skipping.&quot;</span>, <span class="self">self</span>.<span class="ident">target</span>);
+            <span class="macro">futures::select! </span>{
+                <span class="kw">_ </span>= <span class="self">self</span>.helper.termination_events.next().fuse() =&gt; {
+                    termination_event_received = <span class="bool-val">true</span>;
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(ongoing_build_cancellation_sender) = <span class="kw-2">&amp;mut </span>ongoing_build_cancellation_sender {
+                        <span class="kw">if </span>ongoing_build_cancellation_sender.try_send(BuildCancellationMessage).is_err() {
+                            <span class="macro">log::trace!</span>(<span class="string">&quot;{} - Build already cancelled. Skipping.&quot;</span>, <span class="self">self</span>.target);
                         }
-                    } <span class="kw">else</span> {
+                    } <span class="kw">else </span>{
                         <span class="kw">break</span>;
                     }
                 },
-                <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">target_invalidated_events</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() =&gt; {
-                    <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">notify_invalidated</span>(<span class="ident">ExecutionKind::Build</span>).<span class="kw">await</span>
-                }
-                <span class="ident">message</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">target_actor_input_receiver</span>.<span class="ident">next</span>().<span class="ident">fuse</span>() =&gt; {
-                    <span class="kw">match</span> <span class="ident">message</span>.<span class="ident">unwrap</span>() {
-                        <span class="ident">ActorInputMessage::Ok</span> { <span class="ident">kind</span>, <span class="ident">target_id</span>, .. } =&gt; {
-                            <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">unavailable_dependencies</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">kind</span>).<span class="ident">unwrap</span>().<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">target_id</span>);
+                <span class="kw">_ </span>= <span class="self">self</span>.helper.target_invalidated_events.next().fuse() =&gt; {
+                    <span class="self">self</span>.helper.notify_invalidated(ExecutionKind::Build).<span class="kw">await
+                </span>}
+                message = <span class="self">self</span>.helper.target_actor_input_receiver.next().fuse() =&gt; {
+                    <span class="kw">match </span>message.unwrap() {
+                        ActorInputMessage::Ok { kind, target_id, .. } =&gt; {
+                            <span class="self">self</span>.helper.unavailable_dependencies.get_mut(<span class="kw-2">&amp;</span>kind).unwrap().remove(<span class="kw-2">&amp;</span>target_id);
                         },
-                        <span class="ident">ActorInputMessage::Invalidated</span> { <span class="ident">kind</span>, <span class="ident">target_id</span> } =&gt; {
-                            <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">unavailable_dependencies</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">kind</span>).<span class="ident">unwrap</span>().<span class="ident">insert</span>(<span class="ident">target_id</span>);
+                        ActorInputMessage::Invalidated { kind, target_id } =&gt; {
+                            <span class="self">self</span>.helper.unavailable_dependencies.get_mut(<span class="kw-2">&amp;</span>kind).unwrap().insert(target_id);
 
-                            <span class="kw">if</span> <span class="ident">kind</span> <span class="op">==</span> <span class="ident">ExecutionKind::Build</span> {
-                              <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">notify_invalidated</span>(<span class="ident">ExecutionKind::Build</span>).<span class="kw">await</span>
-                            } <span class="comment">// TODO Else, if ongoing build, cancel?</span>
-                        }
-                        <span class="ident">ActorInputMessage::Requested</span> { <span class="ident">kind</span>: <span class="ident">ExecutionKind::Build</span>, <span class="ident">requester</span> } =&gt; {
-                            <span class="kw">let</span> <span class="ident">inserted</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">requesters</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">ExecutionKind::Build</span>).<span class="ident">unwrap</span>().<span class="ident">insert</span>(<span class="ident">requester</span>);
+                            <span class="kw">if </span>kind == ExecutionKind::Build {
+                              <span class="self">self</span>.helper.notify_invalidated(ExecutionKind::Build).<span class="kw">await
+                            </span>} <span class="comment">// TODO Else, if ongoing build, cancel?
+                        </span>}
+                        ActorInputMessage::Requested { kind: ExecutionKind::Build, requester } =&gt; {
+                            <span class="kw">let </span>inserted = <span class="self">self</span>.helper.requesters.get_mut(<span class="kw-2">&amp;</span>ExecutionKind::Build).unwrap().insert(requester);
 
-                            <span class="kw">if</span> <span class="ident">inserted</span> <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">requesters</span>[<span class="kw-2">&amp;</span><span class="ident">ExecutionKind::Build</span>].<span class="ident">len</span>() <span class="op">==</span> <span class="number">1</span> {
-                                <span class="comment">// TODO Eventually, only request deps build (request services when build not skipped)</span>
-                                <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">request_dependencies</span>(<span class="ident">ExecutionKind::Build</span>).<span class="kw">await</span>;
-                                <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">request_dependencies</span>(<span class="ident">ExecutionKind::Service</span>).<span class="kw">await</span>;
+                            <span class="kw">if </span>inserted &amp;&amp; <span class="self">self</span>.helper.requesters[<span class="kw-2">&amp;</span>ExecutionKind::Build].len() == <span class="number">1 </span>{
+                                <span class="comment">// TODO Eventually, only request deps build (request services when build not skipped)
+                                </span><span class="self">self</span>.helper.request_dependencies(ExecutionKind::Build).<span class="kw">await</span>;
+                                <span class="self">self</span>.helper.request_dependencies(ExecutionKind::Service).<span class="kw">await</span>;
                             }
                         }
-                        <span class="ident">ActorInputMessage::Requested</span> { <span class="ident">kind</span>: <span class="ident">ExecutionKind::Service</span>, <span class="ident">requester</span> } =&gt; {
-                            <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="ident">ActorInputMessage::Ok</span> {
-                                <span class="ident">kind</span>: <span class="ident">ExecutionKind::Service</span>,
-                                <span class="ident">target_id</span>: <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">target_id</span>.<span class="ident">clone</span>(),
-                                <span class="ident">actual</span>: <span class="bool-val">false</span>,
+                        ActorInputMessage::Requested { kind: ExecutionKind::Service, requester } =&gt; {
+                            <span class="kw">let </span>msg = ActorInputMessage::Ok {
+                                kind: ExecutionKind::Service,
+                                target_id: <span class="self">self</span>.helper.target_id.clone(),
+                                actual: <span class="bool-val">false</span>,
                             };
-                            <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">send_to_actor</span>(<span class="ident">requester</span>, <span class="ident">msg</span>).<span class="kw">await</span>
-                        }
-                        <span class="ident">ActorInputMessage::Unrequested</span> { <span class="ident">kind</span>, <span class="ident">requester</span> } =&gt; {
-                            <span class="kw">let</span> <span class="ident">was_last_requester</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">handle_unrequested</span>(<span class="ident">kind</span>, <span class="ident">requester</span>);
+                            <span class="self">self</span>.helper.send_to_actor(requester, msg).<span class="kw">await
+                        </span>}
+                        ActorInputMessage::Unrequested { kind, requester } =&gt; {
+                            <span class="kw">let </span>was_last_requester = <span class="self">self</span>.helper.handle_unrequested(kind, requester);
 
-                            <span class="kw">if</span> <span class="ident">was_last_requester</span> <span class="op">&amp;&amp;</span> <span class="ident">kind</span> <span class="op">==</span> <span class="ident">ExecutionKind::Build</span> {
-                                <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">unrequest_dependencies</span>(<span class="ident">ExecutionKind::Build</span>).<span class="kw">await</span>;
-                                <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">unrequest_dependencies</span>(<span class="ident">ExecutionKind::Service</span>).<span class="kw">await</span>;
+                            <span class="kw">if </span>was_last_requester &amp;&amp; kind == ExecutionKind::Build {
+                                <span class="self">self</span>.helper.unrequest_dependencies(ExecutionKind::Build).<span class="kw">await</span>;
+                                <span class="self">self</span>.helper.unrequest_dependencies(ExecutionKind::Service).<span class="kw">await</span>;
                             }
                         }
                     }
                 }
-                <span class="ident">build_result</span> <span class="op">=</span> <span class="ident">ongoing_build_fuse</span> =&gt; {
-                    <span class="ident">ongoing_build_cancellation_sender</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+                build_result = ongoing_build_fuse =&gt; {
+                    ongoing_build_cancellation_sender = <span class="prelude-val">None</span>;
 
-                    <span class="kw">match</span> <span class="ident">build_result</span> {
-                        <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">notify_execution_failed</span>(<span class="ident">e</span>).<span class="kw">await</span>,
-                        <span class="prelude-val">Ok</span>(<span class="ident">IncrementalRunResult::Skipped</span>) =&gt; {
-                            <span class="macro">log::info!</span>(<span class="string">&quot;{} - Build skipped (Not Modified)&quot;</span>, <span class="self">self</span>.<span class="ident">target</span>);
-                            <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">notify_success</span>(<span class="ident">ExecutionKind::Build</span>).<span class="kw">await</span>;
+                    <span class="kw">match </span>build_result {
+                        <span class="prelude-val">Err</span>(e) =&gt; <span class="self">self</span>.helper.notify_execution_failed(e).<span class="kw">await</span>,
+                        <span class="prelude-val">Ok</span>(IncrementalRunResult::Skipped) =&gt; {
+                            <span class="macro">log::info!</span>(<span class="string">&quot;{} - Build skipped (Not Modified)&quot;</span>, <span class="self">self</span>.target);
+                            <span class="self">self</span>.helper.notify_success(ExecutionKind::Build).<span class="kw">await</span>;
                         }
-                        <span class="prelude-val">Ok</span>(<span class="ident">IncrementalRunResult::Completed</span>) =&gt; {
-                            <span class="comment">// TODO Why spreading logs between here and builder?</span>
-                            <span class="self">self</span>.<span class="ident">helper</span>.<span class="ident">notify_success</span>(<span class="ident">ExecutionKind::Build</span>).<span class="kw">await</span>;
+                        <span class="prelude-val">Ok</span>(IncrementalRunResult::Completed) =&gt; {
+                            <span class="comment">// TODO Why spreading logs between here and builder?
+                            </span><span class="self">self</span>.helper.notify_success(ExecutionKind::Build).<span class="kw">await</span>;
 
-                            <span class="comment">// TODO Eventually, unrequest dependency services</span>
-                        }
-                        <span class="prelude-val">Ok</span>(<span class="ident">IncrementalRunResult::Cancelled</span>) =&gt; {
-                            <span class="comment">// As termination_event_received == true, we will exit the loop</span>
-                        },
+                            <span class="comment">// TODO Eventually, unrequest dependency services
+                        </span>}
+                        <span class="prelude-val">Ok</span>(IncrementalRunResult::Cancelled) =&gt; {
+                            <span class="comment">// As termination_event_received == true, we will exit the loop
+                        </span>},
                     }
 
-                    <span class="kw">if</span> <span class="ident">termination_event_received</span> {
-                        <span class="kw">break</span>
-                    }
+                    <span class="kw">if </span>termination_event_received {
+                        <span class="kw">break
+                    </span>}
                 },
             }
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

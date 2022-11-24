@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["clean_path",""],["clean_target_output_paths",""]]});
+window.SIDEBAR_ITEMS = {"fn":[["clean_path",""],["clean_target_output_paths",""]]};

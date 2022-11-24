@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["AggregateTargetActor",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["AggregateTargetActor",""]]};

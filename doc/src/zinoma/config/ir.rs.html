@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/config/ir.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>ir.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../zinoma/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/config/ir.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>ir.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../zinoma/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -466,469 +461,468 @@
 <span id="461">461</span>
 <span id="462">462</span>
 <span id="463">463</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">super</span>::yaml</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::domain</span>::{<span class="self">self</span>, <span class="ident">TargetId</span>};
-<span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">anyhow</span>, <span class="prelude-ty">Result</span>};
-<span class="kw">use</span> <span class="ident">async_std::path</span>::{<span class="ident">Path</span>, <span class="ident">PathBuf</span>};
-<span class="kw">use</span> <span class="ident">domain</span>::{<span class="ident">CmdResource</span>, <span class="ident">FilesResource</span>};
-<span class="kw">use</span> <span class="ident">lazy_static::lazy_static</span>;
-<span class="kw">use</span> <span class="ident">regex::Regex</span>;
-<span class="kw">use</span> <span class="ident">std::collections</span>::{<span class="ident">BTreeSet</span>, <span class="ident">HashMap</span>};
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::yaml;
+<span class="kw">use </span><span class="kw">crate</span>::domain::{<span class="self">self</span>, TargetId};
+<span class="kw">use </span>anyhow::{anyhow, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>async_std::path::{Path, PathBuf};
+<span class="kw">use </span>domain::{CmdResource, FilesResource};
+<span class="kw">use </span>lazy_static::lazy_static;
+<span class="kw">use </span>regex::Regex;
+<span class="kw">use </span>std::collections::{BTreeSet, HashMap};
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Config</span> {
-    <span class="kw">pub</span> <span class="ident">root_project_name</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
-    <span class="ident">projects</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>, (<span class="ident">PathBuf</span>, <span class="ident">yaml::Project</span>)<span class="op">&gt;</span>,
+<span class="kw">pub struct </span>Config {
+    <span class="kw">pub </span>root_project_name: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    projects: HashMap&lt;<span class="prelude-ty">Option</span>&lt;String&gt;, (PathBuf, yaml::Project)&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">yaml::Config</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Config</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">config</span>: <span class="ident">yaml::Config</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">root_project_name</span>: (<span class="kw-2">&amp;</span><span class="ident">config</span>.<span class="ident">projects</span>)[<span class="kw-2">&amp;</span><span class="ident">config</span>.<span class="ident">root_project_dir</span>].<span class="ident">name</span>.<span class="ident">to_owned</span>(),
-            <span class="ident">projects</span>: <span class="ident">config</span>
-                .<span class="ident">projects</span>
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">project_dir</span>, <span class="ident">project</span>)<span class="op">|</span> (<span class="ident">project</span>.<span class="ident">name</span>.<span class="ident">clone</span>(), (<span class="ident">project_dir</span>.<span class="ident">into</span>(), <span class="ident">project</span>)))
-                .<span class="ident">collect</span>(),
+<span class="kw">impl </span>From&lt;yaml::Config&gt; <span class="kw">for </span>Config {
+    <span class="kw">fn </span>from(config: yaml::Config) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            root_project_name: (<span class="kw-2">&amp;</span>config.projects)[<span class="kw-2">&amp;</span>config.root_project_dir].name.to_owned(),
+            projects: config
+                .projects
+                .into_iter()
+                .map(|(project_dir, project)| (project.name.clone(), (project_dir.into(), project)))
+                .collect(),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Config</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">list_all_available_target_names</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">target_names</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">list_all_targets</span>()
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="ident">ToString::to_string</span>)
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
+<span class="kw">impl </span>Config {
+    <span class="kw">pub fn </span>list_all_available_target_names(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>target_names = <span class="self">self
+            </span>.list_all_targets()
+            .iter()
+            .map(ToString::to_string)
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">root_project_name</span>.<span class="ident">is_some</span>() {
-            <span class="comment">// Add root project targets without their namespace</span>
-            <span class="ident">target_names</span>.<span class="ident">extend</span>(
-                <span class="self">self</span>.<span class="ident">get_project</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">root_project_name</span>)
-                    .<span class="ident">targets</span>
-                    .<span class="ident">keys</span>()
-                    .<span class="ident">cloned</span>(),
+        <span class="kw">if </span><span class="self">self</span>.root_project_name.is_some() {
+            <span class="comment">// Add root project targets without their namespace
+            </span>target_names.extend(
+                <span class="self">self</span>.get_project(<span class="kw-2">&amp;</span><span class="self">self</span>.root_project_name)
+                    .targets
+                    .keys()
+                    .cloned(),
             );
         }
 
-        <span class="ident">target_names</span>
+        target_names
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_into_domain_targets</span>(
-        <span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">root_target_ids</span>: <span class="kw-2">&amp;</span>[<span class="ident">TargetId</span>],
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">domain::TargetId</span>, <span class="ident">domain::Target</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">fn</span> <span class="ident">add_target</span>(
-            <span class="kw-2">mut</span> <span class="ident">domain_targets</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">domain::TargetId</span>, <span class="ident">domain::Target</span><span class="op">&gt;</span>,
-            <span class="ident">config</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Config</span>,
-            <span class="ident">target_id</span>: <span class="kw-2">&amp;</span><span class="ident">TargetId</span>,
-            <span class="ident">parent_targets</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">TargetId</span>],
-        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-            <span class="kw">if</span> <span class="ident">domain_targets</span>.<span class="ident">contains_key</span>(<span class="ident">target_id</span>) {
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+    <span class="kw">pub fn </span>try_into_domain_targets(
+        <span class="kw-2">mut </span><span class="self">self</span>,
+        root_target_ids: <span class="kw-2">&amp;</span>[TargetId],
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;HashMap&lt;domain::TargetId, domain::Target&gt;&gt; {
+        <span class="kw">fn </span>add_target(
+            <span class="kw-2">mut </span>domain_targets: <span class="kw-2">&amp;mut </span>HashMap&lt;domain::TargetId, domain::Target&gt;,
+            config: <span class="kw-2">&amp;mut </span>Config,
+            target_id: <span class="kw-2">&amp;</span>TargetId,
+            parent_targets: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>TargetId],
+        ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+            <span class="kw">if </span>domain_targets.contains_key(target_id) {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(());
             }
 
-            <span class="kw">if</span> <span class="ident">parent_targets</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">target_id</span>) {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
+            <span class="kw">if </span>parent_targets.contains(<span class="kw-2">&amp;</span>target_id) {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
                     <span class="string">&quot;Circular dependency: {} -&gt; {}&quot;</span>,
-                    <span class="ident">itertools::join</span>(<span class="ident">parent_targets</span>, <span class="string">&quot; -&gt; &quot;</span>),
-                    <span class="ident">target_id</span>
+                    itertools::join(parent_targets, <span class="string">&quot; -&gt; &quot;</span>),
+                    target_id
                 ));
             }
 
-            <span class="kw">let</span> (<span class="ident">project_dir</span>, <span class="ident">yaml_target</span>) <span class="op">=</span> {
-                <span class="kw">let</span> (<span class="ident">project_dir</span>, <span class="ident">project</span>) <span class="op">=</span> <span class="ident">config</span>
-                    .<span class="ident">projects</span>
-                    .<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">target_id</span>.<span class="ident">project_name</span>)
-                    .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> {
+            <span class="kw">let </span>(project_dir, yaml_target) = {
+                <span class="kw">let </span>(project_dir, project) = config
+                    .projects
+                    .get_mut(<span class="kw-2">&amp;</span>target_id.project_name)
+                    .ok_or_else(|| {
                         <span class="macro">anyhow!</span>(
                             <span class="string">&quot;Project {} does not exist&quot;</span>,
-                            <span class="ident">target_id</span>.<span class="ident">project_name</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>()
+                            target_id.project_name.as_ref().unwrap()
                         )
                     })<span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="ident">yaml_target</span> <span class="op">=</span> <span class="ident">project</span>
-                    .<span class="ident">targets</span>
-                    .<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">target_id</span>.<span class="ident">target_name</span>)
-                    .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">anyhow!</span>(<span class="string">&quot;Target {} does not exist&quot;</span>, <span class="ident">target_id</span>))<span class="question-mark">?</span>;
+                <span class="kw">let </span>yaml_target = project
+                    .targets
+                    .remove(<span class="kw-2">&amp;</span>target_id.target_name)
+                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Target {} does not exist&quot;</span>, target_id))<span class="question-mark">?</span>;
 
-                (<span class="ident">project_dir</span>.<span class="ident">clone</span>(), <span class="ident">yaml_target</span>)
+                (project_dir.clone(), yaml_target)
             };
 
-            <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">target</span>, <span class="ident">dependencies_from_input</span>) <span class="op">=</span>
-                <span class="ident">transform_target</span>(<span class="ident">target_id</span>, <span class="ident">yaml_target</span>, <span class="ident">project_dir</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>(<span class="kw-2">mut </span>target, dependencies_from_input) =
+                transform_target(target_id, yaml_target, project_dir)<span class="question-mark">?</span>;
 
-            <span class="ident">target</span>.<span class="ident">extend_dependencies</span>(<span class="kw-2">&amp;</span><span class="ident">dependencies_from_input</span>);
+            target.extend_dependencies(<span class="kw-2">&amp;</span>dependencies_from_input);
 
-            <span class="kw">let</span> <span class="ident">targets_chain</span> <span class="op">=</span> [<span class="ident">parent_targets</span>, <span class="kw-2">&amp;</span>[<span class="ident">target_id</span>]].<span class="ident">concat</span>();
-            <span class="kw">for</span> <span class="ident">dependency_id</span> <span class="kw">in</span> <span class="ident">target</span>.<span class="ident">dependencies</span>() {
-                <span class="ident">add_target</span>(<span class="kw-2">&amp;mut</span> <span class="ident">domain_targets</span>, <span class="ident">config</span>, <span class="ident">dependency_id</span>, <span class="kw-2">&amp;</span><span class="ident">targets_chain</span>)<span class="question-mark">?</span>
-            }
+            <span class="kw">let </span>targets_chain = [parent_targets, <span class="kw-2">&amp;</span>[target_id]].concat();
+            <span class="kw">for </span>dependency_id <span class="kw">in </span>target.dependencies() {
+                add_target(<span class="kw-2">&amp;mut </span>domain_targets, config, dependency_id, <span class="kw-2">&amp;</span>targets_chain)<span class="question-mark">?
+            </span>}
 
-            <span class="kw">for</span> <span class="ident">dependency_id</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">dependencies_from_input</span> {
-                <span class="kw">let</span> <span class="ident">dependency</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">domain_targets</span>[<span class="ident">dependency_id</span>];
+            <span class="kw">for </span>dependency_id <span class="kw">in </span><span class="kw-2">&amp;</span>dependencies_from_input {
+                <span class="kw">let </span>dependency = <span class="kw-2">&amp;</span>domain_targets[dependency_id];
 
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">domain::Target::Build</span>(<span class="ident">dependency</span>) <span class="op">=</span> <span class="ident">dependency</span> {
-                    <span class="ident">target</span>.<span class="ident">extend_input</span>(<span class="kw-2">&amp;</span><span class="ident">dependency</span>.<span class="ident">output</span>).<span class="ident">unwrap</span>();
-                } <span class="kw">else</span> {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
+                <span class="kw">if let </span>domain::Target::Build(dependency) = dependency {
+                    target.extend_input(<span class="kw-2">&amp;</span>dependency.output).unwrap();
+                } <span class="kw">else </span>{
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
                         <span class="string">&quot;Target {} can not depend on {}&#39;s output as it is not a build target&quot;</span>,
-                        <span class="ident">target_id</span>,
-                        <span class="ident">dependency_id</span>
+                        target_id,
+                        dependency_id
                     ));
                 };
             }
 
-            <span class="ident">domain_targets</span>.<span class="ident">insert</span>(<span class="ident">target_id</span>.<span class="ident">clone</span>(), <span class="ident">target</span>);
+            domain_targets.insert(target_id.clone(), target);
 
             <span class="prelude-val">Ok</span>(())
         }
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">domain_targets</span> <span class="op">=</span> <span class="ident">HashMap::with_capacity</span>(<span class="ident">root_target_ids</span>.<span class="ident">len</span>());
+        <span class="kw">let </span><span class="kw-2">mut </span>domain_targets = HashMap::with_capacity(root_target_ids.len());
 
-        <span class="kw">for</span> <span class="ident">target_id</span> <span class="kw">in</span> <span class="ident">root_target_ids</span> {
-            <span class="ident">add_target</span>(<span class="kw-2">&amp;mut</span> <span class="ident">domain_targets</span>, <span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">target_id</span>, <span class="kw-2">&amp;</span>[])<span class="question-mark">?</span>
-        }
+        <span class="kw">for </span>target_id <span class="kw">in </span>root_target_ids {
+            add_target(<span class="kw-2">&amp;mut </span>domain_targets, <span class="kw-2">&amp;mut </span><span class="self">self</span>, target_id, <span class="kw-2">&amp;</span>[])<span class="question-mark">?
+        </span>}
 
-        <span class="prelude-val">Ok</span>(<span class="ident">domain_targets</span>)
+        <span class="prelude-val">Ok</span>(domain_targets)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">list_all_targets</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TargetId</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">projects</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">flat_map</span>(<span class="op">|</span>(<span class="ident">project_name</span>, (<span class="ident">_project_dir</span>, <span class="ident">project</span>))<span class="op">|</span> {
-                <span class="ident">project</span>
-                    .<span class="ident">targets</span>
-                    .<span class="ident">keys</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">target_name</span><span class="op">|</span> <span class="ident">TargetId</span> {
-                        <span class="ident">project_name</span>: <span class="ident">project_name</span>.<span class="ident">to_owned</span>(),
-                        <span class="ident">target_name</span>: <span class="ident">target_name</span>.<span class="ident">to_owned</span>(),
+    <span class="kw">pub fn </span>list_all_targets(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;TargetId&gt; {
+        <span class="self">self</span>.projects
+            .iter()
+            .flat_map(|(project_name, (_project_dir, project))| {
+                project
+                    .targets
+                    .keys()
+                    .map(|target_name| TargetId {
+                        project_name: project_name.to_owned(),
+                        target_name: target_name.to_owned(),
                     })
-                    .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
             })
-            .<span class="ident">collect</span>()
+            .collect()
     }
 
-    <span class="kw">fn</span> <span class="ident">get_project</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">project_name</span>: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">yaml::Project</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">projects</span>[<span class="kw-2">&amp;</span><span class="ident">project_name</span>].<span class="number">1</span>
-    }
+    <span class="kw">fn </span>get_project(<span class="kw-2">&amp;</span><span class="self">self</span>, project_name: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;String&gt;) -&gt; <span class="kw-2">&amp;</span>yaml::Project {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.projects[<span class="kw-2">&amp;</span>project_name].<span class="number">1
+    </span>}
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_dependencies</span>(<span class="ident">target</span>: <span class="kw-2">&amp;</span><span class="ident">yaml::Target</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> {
-    <span class="kw-2">&amp;</span><span class="kw">match</span> <span class="ident">target</span> {
-        <span class="ident">yaml::Target::Build</span> { <span class="ident">dependencies</span>, .. } =&gt; <span class="ident">dependencies</span>,
-        <span class="ident">yaml::Target::Service</span> { <span class="ident">dependencies</span>, .. } =&gt; <span class="ident">dependencies</span>,
-        <span class="ident">yaml::Target::Aggregate</span> { <span class="ident">dependencies</span> } =&gt; <span class="ident">dependencies</span>,
+<span class="kw">pub fn </span>get_dependencies(target: <span class="kw-2">&amp;</span>yaml::Target) -&gt; <span class="kw-2">&amp;</span>Vec&lt;String&gt; {
+    <span class="kw-2">&amp;</span><span class="kw">match </span>target {
+        yaml::Target::Build { dependencies, .. } =&gt; dependencies,
+        yaml::Target::Service { dependencies, .. } =&gt; dependencies,
+        yaml::Target::Aggregate { dependencies } =&gt; dependencies,
     }
-    .<span class="number">0</span>
-}
+    .<span class="number">0
+</span>}
 
-<span class="kw">fn</span> <span class="ident">transform_target</span>(
-    <span class="ident">target_id</span>: <span class="kw-2">&amp;</span><span class="ident">TargetId</span>,
-    <span class="ident">yaml_target</span>: <span class="ident">yaml::Target</span>,
-    <span class="ident">project_dir</span>: <span class="ident">PathBuf</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">domain::Target</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TargetId</span><span class="op">&gt;</span>)<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">dependencies</span> <span class="op">=</span>
-        <span class="ident">TargetId::try_parse_many</span>(<span class="ident">get_dependencies</span>(<span class="kw-2">&amp;</span><span class="ident">yaml_target</span>), <span class="kw-2">&amp;</span><span class="ident">target_id</span>.<span class="ident">project_name</span>)<span class="question-mark">?</span>;
+<span class="kw">fn </span>transform_target(
+    target_id: <span class="kw-2">&amp;</span>TargetId,
+    yaml_target: yaml::Target,
+    project_dir: PathBuf,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(domain::Target, Vec&lt;TargetId&gt;)&gt; {
+    <span class="kw">let </span>dependencies =
+        TargetId::try_parse_many(get_dependencies(<span class="kw-2">&amp;</span>yaml_target), <span class="kw-2">&amp;</span>target_id.project_name)<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">metadata</span> <span class="op">=</span> <span class="ident">domain::TargetMetadata</span> {
-        <span class="ident">id</span>: <span class="ident">target_id</span>.<span class="ident">clone</span>(),
-        <span class="ident">project_dir</span>,
-        <span class="ident">dependencies</span>,
+    <span class="kw">let </span>metadata = domain::TargetMetadata {
+        id: target_id.clone(),
+        project_dir,
+        dependencies,
     };
 
-    <span class="kw">match</span> <span class="ident">yaml_target</span> {
-        <span class="ident">yaml::Target::Build</span> {
-            <span class="ident">build</span>,
-            <span class="ident">input</span>,
-            <span class="ident">output</span>,
+    <span class="kw">match </span>yaml_target {
+        yaml::Target::Build {
+            build,
+            input,
+            output,
             ..
         } =&gt; {
-            <span class="kw">let</span> (<span class="ident">input</span>, <span class="ident">dependencies_from_input</span>) <span class="op">=</span>
-                <span class="ident">transform_input</span>(<span class="ident">input</span>, <span class="kw-2">&amp;</span><span class="ident">metadata</span>.<span class="ident">id</span>, <span class="kw-2">&amp;</span><span class="ident">metadata</span>.<span class="ident">project_dir</span>)<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="ident">transform_output</span>(<span class="ident">output</span>, <span class="kw-2">&amp;</span><span class="ident">metadata</span>.<span class="ident">project_dir</span>);
+            <span class="kw">let </span>(input, dependencies_from_input) =
+                transform_input(input, <span class="kw-2">&amp;</span>metadata.id, <span class="kw-2">&amp;</span>metadata.project_dir)<span class="question-mark">?</span>;
+            <span class="kw">let </span>output = transform_output(output, <span class="kw-2">&amp;</span>metadata.project_dir);
             <span class="prelude-val">Ok</span>((
-                <span class="ident">domain::Target::Build</span>(<span class="ident">domain::BuildTarget</span> {
-                    <span class="ident">metadata</span>,
-                    <span class="ident">build_script</span>: <span class="ident">build</span>,
-                    <span class="ident">input</span>,
-                    <span class="ident">output</span>,
+                domain::Target::Build(domain::BuildTarget {
+                    metadata,
+                    build_script: build,
+                    input,
+                    output,
                 }),
-                <span class="ident">dependencies_from_input</span>,
+                dependencies_from_input,
             ))
         }
-        <span class="ident">yaml::Target::Service</span> { <span class="ident">service</span>, <span class="ident">input</span>, .. } =&gt; {
-            <span class="kw">let</span> (<span class="ident">input</span>, <span class="ident">dependencies_from_input</span>) <span class="op">=</span>
-                <span class="ident">transform_input</span>(<span class="ident">input</span>, <span class="kw-2">&amp;</span><span class="ident">metadata</span>.<span class="ident">id</span>, <span class="kw-2">&amp;</span><span class="ident">metadata</span>.<span class="ident">project_dir</span>)<span class="question-mark">?</span>;
+        yaml::Target::Service { service, input, .. } =&gt; {
+            <span class="kw">let </span>(input, dependencies_from_input) =
+                transform_input(input, <span class="kw-2">&amp;</span>metadata.id, <span class="kw-2">&amp;</span>metadata.project_dir)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>((
-                <span class="ident">domain::Target::Service</span>(<span class="ident">domain::ServiceTarget</span> {
-                    <span class="ident">metadata</span>,
-                    <span class="ident">run_script</span>: <span class="ident">service</span>,
-                    <span class="ident">input</span>,
+                domain::Target::Service(domain::ServiceTarget {
+                    metadata,
+                    run_script: service,
+                    input,
                 }),
-                <span class="ident">dependencies_from_input</span>,
+                dependencies_from_input,
             ))
         }
-        <span class="ident">yaml::Target::Aggregate</span> { .. } =&gt; <span class="prelude-val">Ok</span>((
-            <span class="ident">domain::Target::Aggregate</span>(<span class="ident">domain::AggregateTarget</span> { <span class="ident">metadata</span> }),
+        yaml::Target::Aggregate { .. } =&gt; <span class="prelude-val">Ok</span>((
+            domain::Target::Aggregate(domain::AggregateTarget { metadata }),
             <span class="macro">vec!</span>[],
         )),
     }
 }
 
-<span class="kw">fn</span> <span class="ident">transform_input</span>(
-    <span class="ident">input</span>: <span class="ident">yaml::InputResources</span>,
-    <span class="ident">target_id</span>: <span class="kw-2">&amp;</span><span class="ident">TargetId</span>,
-    <span class="ident">project_dir</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">domain::Resources</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TargetId</span><span class="op">&gt;</span>)<span class="op">&gt;</span> {
-    <span class="ident">input</span>.<span class="number">0</span>.<span class="ident">into_iter</span>().<span class="ident">fold</span>(
-        <span class="prelude-val">Ok</span>((<span class="ident">domain::Resources::new</span>(), <span class="ident">Vec::new</span>())),
-        <span class="op">|</span><span class="ident">acc</span>, <span class="ident">resource</span><span class="op">|</span> {
-            <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">input</span>, <span class="kw-2">mut</span> <span class="ident">dependencies_from_input</span>) <span class="op">=</span> <span class="ident">acc</span><span class="question-mark">?</span>;
+<span class="kw">fn </span>transform_input(
+    input: yaml::InputResources,
+    target_id: <span class="kw-2">&amp;</span>TargetId,
+    project_dir: <span class="kw-2">&amp;</span>Path,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(domain::Resources, Vec&lt;TargetId&gt;)&gt; {
+    input.<span class="number">0</span>.into_iter().fold(
+        <span class="prelude-val">Ok</span>((domain::Resources::new(), Vec::new())),
+        |acc, resource| {
+            <span class="kw">let </span>(<span class="kw-2">mut </span>input, <span class="kw-2">mut </span>dependencies_from_input) = acc<span class="question-mark">?</span>;
 
-            <span class="kw">match</span> <span class="ident">resource</span> {
-                <span class="ident">yaml::InputResource::Files</span> { <span class="ident">paths</span>, <span class="ident">extensions</span> } =&gt; {
-                    <span class="ident">input</span>.<span class="ident">files</span>.<span class="ident">push</span>(<span class="ident">FilesResource</span> {
-                        <span class="ident">paths</span>: <span class="ident">paths</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">path</span><span class="op">|</span> <span class="ident">project_dir</span>.<span class="ident">join</span>(<span class="ident">path</span>)).<span class="ident">collect</span>(),
-                        <span class="ident">extensions</span>: <span class="ident">transform_extensions</span>(<span class="ident">extensions</span>),
+            <span class="kw">match </span>resource {
+                yaml::InputResource::Files { paths, extensions } =&gt; {
+                    input.files.push(FilesResource {
+                        paths: paths.iter().map(|path| project_dir.join(path)).collect(),
+                        extensions: transform_extensions(extensions),
                     })
                 }
-                <span class="ident">yaml::InputResource::CmdStdout</span> { <span class="ident">cmd_stdout</span> } =&gt; <span class="ident">input</span>.<span class="ident">cmds</span>.<span class="ident">push</span>(<span class="ident">CmdResource</span> {
-                    <span class="ident">cmd</span>: <span class="ident">cmd_stdout</span>,
-                    <span class="ident">dir</span>: <span class="ident">project_dir</span>.<span class="ident">to_owned</span>(),
+                yaml::InputResource::CmdStdout { cmd_stdout } =&gt; input.cmds.push(CmdResource {
+                    cmd: cmd_stdout,
+                    dir: project_dir.to_owned(),
                 }),
-                <span class="ident">yaml::InputResource::DependencyOutput</span>(<span class="ident">id</span>) =&gt; {
-                    <span class="macro">lazy_static!</span> {
-                        <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">RE</span>: <span class="ident">Regex</span> <span class="op">=</span>
-                            <span class="ident">Regex::new</span>(<span class="string">r&quot;^((\w[-\w]*::)?\w[-\w]*)\.output$&quot;</span>).<span class="ident">unwrap</span>();
+                yaml::InputResource::DependencyOutput(id) =&gt; {
+                    <span class="macro">lazy_static! </span>{
+                        <span class="kw">static </span><span class="kw-2">ref </span>RE: Regex =
+                            Regex::new(<span class="string">r&quot;^((\w[-\w]*::)?\w[-\w]*)\.output$&quot;</span>).unwrap();
                     }
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">captures</span>) <span class="op">=</span> <span class="ident">RE</span>.<span class="ident">captures</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>) {
-                        <span class="kw">let</span> <span class="ident">dependency_id</span> <span class="op">=</span> <span class="ident">TargetId::try_parse</span>(
-                            <span class="ident">captures</span>.<span class="ident">get</span>(<span class="number">1</span>).<span class="ident">unwrap</span>().<span class="ident">as_str</span>(),
-                            <span class="kw-2">&amp;</span><span class="ident">target_id</span>.<span class="ident">project_name</span>,
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(captures) = RE.captures(<span class="kw-2">&amp;</span>id) {
+                        <span class="kw">let </span>dependency_id = TargetId::try_parse(
+                            captures.get(<span class="number">1</span>).unwrap().as_str(),
+                            <span class="kw-2">&amp;</span>target_id.project_name,
                         )
-                        .<span class="ident">unwrap</span>();
-                        <span class="ident">dependencies_from_input</span>.<span class="ident">push</span>(<span class="ident">dependency_id</span>);
-                    } <span class="kw">else</span> {
-                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Invalid input: {}&quot;</span>, <span class="ident">id</span>));
+                        .unwrap();
+                        dependencies_from_input.push(dependency_id);
+                    } <span class="kw">else </span>{
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Invalid input: {}&quot;</span>, id));
                     }
                 }
             }
-            <span class="prelude-val">Ok</span>((<span class="ident">input</span>, <span class="ident">dependencies_from_input</span>))
+            <span class="prelude-val">Ok</span>((input, dependencies_from_input))
         },
     )
 }
 
-<span class="kw">fn</span> <span class="ident">transform_output</span>(<span class="ident">output</span>: <span class="ident">yaml::OutputResources</span>, <span class="ident">project_dir</span>: <span class="kw-2">&amp;</span><span class="ident">Path</span>) -&gt; <span class="ident">domain::Resources</span> {
-    <span class="ident">output</span>
-        .<span class="number">0</span>
-        .<span class="ident">into_iter</span>()
-        .<span class="ident">fold</span>(<span class="ident">domain::Resources::new</span>(), <span class="op">|</span><span class="kw-2">mut</span> <span class="ident">acc</span>, <span class="ident">resource</span><span class="op">|</span> {
-            <span class="kw">match</span> <span class="ident">resource</span> {
-                <span class="ident">yaml::OutputResource::Files</span> { <span class="ident">paths</span>, <span class="ident">extensions</span> } =&gt; {
-                    <span class="ident">acc</span>.<span class="ident">files</span>.<span class="ident">push</span>(<span class="ident">FilesResource</span> {
-                        <span class="ident">paths</span>: <span class="ident">paths</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">path</span><span class="op">|</span> <span class="ident">project_dir</span>.<span class="ident">join</span>(<span class="ident">path</span>)).<span class="ident">collect</span>(),
-                        <span class="ident">extensions</span>: <span class="ident">transform_extensions</span>(<span class="ident">extensions</span>),
+<span class="kw">fn </span>transform_output(output: yaml::OutputResources, project_dir: <span class="kw-2">&amp;</span>Path) -&gt; domain::Resources {
+    output
+        .<span class="number">0
+        </span>.into_iter()
+        .fold(domain::Resources::new(), |<span class="kw-2">mut </span>acc, resource| {
+            <span class="kw">match </span>resource {
+                yaml::OutputResource::Files { paths, extensions } =&gt; {
+                    acc.files.push(FilesResource {
+                        paths: paths.iter().map(|path| project_dir.join(path)).collect(),
+                        extensions: transform_extensions(extensions),
                     })
                 }
-                <span class="ident">yaml::OutputResource::CmdStdout</span> { <span class="ident">cmd_stdout</span> } =&gt; <span class="ident">acc</span>.<span class="ident">cmds</span>.<span class="ident">push</span>(<span class="ident">CmdResource</span> {
-                    <span class="ident">cmd</span>: <span class="ident">cmd_stdout</span>,
-                    <span class="ident">dir</span>: <span class="ident">project_dir</span>.<span class="ident">to_owned</span>(),
+                yaml::OutputResource::CmdStdout { cmd_stdout } =&gt; acc.cmds.push(CmdResource {
+                    cmd: cmd_stdout,
+                    dir: project_dir.to_owned(),
                 }),
             }
-            <span class="ident">acc</span>
+            acc
         })
 }
 
-<span class="kw">fn</span> <span class="ident">transform_extensions</span>(<span class="ident">extensions</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="ident">extensions</span>
-        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">extensions</span><span class="op">|</span> {
-            <span class="ident">extensions</span>
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">ext</span><span class="op">|</span> <span class="op">!</span><span class="ident">ext</span>.<span class="ident">is_empty</span>())
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">ext</span><span class="op">|</span> {
-                    <span class="kw">if</span> <span class="ident">ext</span>.<span class="ident">starts_with</span>(<span class="string">&#39;.&#39;</span>) {
-                        <span class="ident">ext</span>
-                    } <span class="kw">else</span> {
-                        <span class="macro">format!</span>(<span class="string">&quot;.{}&quot;</span>, <span class="ident">ext</span>)
+<span class="kw">fn </span>transform_extensions(extensions: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;BTreeSet&lt;String&gt;&gt; {
+    extensions
+        .map(|extensions| {
+            extensions
+                .into_iter()
+                .filter(|ext| !ext.is_empty())
+                .map(|ext| {
+                    <span class="kw">if </span>ext.starts_with(<span class="string">&#39;.&#39;</span>) {
+                        ext
+                    } <span class="kw">else </span>{
+                        <span class="macro">format!</span>(<span class="string">&quot;.{}&quot;</span>, ext)
                     }
                 })
-                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
+                .collect::&lt;BTreeSet&lt;<span class="kw">_</span>&gt;&gt;()
         })
-        .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">extensions</span><span class="op">|</span> <span class="op">!</span><span class="ident">extensions</span>.<span class="ident">is_empty</span>())
+        .filter(|extensions| !extensions.is_empty())
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::Config</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::yaml</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::domain</span>::{<span class="self">self</span>, <span class="ident">TargetId</span>};
-    <span class="kw">use</span> <span class="ident">async_std::path::PathBuf</span>;
-    <span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use </span><span class="kw">super</span>::Config;
+    <span class="kw">use </span><span class="kw">crate</span>::config::yaml;
+    <span class="kw">use </span><span class="kw">crate</span>::domain::{<span class="self">self</span>, TargetId};
+    <span class="kw">use </span>async_std::path::PathBuf;
+    <span class="kw">use </span>std::collections::HashMap;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_try_into_domain_targets_should_return_the_requested_targets</span>() {
-        <span class="kw">let</span> <span class="ident">projects</span> <span class="op">=</span> <span class="ident">build_config</span>(<span class="macro">vec!</span>[
-            (<span class="string">&quot;target_1&quot;</span>, <span class="ident">build_empty_target</span>()),
-            (<span class="string">&quot;target_2&quot;</span>, <span class="ident">build_empty_target</span>()),
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_try_into_domain_targets_should_return_the_requested_targets() {
+        <span class="kw">let </span>projects = build_config(<span class="macro">vec!</span>[
+            (<span class="string">&quot;target_1&quot;</span>, build_empty_target()),
+            (<span class="string">&quot;target_2&quot;</span>, build_empty_target()),
         ]);
 
-        <span class="kw">let</span> <span class="ident">actual_targets</span> <span class="op">=</span> <span class="ident">projects</span>
-            .<span class="ident">try_into_domain_targets</span>(<span class="kw-2">&amp;</span><span class="ident">build_target_ids</span>(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>]))
-            .<span class="ident">expect</span>(<span class="string">&quot;Conversion of valid targets should be successful&quot;</span>);
+        <span class="kw">let </span>actual_targets = projects
+            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>]))
+            .expect(<span class="string">&quot;Conversion of valid targets should be successful&quot;</span>);
 
-        <span class="macro">assert_eq!</span>(<span class="ident">actual_targets</span>.<span class="ident">len</span>(), <span class="number">1</span>);
-        <span class="macro">assert!</span>(<span class="ident">find_target</span>(<span class="kw-2">&amp;</span><span class="ident">actual_targets</span>, <span class="string">&quot;target_2&quot;</span>).<span class="ident">is_some</span>());
+        <span class="macro">assert_eq!</span>(actual_targets.len(), <span class="number">1</span>);
+        <span class="macro">assert!</span>(find_target(<span class="kw-2">&amp;</span>actual_targets, <span class="string">&quot;target_2&quot;</span>).is_some());
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_try_into_domain_targets_should_reject_requested_target_not_found</span>() {
-        <span class="kw">let</span> <span class="ident">projects</span> <span class="op">=</span> <span class="ident">build_config</span>(<span class="macro">vec!</span>[(<span class="string">&quot;target_1&quot;</span>, <span class="ident">build_empty_target</span>())]);
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_try_into_domain_targets_should_reject_requested_target_not_found() {
+        <span class="kw">let </span>projects = build_config(<span class="macro">vec!</span>[(<span class="string">&quot;target_1&quot;</span>, build_empty_target())]);
 
-        <span class="ident">projects</span>
-            .<span class="ident">try_into_domain_targets</span>(<span class="kw-2">&amp;</span><span class="ident">build_target_ids</span>(<span class="macro">vec!</span>[<span class="string">&quot;not_a_target&quot;</span>]))
-            .<span class="ident">expect_err</span>(<span class="string">&quot;Should reject an invalid requested target&quot;</span>);
+        projects
+            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">&quot;not_a_target&quot;</span>]))
+            .expect_err(<span class="string">&quot;Should reject an invalid requested target&quot;</span>);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_try_into_domain_targets_with_dependency_input</span>() {
-        <span class="kw">let</span> <span class="ident">config</span> <span class="op">=</span> <span class="ident">build_config</span>(<span class="macro">vec!</span>[
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_try_into_domain_targets_with_dependency_input() {
+        <span class="kw">let </span>config = build_config(<span class="macro">vec!</span>[
             (
                 <span class="string">&quot;target_1&quot;</span>,
-                <span class="ident">build_target_with_output</span>(<span class="macro">vec!</span>[<span class="ident">yaml::OutputResource::Files</span> {
-                    <span class="ident">paths</span>: <span class="macro">vec!</span>[<span class="string">&quot;protos&quot;</span>.<span class="ident">to_string</span>()],
-                    <span class="ident">extensions</span>: <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="string">&quot;go&quot;</span>.<span class="ident">to_string</span>()]),
+                build_target_with_output(<span class="macro">vec!</span>[yaml::OutputResource::Files {
+                    paths: <span class="macro">vec!</span>[<span class="string">&quot;protos&quot;</span>.to_string()],
+                    extensions: <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="string">&quot;go&quot;</span>.to_string()]),
                 }]),
             ),
             (
                 <span class="string">&quot;target_2&quot;</span>,
-                <span class="ident">build_target_with_input</span>(<span class="macro">vec!</span>[<span class="ident">yaml::InputResource::DependencyOutput</span>(
-                    <span class="string">&quot;target_1.output&quot;</span>.<span class="ident">to_string</span>(),
+                build_target_with_input(<span class="macro">vec!</span>[yaml::InputResource::DependencyOutput(
+                    <span class="string">&quot;target_1.output&quot;</span>.to_string(),
                 )]),
             ),
         ]);
 
-        <span class="kw">let</span> <span class="ident">actual_targets</span> <span class="op">=</span> <span class="ident">config</span>
-            .<span class="ident">try_into_domain_targets</span>(<span class="kw-2">&amp;</span><span class="ident">build_target_ids</span>(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>]))
-            .<span class="ident">unwrap</span>();
+        <span class="kw">let </span>actual_targets = config
+            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>]))
+            .unwrap();
 
-        <span class="macro">assert_eq!</span>(<span class="ident">actual_targets</span>.<span class="ident">len</span>(), <span class="number">2</span>);
-        <span class="kw">let</span> <span class="ident">target1</span> <span class="op">=</span> <span class="ident">find_target</span>(<span class="kw-2">&amp;</span><span class="ident">actual_targets</span>, <span class="string">&quot;target_1&quot;</span>).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">target2</span> <span class="op">=</span> <span class="ident">find_target</span>(<span class="kw-2">&amp;</span><span class="ident">actual_targets</span>, <span class="string">&quot;target_2&quot;</span>).<span class="ident">unwrap</span>();
-        <span class="macro">assert_eq!</span>(<span class="ident">target2</span>.<span class="ident">dependencies</span>(), <span class="kw-2">&amp;</span><span class="macro">vec!</span>[<span class="ident">target1</span>.<span class="ident">id</span>().<span class="ident">clone</span>()]);
-        <span class="macro">assert_eq!</span>(<span class="ident">target2</span>.<span class="ident">input</span>(), <span class="ident">target1</span>.<span class="ident">output</span>());
+        <span class="macro">assert_eq!</span>(actual_targets.len(), <span class="number">2</span>);
+        <span class="kw">let </span>target1 = find_target(<span class="kw-2">&amp;</span>actual_targets, <span class="string">&quot;target_1&quot;</span>).unwrap();
+        <span class="kw">let </span>target2 = find_target(<span class="kw-2">&amp;</span>actual_targets, <span class="string">&quot;target_2&quot;</span>).unwrap();
+        <span class="macro">assert_eq!</span>(target2.dependencies(), <span class="kw-2">&amp;</span><span class="macro">vec!</span>[target1.id().clone()]);
+        <span class="macro">assert_eq!</span>(target2.input(), target1.output());
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_try_into_domain_targets_on_valid_targets</span>() {
-        <span class="kw">let</span> <span class="ident">projects</span> <span class="op">=</span> <span class="ident">build_config</span>(<span class="macro">vec!</span>[
-            (<span class="string">&quot;target_1&quot;</span>, <span class="ident">build_target_with_dependencies</span>(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>])),
-            (<span class="string">&quot;target_2&quot;</span>, <span class="ident">build_empty_target</span>()),
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_try_into_domain_targets_on_valid_targets() {
+        <span class="kw">let </span>projects = build_config(<span class="macro">vec!</span>[
+            (<span class="string">&quot;target_1&quot;</span>, build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>])),
+            (<span class="string">&quot;target_2&quot;</span>, build_empty_target()),
         ]);
 
-        <span class="ident">projects</span>
-            .<span class="ident">try_into_domain_targets</span>(<span class="kw-2">&amp;</span><span class="ident">build_target_ids</span>(<span class="macro">vec!</span>[<span class="string">&quot;target_1&quot;</span>, <span class="string">&quot;target_2&quot;</span>]))
-            .<span class="ident">expect</span>(<span class="string">&quot;Valid targets should be accepted&quot;</span>);
+        projects
+            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">&quot;target_1&quot;</span>, <span class="string">&quot;target_2&quot;</span>]))
+            .expect(<span class="string">&quot;Valid targets should be accepted&quot;</span>);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_try_into_domain_targets_with_unknown_dependency</span>() {
-        <span class="kw">let</span> <span class="ident">projects</span> <span class="op">=</span> <span class="ident">build_config</span>(<span class="macro">vec!</span>[(
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_try_into_domain_targets_with_unknown_dependency() {
+        <span class="kw">let </span>projects = build_config(<span class="macro">vec!</span>[(
             <span class="string">&quot;target_1&quot;</span>,
-            <span class="ident">build_target_with_dependencies</span>(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>]),
+            build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>]),
         )]);
 
-        <span class="ident">projects</span>
-            .<span class="ident">try_into_domain_targets</span>(<span class="kw-2">&amp;</span><span class="ident">build_target_ids</span>(<span class="macro">vec!</span>[<span class="string">&quot;target_1&quot;</span>]))
-            .<span class="ident">expect_err</span>(<span class="string">&quot;Unknown dependencies should be rejected&quot;</span>);
+        projects
+            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">&quot;target_1&quot;</span>]))
+            .expect_err(<span class="string">&quot;Unknown dependencies should be rejected&quot;</span>);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_try_into_domain_targets_with_circular_dependency</span>() {
-        <span class="kw">let</span> <span class="ident">projects</span> <span class="op">=</span> <span class="ident">build_config</span>(<span class="macro">vec!</span>[
-            (<span class="string">&quot;target_1&quot;</span>, <span class="ident">build_target_with_dependencies</span>(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>])),
-            (<span class="string">&quot;target_2&quot;</span>, <span class="ident">build_target_with_dependencies</span>(<span class="macro">vec!</span>[<span class="string">&quot;target_3&quot;</span>])),
-            (<span class="string">&quot;target_3&quot;</span>, <span class="ident">build_target_with_dependencies</span>(<span class="macro">vec!</span>[<span class="string">&quot;target_1&quot;</span>])),
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_try_into_domain_targets_with_circular_dependency() {
+        <span class="kw">let </span>projects = build_config(<span class="macro">vec!</span>[
+            (<span class="string">&quot;target_1&quot;</span>, build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>])),
+            (<span class="string">&quot;target_2&quot;</span>, build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">&quot;target_3&quot;</span>])),
+            (<span class="string">&quot;target_3&quot;</span>, build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">&quot;target_1&quot;</span>])),
         ]);
 
-        <span class="ident">projects</span>
-            .<span class="ident">try_into_domain_targets</span>(<span class="kw-2">&amp;</span><span class="ident">build_target_ids</span>(<span class="macro">vec!</span>[<span class="string">&quot;target_1&quot;</span>, <span class="string">&quot;target_2&quot;</span>, <span class="string">&quot;target_3&quot;</span>]))
-            .<span class="ident">expect_err</span>(<span class="string">&quot;Circular dependencies should be rejected&quot;</span>);
+        projects
+            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">&quot;target_1&quot;</span>, <span class="string">&quot;target_2&quot;</span>, <span class="string">&quot;target_3&quot;</span>]))
+            .expect_err(<span class="string">&quot;Circular dependencies should be rejected&quot;</span>);
     }
 
-    <span class="kw">fn</span> <span class="ident">build_target_ids</span>(<span class="ident">names</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TargetId</span><span class="op">&gt;</span> {
-        <span class="ident">names</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">target_name</span><span class="op">|</span> <span class="ident">TargetId</span> {
-                <span class="ident">project_name</span>: <span class="prelude-val">None</span>,
-                <span class="ident">target_name</span>: <span class="ident">target_name</span>.<span class="ident">to_owned</span>(),
+    <span class="kw">fn </span>build_target_ids(names: Vec&lt;<span class="kw-2">&amp;</span>str&gt;) -&gt; Vec&lt;TargetId&gt; {
+        names
+            .iter()
+            .map(|<span class="kw-2">&amp;</span>target_name| TargetId {
+                project_name: <span class="prelude-val">None</span>,
+                target_name: target_name.to_owned(),
             })
-            .<span class="ident">collect</span>()
+            .collect()
     }
 
-    <span class="kw">fn</span> <span class="ident">build_empty_target</span>() -&gt; <span class="ident">yaml::Target</span> {
-        <span class="ident">build_target_with_dependencies</span>(<span class="macro">vec!</span>[])
+    <span class="kw">fn </span>build_empty_target() -&gt; yaml::Target {
+        build_target_with_dependencies(<span class="macro">vec!</span>[])
     }
 
-    <span class="kw">fn</span> <span class="ident">build_target_with_dependencies</span>(<span class="ident">dependencies</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span>) -&gt; <span class="ident">yaml::Target</span> {
-        <span class="ident">yaml::Target::Aggregate</span> {
-            <span class="ident">dependencies</span>: <span class="ident">yaml::Dependencies</span>(
-                <span class="ident">dependencies</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="ident">str::to_string</span>).<span class="ident">collect</span>(),
+    <span class="kw">fn </span>build_target_with_dependencies(dependencies: Vec&lt;<span class="kw-2">&amp;</span>str&gt;) -&gt; yaml::Target {
+        yaml::Target::Aggregate {
+            dependencies: yaml::Dependencies(
+                dependencies.into_iter().map(str::to_string).collect(),
             ),
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">build_target_with_input</span>(<span class="ident">input</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">yaml::InputResource</span><span class="op">&gt;</span>) -&gt; <span class="ident">yaml::Target</span> {
-        <span class="ident">yaml::Target::Build</span> {
-            <span class="ident">dependencies</span>: <span class="ident">yaml::Dependencies</span>(<span class="macro">vec!</span>[]),
-            <span class="ident">build</span>: <span class="string">&quot;:&quot;</span>.<span class="ident">to_string</span>(),
-            <span class="ident">input</span>: <span class="ident">yaml::InputResources</span>(<span class="ident">input</span>),
-            <span class="ident">output</span>: <span class="ident">yaml::OutputResources</span>(<span class="macro">vec!</span>[]),
+    <span class="kw">fn </span>build_target_with_input(input: Vec&lt;yaml::InputResource&gt;) -&gt; yaml::Target {
+        yaml::Target::Build {
+            dependencies: yaml::Dependencies(<span class="macro">vec!</span>[]),
+            build: <span class="string">&quot;:&quot;</span>.to_string(),
+            input: yaml::InputResources(input),
+            output: yaml::OutputResources(<span class="macro">vec!</span>[]),
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">build_target_with_output</span>(<span class="ident">output</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">yaml::OutputResource</span><span class="op">&gt;</span>) -&gt; <span class="ident">yaml::Target</span> {
-        <span class="ident">yaml::Target::Build</span> {
-            <span class="ident">dependencies</span>: <span class="ident">yaml::Dependencies</span>(<span class="macro">vec!</span>[]),
-            <span class="ident">build</span>: <span class="string">&quot;:&quot;</span>.<span class="ident">to_string</span>(),
-            <span class="ident">input</span>: <span class="ident">yaml::InputResources</span>(<span class="macro">vec!</span>[]),
-            <span class="ident">output</span>: <span class="ident">yaml::OutputResources</span>(<span class="ident">output</span>),
+    <span class="kw">fn </span>build_target_with_output(output: Vec&lt;yaml::OutputResource&gt;) -&gt; yaml::Target {
+        yaml::Target::Build {
+            dependencies: yaml::Dependencies(<span class="macro">vec!</span>[]),
+            build: <span class="string">&quot;:&quot;</span>.to_string(),
+            input: yaml::InputResources(<span class="macro">vec!</span>[]),
+            output: yaml::OutputResources(output),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">build_config</span>(<span class="ident">targets</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">yaml::Target</span>)<span class="op">&gt;</span>) -&gt; <span class="ident">Config</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">projects</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-        <span class="ident">projects</span>.<span class="ident">insert</span>(
+    <span class="kw">pub fn </span>build_config(targets: Vec&lt;(<span class="kw-2">&amp;</span>str, yaml::Target)&gt;) -&gt; Config {
+        <span class="kw">let </span><span class="kw-2">mut </span>projects = HashMap::new();
+        projects.insert(
             <span class="prelude-val">None</span>,
             (
-                <span class="ident">PathBuf::new</span>(),
-                <span class="ident">yaml::Project</span> {
-                    <span class="ident">name</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">imports</span>: <span class="ident">HashMap::new</span>(),
-                    <span class="ident">targets</span>: <span class="ident">targets</span>
-                        .<span class="ident">into_iter</span>()
-                        .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">k</span>, <span class="ident">v</span>)<span class="op">|</span> (<span class="ident">k</span>.<span class="ident">to_string</span>(), <span class="ident">v</span>))
-                        .<span class="ident">collect</span>(),
+                PathBuf::new(),
+                yaml::Project {
+                    name: <span class="prelude-val">None</span>,
+                    imports: HashMap::new(),
+                    targets: targets
+                        .into_iter()
+                        .map(|(k, v)| (k.to_string(), v))
+                        .collect(),
                 },
             ),
         );
 
-        <span class="ident">Config</span> {
-            <span class="ident">root_project_name</span>: <span class="prelude-val">None</span>,
-            <span class="ident">projects</span>,
+        Config {
+            root_project_name: <span class="prelude-val">None</span>,
+            projects,
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">find_target</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(
-        <span class="ident">targets</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">domain::TargetId</span>, <span class="ident">domain::Target</span><span class="op">&gt;</span>,
-        <span class="ident">target_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">domain::Target</span><span class="op">&gt;</span> {
-        <span class="ident">targets</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">TargetId</span> {
-            <span class="ident">project_name</span>: <span class="prelude-val">None</span>,
-            <span class="ident">target_name</span>: <span class="ident">target_name</span>.<span class="ident">to_string</span>(),
+    <span class="kw">fn </span>find_target&lt;<span class="lifetime">&#39;a</span>&gt;(
+        targets: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HashMap&lt;domain::TargetId, domain::Target&gt;,
+        target_name: <span class="kw-2">&amp;</span>str,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>domain::Target&gt; {
+        targets.get(<span class="kw-2">&amp;</span>TargetId {
+            project_name: <span class="prelude-val">None</span>,
+            target_name: target_name.to_string(),
         })
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

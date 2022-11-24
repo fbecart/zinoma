@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/target_actor/target_actor_helper.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>target_actor_helper.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/target_actor/target_actor_helper.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>target_actor_helper.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../zinoma/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../zinoma/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -141,144 +136,143 @@
 <span id="136">136</span>
 <span id="137">137</span>
 <span id="138">138</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">ActorId</span>, <span class="ident">ActorInputMessage</span>, <span class="ident">ExecutionKind</span>, <span class="ident">TargetActorOutputMessage</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::domain</span>::{<span class="ident">TargetId</span>, <span class="ident">TargetMetadata</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::watcher::TargetInvalidatedMessage</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::TerminationMessage</span>;
-<span class="kw">use</span> <span class="ident">anyhow::Error</span>;
-<span class="kw">use</span> <span class="ident">async_std::channel</span>::{<span class="ident">Receiver</span>, <span class="ident">Sender</span>};
-<span class="kw">use</span> <span class="ident">std::collections</span>::{<span class="ident">HashMap</span>, <span class="ident">HashSet</span>};
+</pre><pre class="rust"><code><span class="kw">use super</span>::{ActorId, ActorInputMessage, ExecutionKind, TargetActorOutputMessage};
+<span class="kw">use </span><span class="kw">crate</span>::domain::{TargetId, TargetMetadata};
+<span class="kw">use </span><span class="kw">crate</span>::engine::watcher::TargetInvalidatedMessage;
+<span class="kw">use </span><span class="kw">crate</span>::TerminationMessage;
+<span class="kw">use </span>anyhow::Error;
+<span class="kw">use </span>async_std::channel::{Receiver, Sender};
+<span class="kw">use </span>std::collections::{HashMap, HashSet};
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TargetActorHelper</span> {
-    <span class="kw">pub</span> <span class="ident">target_id</span>: <span class="ident">TargetId</span>,
-    <span class="kw">pub</span> <span class="ident">termination_events</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">TerminationMessage</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">target_invalidated_events</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">TargetInvalidatedMessage</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">target_actor_input_receiver</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">ActorInputMessage</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">target_actor_output_sender</span>: <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">TargetActorOutputMessage</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">to_execute</span>: <span class="ident">bool</span>,
-    <span class="kw">pub</span> <span class="ident">executed</span>: <span class="ident">bool</span>,
-    <span class="kw">pub</span> <span class="ident">dependencies</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TargetId</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">unavailable_dependencies</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ExecutionKind</span>, <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">TargetId</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">requesters</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ExecutionKind</span>, <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">ActorId</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">pub struct </span>TargetActorHelper {
+    <span class="kw">pub </span>target_id: TargetId,
+    <span class="kw">pub </span>termination_events: Receiver&lt;TerminationMessage&gt;,
+    <span class="kw">pub </span>target_invalidated_events: Receiver&lt;TargetInvalidatedMessage&gt;,
+    <span class="kw">pub </span>target_actor_input_receiver: Receiver&lt;ActorInputMessage&gt;,
+    <span class="kw">pub </span>target_actor_output_sender: Sender&lt;TargetActorOutputMessage&gt;,
+    <span class="kw">pub </span>to_execute: bool,
+    <span class="kw">pub </span>executed: bool,
+    <span class="kw">pub </span>dependencies: Vec&lt;TargetId&gt;,
+    <span class="kw">pub </span>unavailable_dependencies: HashMap&lt;ExecutionKind, HashSet&lt;TargetId&gt;&gt;,
+    <span class="kw">pub </span>requesters: HashMap&lt;ExecutionKind, HashSet&lt;ActorId&gt;&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">TargetActorHelper</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">target_metadata</span>: <span class="kw-2">&amp;</span><span class="ident">TargetMetadata</span>,
-        <span class="ident">termination_events</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">TerminationMessage</span><span class="op">&gt;</span>,
-        <span class="ident">target_invalidated_events</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">TargetInvalidatedMessage</span><span class="op">&gt;</span>,
-        <span class="ident">target_actor_input_receiver</span>: <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">ActorInputMessage</span><span class="op">&gt;</span>,
-        <span class="ident">target_actor_output_sender</span>: <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">TargetActorOutputMessage</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">dependencies</span> <span class="op">=</span> <span class="ident">target_metadata</span>.<span class="ident">dependencies</span>.<span class="ident">clone</span>();
+<span class="kw">impl </span>TargetActorHelper {
+    <span class="kw">pub fn </span>new(
+        target_metadata: <span class="kw-2">&amp;</span>TargetMetadata,
+        termination_events: Receiver&lt;TerminationMessage&gt;,
+        target_invalidated_events: Receiver&lt;TargetInvalidatedMessage&gt;,
+        target_actor_input_receiver: Receiver&lt;ActorInputMessage&gt;,
+        target_actor_output_sender: Sender&lt;TargetActorOutputMessage&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>dependencies = target_metadata.dependencies.clone();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">unavailable_dependencies</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-        <span class="kw">let</span> <span class="ident">dependencies_set</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">dependencies</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>().<span class="ident">collect</span>();
-        <span class="ident">unavailable_dependencies</span>.<span class="ident">insert</span>(<span class="ident">ExecutionKind::Build</span>, <span class="ident">dependencies_set</span>.<span class="ident">clone</span>());
-        <span class="ident">unavailable_dependencies</span>.<span class="ident">insert</span>(<span class="ident">ExecutionKind::Service</span>, <span class="ident">dependencies_set</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>unavailable_dependencies = HashMap::new();
+        <span class="kw">let </span>dependencies_set: HashSet&lt;<span class="kw">_</span>&gt; = dependencies.iter().cloned().collect();
+        unavailable_dependencies.insert(ExecutionKind::Build, dependencies_set.clone());
+        unavailable_dependencies.insert(ExecutionKind::Service, dependencies_set);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">requesters</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-        <span class="ident">requesters</span>.<span class="ident">insert</span>(<span class="ident">ExecutionKind::Build</span>, <span class="ident">HashSet::new</span>());
-        <span class="ident">requesters</span>.<span class="ident">insert</span>(<span class="ident">ExecutionKind::Service</span>, <span class="ident">HashSet::new</span>());
+        <span class="kw">let </span><span class="kw-2">mut </span>requesters = HashMap::new();
+        requesters.insert(ExecutionKind::Build, HashSet::new());
+        requesters.insert(ExecutionKind::Service, HashSet::new());
 
-        <span class="self">Self</span> {
-            <span class="ident">target_id</span>: <span class="ident">target_metadata</span>.<span class="ident">id</span>.<span class="ident">clone</span>(),
-            <span class="ident">termination_events</span>,
-            <span class="ident">target_invalidated_events</span>,
-            <span class="ident">target_actor_input_receiver</span>,
-            <span class="ident">target_actor_output_sender</span>,
-            <span class="ident">to_execute</span>: <span class="bool-val">true</span>,
-            <span class="ident">executed</span>: <span class="bool-val">false</span>,
-            <span class="ident">dependencies</span>,
-            <span class="ident">unavailable_dependencies</span>,
-            <span class="ident">requesters</span>,
+        <span class="self">Self </span>{
+            target_id: target_metadata.id.clone(),
+            termination_events,
+            target_invalidated_events,
+            target_actor_input_receiver,
+            target_actor_output_sender,
+            to_execute: <span class="bool-val">true</span>,
+            executed: <span class="bool-val">false</span>,
+            dependencies,
+            unavailable_dependencies,
+            requesters,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">should_execute</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">to_execute</span>
-            <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">requesters</span>[<span class="kw-2">&amp;</span><span class="ident">kind</span>].<span class="ident">is_empty</span>()
-            <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">unavailable_dependencies</span>[<span class="kw-2">&amp;</span><span class="ident">ExecutionKind::Build</span>].<span class="ident">is_empty</span>()
-            <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">unavailable_dependencies</span>[<span class="kw-2">&amp;</span><span class="ident">ExecutionKind::Service</span>].<span class="ident">is_empty</span>()
+    <span class="kw">pub fn </span>should_execute(<span class="kw-2">&amp;</span><span class="self">self</span>, kind: ExecutionKind) -&gt; bool {
+        <span class="self">self</span>.to_execute
+            &amp;&amp; !<span class="self">self</span>.requesters[<span class="kw-2">&amp;</span>kind].is_empty()
+            &amp;&amp; <span class="self">self</span>.unavailable_dependencies[<span class="kw-2">&amp;</span>ExecutionKind::Build].is_empty()
+            &amp;&amp; <span class="self">self</span>.unavailable_dependencies[<span class="kw-2">&amp;</span>ExecutionKind::Service].is_empty()
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">notify_invalidated</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>) {
-        <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">to_execute</span> {
-            <span class="self">self</span>.<span class="ident">to_execute</span> <span class="op">=</span> <span class="bool-val">true</span>;
-            <span class="self">self</span>.<span class="ident">executed</span> <span class="op">=</span> <span class="bool-val">false</span>;
+    <span class="kw">pub async fn </span>notify_invalidated(<span class="kw-2">&amp;mut </span><span class="self">self</span>, kind: ExecutionKind) {
+        <span class="kw">if </span>!<span class="self">self</span>.to_execute {
+            <span class="self">self</span>.to_execute = <span class="bool-val">true</span>;
+            <span class="self">self</span>.executed = <span class="bool-val">false</span>;
 
-            <span class="kw">let</span> <span class="ident">target_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">target_id</span>.<span class="ident">clone</span>();
-            <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="ident">ActorInputMessage::Invalidated</span> { <span class="ident">kind</span>, <span class="ident">target_id</span> };
-            <span class="self">self</span>.<span class="ident">send_to_requesters</span>(<span class="ident">kind</span>, <span class="ident">msg</span>).<span class="kw">await</span>
-        }
+            <span class="kw">let </span>target_id = <span class="self">self</span>.target_id.clone();
+            <span class="kw">let </span>msg = ActorInputMessage::Invalidated { kind, target_id };
+            <span class="self">self</span>.send_to_requesters(kind, msg).<span class="kw">await
+        </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_execution_started</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">to_execute</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="self">self</span>.<span class="ident">executed</span> <span class="op">=</span> <span class="bool-val">false</span>;
+    <span class="kw">pub fn </span>set_execution_started(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.to_execute = <span class="bool-val">false</span>;
+        <span class="self">self</span>.executed = <span class="bool-val">false</span>;
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">notify_execution_failed</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">e</span>: <span class="ident">Error</span>) {
-        <span class="self">self</span>.<span class="ident">executed</span> <span class="op">=</span> <span class="bool-val">false</span>;
-        <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="ident">TargetActorOutputMessage::TargetExecutionError</span>(<span class="self">self</span>.<span class="ident">target_id</span>.<span class="ident">clone</span>(), <span class="ident">e</span>);
-        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">target_actor_output_sender</span>.<span class="ident">send</span>(<span class="ident">msg</span>).<span class="kw">await</span>;
+    <span class="kw">pub async fn </span>notify_execution_failed(<span class="kw-2">&amp;mut </span><span class="self">self</span>, e: Error) {
+        <span class="self">self</span>.executed = <span class="bool-val">false</span>;
+        <span class="kw">let </span>msg = TargetActorOutputMessage::TargetExecutionError(<span class="self">self</span>.target_id.clone(), e);
+        <span class="kw">let _ </span>= <span class="self">self</span>.target_actor_output_sender.send(msg).<span class="kw">await</span>;
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">send_to_actor</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">dest</span>: <span class="ident">ActorId</span>, <span class="ident">msg</span>: <span class="ident">ActorInputMessage</span>) {
-        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">target_actor_output_sender</span>
-            .<span class="ident">send</span>(<span class="ident">TargetActorOutputMessage::MessageActor</span> { <span class="ident">dest</span>, <span class="ident">msg</span> })
+    <span class="kw">pub async fn </span>send_to_actor(<span class="kw-2">&amp;</span><span class="self">self</span>, dest: ActorId, msg: ActorInputMessage) {
+        <span class="kw">let _ </span>= <span class="self">self
+            </span>.target_actor_output_sender
+            .send(TargetActorOutputMessage::MessageActor { dest, msg })
             .<span class="kw">await</span>;
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">send_to_dependencies</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">ActorInputMessage</span>) {
-        <span class="kw">for</span> <span class="ident">dependency</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">dependencies</span> {
-            <span class="self">self</span>.<span class="ident">send_to_actor</span>(<span class="ident">ActorId::Target</span>(<span class="ident">dependency</span>.<span class="ident">clone</span>()), <span class="ident">msg</span>.<span class="ident">clone</span>())
-                .<span class="kw">await</span>
-        }
+    <span class="kw">pub async fn </span>send_to_dependencies(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: ActorInputMessage) {
+        <span class="kw">for </span>dependency <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.dependencies {
+            <span class="self">self</span>.send_to_actor(ActorId::Target(dependency.clone()), msg.clone())
+                .<span class="kw">await
+        </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">send_to_requesters</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>, <span class="ident">msg</span>: <span class="ident">ActorInputMessage</span>) {
-        <span class="kw">for</span> <span class="ident">requester</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">requesters</span>[<span class="kw-2">&amp;</span><span class="ident">kind</span>] {
-            <span class="self">self</span>.<span class="ident">send_to_actor</span>(<span class="ident">requester</span>.<span class="ident">clone</span>(), <span class="ident">msg</span>.<span class="ident">clone</span>()).<span class="kw">await</span>
-        }
+    <span class="kw">pub async fn </span>send_to_requesters(<span class="kw-2">&amp;</span><span class="self">self</span>, kind: ExecutionKind, msg: ActorInputMessage) {
+        <span class="kw">for </span>requester <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.requesters[<span class="kw-2">&amp;</span>kind] {
+            <span class="self">self</span>.send_to_actor(requester.clone(), msg.clone()).<span class="kw">await
+        </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">notify_success</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>) {
-        <span class="self">self</span>.<span class="ident">executed</span> <span class="op">=</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">to_execute</span>;
+    <span class="kw">pub async fn </span>notify_success(<span class="kw-2">&amp;mut </span><span class="self">self</span>, kind: ExecutionKind) {
+        <span class="self">self</span>.executed = !<span class="self">self</span>.to_execute;
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">executed</span> {
-            <span class="kw">let</span> <span class="ident">target_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">target_id</span>.<span class="ident">clone</span>();
-            <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="ident">ActorInputMessage::Ok</span> {
-                <span class="ident">kind</span>,
-                <span class="ident">target_id</span>,
-                <span class="ident">actual</span>: <span class="bool-val">true</span>,
+        <span class="kw">if </span><span class="self">self</span>.executed {
+            <span class="kw">let </span>target_id = <span class="self">self</span>.target_id.clone();
+            <span class="kw">let </span>msg = ActorInputMessage::Ok {
+                kind,
+                target_id,
+                actual: <span class="bool-val">true</span>,
             };
-            <span class="self">self</span>.<span class="ident">send_to_requesters</span>(<span class="ident">kind</span>, <span class="ident">msg</span>).<span class="kw">await</span>
-        }
+            <span class="self">self</span>.send_to_requesters(kind, msg).<span class="kw">await
+        </span>}
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">request_dependencies</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>) {
-        <span class="self">self</span>.<span class="ident">send_to_dependencies</span>(<span class="ident">ActorInputMessage::Requested</span> {
-            <span class="ident">kind</span>,
-            <span class="ident">requester</span>: <span class="ident">ActorId::Target</span>(<span class="self">self</span>.<span class="ident">target_id</span>.<span class="ident">clone</span>()),
+    <span class="kw">pub async fn </span>request_dependencies(<span class="kw-2">&amp;</span><span class="self">self</span>, kind: ExecutionKind) {
+        <span class="self">self</span>.send_to_dependencies(ActorInputMessage::Requested {
+            kind,
+            requester: ActorId::Target(<span class="self">self</span>.target_id.clone()),
         })
         .<span class="kw">await</span>;
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handle_unrequested</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>, <span class="ident">requester</span>: <span class="ident">ActorId</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> <span class="ident">removed</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">requesters</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">kind</span>).<span class="ident">unwrap</span>().<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">requester</span>);
-        <span class="ident">removed</span> <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">requesters</span>[<span class="kw-2">&amp;</span><span class="ident">kind</span>].<span class="ident">is_empty</span>()
+    <span class="kw">pub fn </span>handle_unrequested(<span class="kw-2">&amp;mut </span><span class="self">self</span>, kind: ExecutionKind, requester: ActorId) -&gt; bool {
+        <span class="kw">let </span>removed = <span class="self">self</span>.requesters.get_mut(<span class="kw-2">&amp;</span>kind).unwrap().remove(<span class="kw-2">&amp;</span>requester);
+        removed &amp;&amp; <span class="self">self</span>.requesters[<span class="kw-2">&amp;</span>kind].is_empty()
     }
 
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">unrequest_dependencies</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">kind</span>: <span class="ident">ExecutionKind</span>) {
-        <span class="self">self</span>.<span class="ident">send_to_dependencies</span>(<span class="ident">ActorInputMessage::Unrequested</span> {
-            <span class="ident">kind</span>,
-            <span class="ident">requester</span>: <span class="ident">ActorId::Target</span>(<span class="self">self</span>.<span class="ident">target_id</span>.<span class="ident">clone</span>()),
+    <span class="kw">pub async fn </span>unrequest_dependencies(<span class="kw-2">&amp;</span><span class="self">self</span>, kind: ExecutionKind) {
+        <span class="self">self</span>.send_to_dependencies(ActorInputMessage::Unrequested {
+            kind,
+            requester: ActorId::Target(<span class="self">self</span>.target_id.clone()),
         })
         .<span class="kw">await</span>;
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="zinoma" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
