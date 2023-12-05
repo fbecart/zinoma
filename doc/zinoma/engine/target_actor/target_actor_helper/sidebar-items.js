@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["TargetActorHelper",""]]};
+window.SIDEBAR_ITEMS = {"struct":["TargetActorHelper"]};

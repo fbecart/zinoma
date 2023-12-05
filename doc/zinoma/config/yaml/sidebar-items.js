@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["canonicalize_dir",""],["is_valid_project_name",""],["is_valid_target_name",""]],"mod":[["schema",""]],"struct":[["Config",""]]};
+window.SIDEBAR_ITEMS = {"fn":["canonicalize_dir","is_valid_project_name","is_valid_target_name"],"mod":["schema"],"struct":["Config"]};

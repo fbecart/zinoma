@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["WORK_DIR_NAME","Name of the directory in which Žinoma stores its own files."]],"fn":[["get_work_dir_path",""],["is_in_work_dir",""],["is_work_dir",""],["remove_work_dir",""]]};
+window.SIDEBAR_ITEMS = {"constant":["WORK_DIR_NAME"],"fn":["get_work_dir_path","is_in_work_dir","is_work_dir","remove_work_dir"]};

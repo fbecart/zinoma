@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["get_dependencies",""],["transform_extensions",""],["transform_input",""],["transform_output",""],["transform_target",""]],"struct":[["Config",""]]};
+window.SIDEBAR_ITEMS = {"fn":["get_dependencies","transform_extensions","transform_input","transform_output","transform_target"],"struct":["Config"]};

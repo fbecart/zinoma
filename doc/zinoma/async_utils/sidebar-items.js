@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["all","Resolve as true unless any future in the iterator resolves as false."],["both",""]]};
+window.SIDEBAR_ITEMS = {"fn":["all","both"]};

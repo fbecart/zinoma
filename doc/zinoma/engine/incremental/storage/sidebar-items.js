@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["delete_saved_env_state",""],["get_checksums_file_path","File where the state of the target inputs and outputs are stored upon successful build."],["read_saved_target_env_state",""],["save_env_state",""]]};
+window.SIDEBAR_ITEMS = {"fn":["delete_saved_env_state","get_checksums_file_path","read_saved_target_env_state","save_env_state"]};

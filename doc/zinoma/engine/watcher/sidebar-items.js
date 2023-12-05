@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["is_tmp_editor_file",""]],"struct":[["TargetInvalidatedMessage",""],["TargetWatcher",""]]};
+window.SIDEBAR_ITEMS = {"fn":["is_tmp_editor_file"],"struct":["TargetInvalidatedMessage","TargetWatcher"]};

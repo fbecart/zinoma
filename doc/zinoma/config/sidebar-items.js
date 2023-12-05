@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["ir",""],["yaml",""]]};
+window.SIDEBAR_ITEMS = {"mod":["ir","yaml"]};

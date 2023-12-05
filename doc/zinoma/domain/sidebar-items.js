@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["Target",""]],"fn":[["matches_extensions",""]],"struct":[["AggregateTarget",""],["BuildTarget",""],["CmdResource",""],["FilesResource",""],["Resources",""],["ServiceTarget",""],["TargetId",""],["TargetMetadata",""]],"type":[["FileExtensions",""]]};
+window.SIDEBAR_ITEMS = {"enum":["Target"],"fn":["matches_extensions"],"struct":["AggregateTarget","BuildTarget","CmdResource","FilesResource","Resources","ServiceTarget","TargetId","TargetMetadata"],"type":["FileExtensions"]};
