@@ -114,7 +114,6 @@
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
 <a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a>
 </pre></div><pre class="rust"><code><span class="kw">use super</span>::{ActorInputMessage, ExecutionKind, TargetActorHelper};
 <span class="kw">use </span><span class="kw">crate</span>::domain::ServiceTarget;
 <span class="kw">use </span><span class="kw">crate</span>::run_script;
@@ -122,7 +121,6 @@
 <span class="kw">use </span>async_process::Child;
 <span class="kw">use </span>async_std::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>futures::FutureExt;
-<span class="kw">use </span>std::mem;
 <span class="kw">use </span>std::process::Stdio;
 
 <span class="kw">pub struct </span>ServiceTargetActor {
@@ -203,7 +201,7 @@
     <span class="kw">async fn </span>stop_service(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">if </span><span class="self">self</span>.service_process.is_some() {
             <span class="kw">let </span>target_id = <span class="self">self</span>.target.metadata.id.clone();
-            <span class="kw">let </span><span class="kw-2">mut </span>running_service = mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.service_process, <span class="prelude-val">None</span>).unwrap();
+            <span class="kw">let </span><span class="kw-2">mut </span>running_service = <span class="self">self</span>.service_process.take().unwrap();
             <span class="macro">log::trace!</span>(<span class="string">&quot;{} - Stopping service&quot;</span>, target_id);
             <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = running_service.kill() {
                 <span class="macro">log::warn!</span>(<span class="string">&quot;{} - Failed to kill service: {}&quot;</span>, target_id, e);

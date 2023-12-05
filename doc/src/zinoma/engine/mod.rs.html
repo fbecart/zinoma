@@ -161,7 +161,7 @@
 <span class="kw">pub async fn </span>run(
     root_target_ids: Vec&lt;TargetId&gt;,
     watch_option: WatchOption,
-    <span class="kw-2">mut </span>target_actors: <span class="kw-2">&amp;mut </span>TargetActors,
+    target_actors: <span class="kw-2">&amp;mut </span>TargetActors,
     termination_events: Receiver&lt;TerminationMessage&gt;,
     target_actor_output_events: Receiver&lt;TargetActorOutputMessage&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
@@ -172,7 +172,7 @@
     <span class="kw">match </span>watch_option {
         WatchOption::Enabled =&gt; {
             watch(
-                <span class="kw-2">&amp;mut </span>target_actors,
+                target_actors,
                 termination_events,
                 target_actor_output_events,
             )
@@ -181,7 +181,7 @@
         WatchOption::Disabled =&gt; {
             execute_once(
                 <span class="kw-2">&amp;</span>root_target_ids,
-                <span class="kw-2">&amp;mut </span>target_actors,
+                target_actors,
                 termination_events,
                 target_actor_output_events,
             )

@@ -223,7 +223,7 @@
             .with_context(|| <span class="macro">format!</span>(<span class="string">&quot;Invalid format for {}&quot;</span>, config_file_path.display()))<span class="question-mark">?</span>;
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(project_name) = <span class="kw-2">&amp;</span>project.name {
-            <span class="kw">if </span>!is_valid_project_name(<span class="kw-2">&amp;</span>project_name) {
+            <span class="kw">if </span>!is_valid_project_name(project_name) {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;{} is not a valid project name&quot;</span>, project_name));
             }
         }

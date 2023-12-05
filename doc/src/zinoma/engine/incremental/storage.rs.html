@@ -116,7 +116,7 @@
             target,
             e
         );
-        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = delete_saved_env_state(<span class="kw-2">&amp;</span>target).<span class="kw">await </span>{
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = delete_saved_env_state(target).<span class="kw">await </span>{
             <span class="macro">log::error!</span>(
                 <span class="string">&quot;{} - Failed to drop corrupted checksum file: {} (Error: {})&quot;</span>,
                 target,
