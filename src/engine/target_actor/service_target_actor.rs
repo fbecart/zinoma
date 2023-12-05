@@ -5,7 +5,6 @@ use anyhow::{Context, Result};
 use async_process::Child;
 use async_std::prelude::*;
 use futures::FutureExt;
-use std::mem;
 use std::process::Stdio;
 
 pub struct ServiceTargetActor {
@@ -86,7 +85,7 @@ impl ServiceTargetActor {
     async fn stop_service(&mut self) {
         if self.service_process.is_some() {
             let target_id = self.target.metadata.id.clone();
-            let mut running_service = mem::replace(&mut self.service_process, None).unwrap();
+            let mut running_service = self.service_process.take().unwrap();
             log::trace!("{} - Stopping service", target_id);
             if let Err(e) = running_service.kill() {
                 log::warn!("{} - Failed to kill service: {}", target_id, e);

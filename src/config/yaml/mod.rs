@@ -73,7 +73,7 @@ impl Config {
             .with_context(|| format!("Invalid format for {}", config_file_path.display()))?;
 
         if let Some(project_name) = &project.name {
-            if !is_valid_project_name(&project_name) {
+            if !is_valid_project_name(project_name) {
                 return Err(anyhow!("{} is not a valid project name", project_name));
             }
         }

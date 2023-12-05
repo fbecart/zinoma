@@ -36,7 +36,7 @@ pub async fn read_saved_target_env_state(target: &TargetMetadata) -> Option<Targ
             target,
             e
         );
-        if let Err(e) = delete_saved_env_state(&target).await {
+        if let Err(e) = delete_saved_env_state(target).await {
             log::error!(
                 "{} - Failed to drop corrupted checksum file: {} (Error: {})",
                 target,

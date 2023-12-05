@@ -51,7 +51,7 @@ impl Config {
         root_target_ids: &[TargetId],
     ) -> Result<HashMap<domain::TargetId, domain::Target>> {
         fn add_target(
-            mut domain_targets: &mut HashMap<domain::TargetId, domain::Target>,
+            domain_targets: &mut HashMap<domain::TargetId, domain::Target>,
             config: &mut Config,
             target_id: &TargetId,
             parent_targets: &[&TargetId],
@@ -94,7 +94,7 @@ impl Config {
 
             let targets_chain = [parent_targets, &[target_id]].concat();
             for dependency_id in target.dependencies() {
-                add_target(&mut domain_targets, config, dependency_id, &targets_chain)?
+                add_target(domain_targets, config, dependency_id, &targets_chain)?
             }
 
             for dependency_id in &dependencies_from_input {
@@ -213,11 +213,9 @@ fn transform_input(
     target_id: &TargetId,
     project_dir: &Path,
 ) -> Result<(domain::Resources, Vec<TargetId>)> {
-    input.0.into_iter().fold(
-        Ok((domain::Resources::new(), Vec::new())),
-        |acc, resource| {
-            let (mut input, mut dependencies_from_input) = acc?;
-
+    input.0.into_iter().try_fold(
+        (domain::Resources::new(), Vec::new()),
+        |(mut input, mut dependencies_from_input), resource| {
             match resource {
                 yaml::InputResource::Files { paths, extensions } => {
                     input.files.push(FilesResource {

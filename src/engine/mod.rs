@@ -17,7 +17,7 @@ pub use target_actors::TargetActors;
 pub async fn run(
     root_target_ids: Vec<TargetId>,
     watch_option: WatchOption,
-    mut target_actors: &mut TargetActors,
+    target_actors: &mut TargetActors,
     termination_events: Receiver<TerminationMessage>,
     target_actor_output_events: Receiver<TargetActorOutputMessage>,
 ) -> Result<()> {
@@ -28,7 +28,7 @@ pub async fn run(
     match watch_option {
         WatchOption::Enabled => {
             watch(
-                &mut target_actors,
+                target_actors,
                 termination_events,
                 target_actor_output_events,
             )
@@ -37,7 +37,7 @@ pub async fn run(
         WatchOption::Disabled => {
             execute_once(
                 &root_target_ids,
-                &mut target_actors,
+                target_actors,
                 termination_events,
                 target_actor_output_events,
             )
