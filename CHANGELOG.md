@@ -2,6 +2,10 @@
 
 ## TBD
 
+## 0.19.5 (2023-12-12)
+
+Minor version with dependency updates.
+
 ## 0.19.4 (2021-03-26)
 
 Minor version with dependency updates.
