@@ -2,6 +2,10 @@
 
 ## TBD
 
+## 0.19.6 (2023-12-12)
+
+Fix Homebrew and PPA deployment. The release process of version 0.19.5 failed due to expired tokens.
+
 ## 0.19.5 (2023-12-12)
 
 Minor version with dependency updates.
