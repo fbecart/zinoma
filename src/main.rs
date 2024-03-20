@@ -19,7 +19,6 @@ use clean::clean_target_output_paths;
 use config::{ir, yaml};
 use domain::TargetId;
 use engine::{incremental::storage::delete_saved_env_state, TargetActors};
-use std::convert::TryInto;
 use work_dir::remove_work_dir;
 
 #[cfg(all(not(target_env = "msvc"), target_pointer_width = "64"))]
@@ -44,7 +43,7 @@ fn main() -> Result<()> {
         std::path::PathBuf::from(arg_matches.value_of(cli::arg::PROJECT_DIR).unwrap());
     let config = yaml::Config::load(&root_project_dir)?;
     let project_dirs = config.get_project_dirs();
-    let config: ir::Config = config.try_into()?;
+    let config: ir::Config = config.into();
     let all_target_names = config.list_all_available_target_names();
 
     let arg_matches = cli::get_app()
