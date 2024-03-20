@@ -4,8 +4,9 @@ use anyhow::{Context, Error, Result};
 use async_std::channel::Sender;
 use async_std::path::{Path, PathBuf};
 use domain::FileExtensions;
-use notify::{ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{Config, ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::{HashMap, HashSet};
+use std::time::Duration;
 
 pub struct TargetWatcher {
     _watchers: Vec<RecommendedWatcher>,
@@ -37,7 +38,7 @@ impl TargetWatcher {
                     )?;
 
                     for path in paths {
-                        match watcher.watch(path, RecursiveMode::Recursive) {
+                        match watcher.watch(path.as_path().into(), RecursiveMode::Recursive) {
                             Ok(_) => {}
                             Err(notify::Error {
                                 kind: ErrorKind::PathNotFound,
@@ -76,34 +77,38 @@ impl TargetWatcher {
         target_invalidated_sender: Sender<TargetInvalidatedMessage>,
         extensions: FileExtensions,
     ) -> Result<RecommendedWatcher> {
-        Watcher::new_immediate(move |result: notify::Result<notify::Event>| {
-            let relevant_files = result
-                .unwrap()
-                .paths
-                .into_iter()
-                .filter(|path| {
-                    let path: PathBuf = path.into();
-                    !is_tmp_editor_file(&path)
-                        && !work_dir::is_in_work_dir(&path)
-                        && domain::matches_extensions(path.as_path().into(), &extensions)
-                })
-                .collect::<Vec<_>>();
+        let watcher_config = Config::default().with_poll_interval(Duration::from_millis(100));
+        Watcher::new(
+            move |result: notify::Result<notify::Event>| {
+                let relevant_files = result
+                    .unwrap()
+                    .paths
+                    .into_iter()
+                    .filter(|path| {
+                        let path: PathBuf = path.into();
+                        !is_tmp_editor_file(&path)
+                            && !work_dir::is_in_work_dir(&path)
+                            && domain::matches_extensions(path.as_path().into(), &extensions)
+                    })
+                    .collect::<Vec<_>>();
 
-            if !relevant_files.is_empty() {
-                let target_id = target_id.clone();
-                log::trace!(
-                    "{} - Invalidated by {}",
-                    &target_id,
-                    itertools::join(relevant_files.iter().flat_map(|path| path.to_str()), ", ")
-                );
-                if target_invalidated_sender
-                    .try_send(TargetInvalidatedMessage)
-                    .is_err()
-                {
-                    log::trace!("{} - Target already invalidated. Skipping.", &target_id);
+                if !relevant_files.is_empty() {
+                    let target_id = target_id.clone();
+                    log::trace!(
+                        "{} - Invalidated by {}",
+                        &target_id,
+                        itertools::join(relevant_files.iter().flat_map(|path| path.to_str()), ", ")
+                    );
+                    if target_invalidated_sender
+                        .try_send(TargetInvalidatedMessage)
+                        .is_err()
+                    {
+                        log::trace!("{} - Target already invalidated. Skipping.", &target_id);
+                    }
                 }
-            }
-        })
+            },
+            watcher_config,
+        )
         .with_context(|| "Error creating watcher")
     }
 }
