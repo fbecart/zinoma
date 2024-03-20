@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/config/ir.rs`."><title>ir.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="zinoma" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/config/ir.rs`."><title>ir.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="zinoma" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -523,8 +524,8 @@
 
             <span class="kw">if </span>parent_targets.contains(<span class="kw-2">&amp;</span>target_id) {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
-                    <span class="string">&quot;Circular dependency: {} -&gt; {}&quot;</span>,
-                    itertools::join(parent_targets, <span class="string">&quot; -&gt; &quot;</span>),
+                    <span class="string">"Circular dependency: {} -&gt; {}"</span>,
+                    itertools::join(parent_targets, <span class="string">" -&gt; "</span>),
                     target_id
                 ));
             }
@@ -535,7 +536,7 @@
                     .get_mut(<span class="kw-2">&amp;</span>target_id.project_name)
                     .ok_or_else(|| {
                         <span class="macro">anyhow!</span>(
-                            <span class="string">&quot;Project {} does not exist&quot;</span>,
+                            <span class="string">"Project {} does not exist"</span>,
                             target_id.project_name.as_ref().unwrap()
                         )
                     })<span class="question-mark">?</span>;
@@ -543,7 +544,7 @@
                 <span class="kw">let </span>yaml_target = project
                     .targets
                     .remove(<span class="kw-2">&amp;</span>target_id.target_name)
-                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Target {} does not exist&quot;</span>, target_id))<span class="question-mark">?</span>;
+                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">"Target {} does not exist"</span>, target_id))<span class="question-mark">?</span>;
 
                 (project_dir.clone(), yaml_target)
             };
@@ -565,7 +566,7 @@
                     target.extend_input(<span class="kw-2">&amp;</span>dependency.output).unwrap();
                 } <span class="kw">else </span>{
                     <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
-                        <span class="string">&quot;Target {} can not depend on {}&#39;s output as it is not a build target&quot;</span>,
+                        <span class="string">"Target {} can not depend on {}'s output as it is not a build target"</span>,
                         target_id,
                         dependency_id
                     ));
@@ -691,7 +692,7 @@
                 yaml::InputResource::DependencyOutput(id) =&gt; {
                     <span class="macro">lazy_static! </span>{
                         <span class="kw">static </span><span class="kw-2">ref </span>RE: Regex =
-                            Regex::new(<span class="string">r&quot;^((\w[-\w]*::)?\w[-\w]*)\.output$&quot;</span>).unwrap();
+                            Regex::new(<span class="string">r"^((\w[-\w]*::)?\w[-\w]*)\.output$"</span>).unwrap();
                     }
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(captures) = RE.captures(<span class="kw-2">&amp;</span>id) {
                         <span class="kw">let </span>dependency_id = TargetId::try_parse(
@@ -701,7 +702,7 @@
                         .unwrap();
                         dependencies_from_input.push(dependency_id);
                     } <span class="kw">else </span>{
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Invalid input: {}&quot;</span>, id));
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"Invalid input: {}"</span>, id));
                     }
                 }
             }
@@ -738,10 +739,10 @@
                 .into_iter()
                 .filter(|ext| !ext.is_empty())
                 .map(|ext| {
-                    <span class="kw">if </span>ext.starts_with(<span class="string">&#39;.&#39;</span>) {
+                    <span class="kw">if </span>ext.starts_with(<span class="string">'.'</span>) {
                         ext
                     } <span class="kw">else </span>{
-                        <span class="macro">format!</span>(<span class="string">&quot;.{}&quot;</span>, ext)
+                        <span class="macro">format!</span>(<span class="string">".{}"</span>, ext)
                     }
                 })
                 .collect::&lt;BTreeSet&lt;<span class="kw">_</span>&gt;&gt;()
@@ -760,52 +761,52 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_try_into_domain_targets_should_return_the_requested_targets() {
         <span class="kw">let </span>projects = build_config(<span class="macro">vec!</span>[
-            (<span class="string">&quot;target_1&quot;</span>, build_empty_target()),
-            (<span class="string">&quot;target_2&quot;</span>, build_empty_target()),
+            (<span class="string">"target_1"</span>, build_empty_target()),
+            (<span class="string">"target_2"</span>, build_empty_target()),
         ]);
 
         <span class="kw">let </span>actual_targets = projects
-            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>]))
-            .expect(<span class="string">&quot;Conversion of valid targets should be successful&quot;</span>);
+            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">"target_2"</span>]))
+            .expect(<span class="string">"Conversion of valid targets should be successful"</span>);
 
         <span class="macro">assert_eq!</span>(actual_targets.len(), <span class="number">1</span>);
-        <span class="macro">assert!</span>(find_target(<span class="kw-2">&amp;</span>actual_targets, <span class="string">&quot;target_2&quot;</span>).is_some());
+        <span class="macro">assert!</span>(find_target(<span class="kw-2">&amp;</span>actual_targets, <span class="string">"target_2"</span>).is_some());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_try_into_domain_targets_should_reject_requested_target_not_found() {
-        <span class="kw">let </span>projects = build_config(<span class="macro">vec!</span>[(<span class="string">&quot;target_1&quot;</span>, build_empty_target())]);
+        <span class="kw">let </span>projects = build_config(<span class="macro">vec!</span>[(<span class="string">"target_1"</span>, build_empty_target())]);
 
         projects
-            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">&quot;not_a_target&quot;</span>]))
-            .expect_err(<span class="string">&quot;Should reject an invalid requested target&quot;</span>);
+            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">"not_a_target"</span>]))
+            .expect_err(<span class="string">"Should reject an invalid requested target"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_try_into_domain_targets_with_dependency_input() {
         <span class="kw">let </span>config = build_config(<span class="macro">vec!</span>[
             (
-                <span class="string">&quot;target_1&quot;</span>,
+                <span class="string">"target_1"</span>,
                 build_target_with_output(<span class="macro">vec!</span>[yaml::OutputResource::Files {
-                    paths: <span class="macro">vec!</span>[<span class="string">&quot;protos&quot;</span>.to_string()],
-                    extensions: <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="string">&quot;go&quot;</span>.to_string()]),
+                    paths: <span class="macro">vec!</span>[<span class="string">"protos"</span>.to_string()],
+                    extensions: <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="string">"go"</span>.to_string()]),
                 }]),
             ),
             (
-                <span class="string">&quot;target_2&quot;</span>,
+                <span class="string">"target_2"</span>,
                 build_target_with_input(<span class="macro">vec!</span>[yaml::InputResource::DependencyOutput(
-                    <span class="string">&quot;target_1.output&quot;</span>.to_string(),
+                    <span class="string">"target_1.output"</span>.to_string(),
                 )]),
             ),
         ]);
 
         <span class="kw">let </span>actual_targets = config
-            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>]))
+            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">"target_2"</span>]))
             .unwrap();
 
         <span class="macro">assert_eq!</span>(actual_targets.len(), <span class="number">2</span>);
-        <span class="kw">let </span>target1 = find_target(<span class="kw-2">&amp;</span>actual_targets, <span class="string">&quot;target_1&quot;</span>).unwrap();
-        <span class="kw">let </span>target2 = find_target(<span class="kw-2">&amp;</span>actual_targets, <span class="string">&quot;target_2&quot;</span>).unwrap();
+        <span class="kw">let </span>target1 = find_target(<span class="kw-2">&amp;</span>actual_targets, <span class="string">"target_1"</span>).unwrap();
+        <span class="kw">let </span>target2 = find_target(<span class="kw-2">&amp;</span>actual_targets, <span class="string">"target_2"</span>).unwrap();
         <span class="macro">assert_eq!</span>(target2.dependencies(), <span class="kw-2">&amp;</span><span class="macro">vec!</span>[target1.id().clone()]);
         <span class="macro">assert_eq!</span>(target2.input(), target1.output());
     }
@@ -813,38 +814,38 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_try_into_domain_targets_on_valid_targets() {
         <span class="kw">let </span>projects = build_config(<span class="macro">vec!</span>[
-            (<span class="string">&quot;target_1&quot;</span>, build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>])),
-            (<span class="string">&quot;target_2&quot;</span>, build_empty_target()),
+            (<span class="string">"target_1"</span>, build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">"target_2"</span>])),
+            (<span class="string">"target_2"</span>, build_empty_target()),
         ]);
 
         projects
-            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">&quot;target_1&quot;</span>, <span class="string">&quot;target_2&quot;</span>]))
-            .expect(<span class="string">&quot;Valid targets should be accepted&quot;</span>);
+            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">"target_1"</span>, <span class="string">"target_2"</span>]))
+            .expect(<span class="string">"Valid targets should be accepted"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_try_into_domain_targets_with_unknown_dependency() {
         <span class="kw">let </span>projects = build_config(<span class="macro">vec!</span>[(
-            <span class="string">&quot;target_1&quot;</span>,
-            build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>]),
+            <span class="string">"target_1"</span>,
+            build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">"target_2"</span>]),
         )]);
 
         projects
-            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">&quot;target_1&quot;</span>]))
-            .expect_err(<span class="string">&quot;Unknown dependencies should be rejected&quot;</span>);
+            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">"target_1"</span>]))
+            .expect_err(<span class="string">"Unknown dependencies should be rejected"</span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_try_into_domain_targets_with_circular_dependency() {
         <span class="kw">let </span>projects = build_config(<span class="macro">vec!</span>[
-            (<span class="string">&quot;target_1&quot;</span>, build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">&quot;target_2&quot;</span>])),
-            (<span class="string">&quot;target_2&quot;</span>, build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">&quot;target_3&quot;</span>])),
-            (<span class="string">&quot;target_3&quot;</span>, build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">&quot;target_1&quot;</span>])),
+            (<span class="string">"target_1"</span>, build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">"target_2"</span>])),
+            (<span class="string">"target_2"</span>, build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">"target_3"</span>])),
+            (<span class="string">"target_3"</span>, build_target_with_dependencies(<span class="macro">vec!</span>[<span class="string">"target_1"</span>])),
         ]);
 
         projects
-            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">&quot;target_1&quot;</span>, <span class="string">&quot;target_2&quot;</span>, <span class="string">&quot;target_3&quot;</span>]))
-            .expect_err(<span class="string">&quot;Circular dependencies should be rejected&quot;</span>);
+            .try_into_domain_targets(<span class="kw-2">&amp;</span>build_target_ids(<span class="macro">vec!</span>[<span class="string">"target_1"</span>, <span class="string">"target_2"</span>, <span class="string">"target_3"</span>]))
+            .expect_err(<span class="string">"Circular dependencies should be rejected"</span>);
     }
 
     <span class="kw">fn </span>build_target_ids(names: Vec&lt;<span class="kw-2">&amp;</span>str&gt;) -&gt; Vec&lt;TargetId&gt; {
@@ -872,7 +873,7 @@
     <span class="kw">fn </span>build_target_with_input(input: Vec&lt;yaml::InputResource&gt;) -&gt; yaml::Target {
         yaml::Target::Build {
             dependencies: yaml::Dependencies(<span class="macro">vec!</span>[]),
-            build: <span class="string">&quot;:&quot;</span>.to_string(),
+            build: <span class="string">":"</span>.to_string(),
             input: yaml::InputResources(input),
             output: yaml::OutputResources(<span class="macro">vec!</span>[]),
         }
@@ -881,7 +882,7 @@
     <span class="kw">fn </span>build_target_with_output(output: Vec&lt;yaml::OutputResource&gt;) -&gt; yaml::Target {
         yaml::Target::Build {
             dependencies: yaml::Dependencies(<span class="macro">vec!</span>[]),
-            build: <span class="string">&quot;:&quot;</span>.to_string(),
+            build: <span class="string">":"</span>.to_string(),
             input: yaml::InputResources(<span class="macro">vec!</span>[]),
             output: yaml::OutputResources(output),
         }
@@ -910,10 +911,10 @@
         }
     }
 
-    <span class="kw">fn </span>find_target&lt;<span class="lifetime">&#39;a</span>&gt;(
-        targets: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HashMap&lt;domain::TargetId, domain::Target&gt;,
+    <span class="kw">fn </span>find_target&lt;<span class="lifetime">'a</span>&gt;(
+        targets: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>HashMap&lt;domain::TargetId, domain::Target&gt;,
         target_name: <span class="kw-2">&amp;</span>str,
-    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>domain::Target&gt; {
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>domain::Target&gt; {
         targets.get(<span class="kw-2">&amp;</span>TargetId {
             project_name: <span class="prelude-val">None</span>,
             target_name: target_name.to_string(),

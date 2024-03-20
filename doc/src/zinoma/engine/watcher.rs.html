@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/watcher.rs`."><title>watcher.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="zinoma" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/watcher.rs`."><title>watcher.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="zinoma" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -149,14 +150,20 @@
 <a href="#149" id="149">149</a>
 <a href="#150" id="150">150</a>
 <a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::domain::{<span class="self">self</span>, Resources, TargetId};
 <span class="kw">use </span><span class="kw">crate</span>::work_dir;
 <span class="kw">use </span>anyhow::{Context, Error, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_std::channel::Sender;
 <span class="kw">use </span>async_std::path::{Path, PathBuf};
 <span class="kw">use </span>domain::FileExtensions;
-<span class="kw">use </span>notify::{ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
+<span class="kw">use </span>notify::{Config, ErrorKind, RecommendedWatcher, RecursiveMode, Watcher};
 <span class="kw">use </span>std::collections::{HashMap, HashSet};
+<span class="kw">use </span>std::time::Duration;
 
 <span class="kw">pub struct </span>TargetWatcher {
     _watchers: Vec&lt;RecommendedWatcher&gt;,
@@ -188,21 +195,21 @@
                     )<span class="question-mark">?</span>;
 
                     <span class="kw">for </span>path <span class="kw">in </span>paths {
-                        <span class="kw">match </span>watcher.watch(path, RecursiveMode::Recursive) {
+                        <span class="kw">match </span>watcher.watch(path.as_path().into(), RecursiveMode::Recursive) {
                             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {}
                             <span class="prelude-val">Err</span>(notify::Error {
                                 kind: ErrorKind::PathNotFound,
                                 ..
                             }) =&gt; {
                                 <span class="macro">log::warn!</span>(
-                                    <span class="string">&quot;{} - Skipping watch on non-existing path: {}&quot;</span>,
+                                    <span class="string">"{} - Skipping watch on non-existing path: {}"</span>,
                                     target_id,
                                     path.display(),
                                 );
                             }
                             <span class="prelude-val">Err</span>(e) =&gt; {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::new(e).context(<span class="macro">format!</span>(
-                                    <span class="string">&quot;Error watching path {} for target {}&quot;</span>,
+                                    <span class="string">"Error watching path {} for target {}"</span>,
                                     path.display(),
                                     target_id,
                                 )));
@@ -227,35 +234,39 @@
         target_invalidated_sender: Sender&lt;TargetInvalidatedMessage&gt;,
         extensions: FileExtensions,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;RecommendedWatcher&gt; {
-        Watcher::new_immediate(<span class="kw">move </span>|result: notify::Result&lt;notify::Event&gt;| {
-            <span class="kw">let </span>relevant_files = result
-                .unwrap()
-                .paths
-                .into_iter()
-                .filter(|path| {
-                    <span class="kw">let </span>path: PathBuf = path.into();
-                    !is_tmp_editor_file(<span class="kw-2">&amp;</span>path)
-                        &amp;&amp; !work_dir::is_in_work_dir(<span class="kw-2">&amp;</span>path)
-                        &amp;&amp; domain::matches_extensions(path.as_path().into(), <span class="kw-2">&amp;</span>extensions)
-                })
-                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="kw">let </span>watcher_config = Config::default().with_poll_interval(Duration::from_millis(<span class="number">100</span>));
+        Watcher::new(
+            <span class="kw">move </span>|result: notify::Result&lt;notify::Event&gt;| {
+                <span class="kw">let </span>relevant_files = result
+                    .unwrap()
+                    .paths
+                    .into_iter()
+                    .filter(|path| {
+                        <span class="kw">let </span>path: PathBuf = path.into();
+                        !is_tmp_editor_file(<span class="kw-2">&amp;</span>path)
+                            &amp;&amp; !work_dir::is_in_work_dir(<span class="kw-2">&amp;</span>path)
+                            &amp;&amp; domain::matches_extensions(path.as_path().into(), <span class="kw-2">&amp;</span>extensions)
+                    })
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-            <span class="kw">if </span>!relevant_files.is_empty() {
-                <span class="kw">let </span>target_id = target_id.clone();
-                <span class="macro">log::trace!</span>(
-                    <span class="string">&quot;{} - Invalidated by {}&quot;</span>,
-                    <span class="kw-2">&amp;</span>target_id,
-                    itertools::join(relevant_files.iter().flat_map(|path| path.to_str()), <span class="string">&quot;, &quot;</span>)
-                );
-                <span class="kw">if </span>target_invalidated_sender
-                    .try_send(TargetInvalidatedMessage)
-                    .is_err()
-                {
-                    <span class="macro">log::trace!</span>(<span class="string">&quot;{} - Target already invalidated. Skipping.&quot;</span>, <span class="kw-2">&amp;</span>target_id);
+                <span class="kw">if </span>!relevant_files.is_empty() {
+                    <span class="kw">let </span>target_id = target_id.clone();
+                    <span class="macro">log::trace!</span>(
+                        <span class="string">"{} - Invalidated by {}"</span>,
+                        <span class="kw-2">&amp;</span>target_id,
+                        itertools::join(relevant_files.iter().flat_map(|path| path.to_str()), <span class="string">", "</span>)
+                    );
+                    <span class="kw">if </span>target_invalidated_sender
+                        .try_send(TargetInvalidatedMessage)
+                        .is_err()
+                    {
+                        <span class="macro">log::trace!</span>(<span class="string">"{} - Target already invalidated. Skipping."</span>, <span class="kw-2">&amp;</span>target_id);
+                    }
                 }
-            }
-        })
-        .with_context(|| <span class="string">&quot;Error creating watcher&quot;</span>)
+            },
+            watcher_config,
+        )
+        .with_context(|| <span class="string">"Error creating watcher"</span>)
     }
 }
 
@@ -263,11 +274,11 @@
     <span class="kw">let </span>file_name = file_path.file_name().unwrap();
     <span class="kw">let </span>file_name = file_name.to_str().unwrap();
 
-    <span class="kw">if </span>file_name.ends_with(<span class="string">&#39;~&#39;</span>) {
+    <span class="kw">if </span>file_name.ends_with(<span class="string">'~'</span>) {
         <span class="kw">return </span><span class="bool-val">true</span>; <span class="comment">// IntelliJ IDEA
     </span>}
 
-    <span class="kw">if </span>file_name.starts_with(<span class="string">&#39;.&#39;</span>) &amp;&amp; (file_name.ends_with(<span class="string">&quot;.swp&quot;</span>) || file_name.ends_with(<span class="string">&quot;.swx&quot;</span>)) {
+    <span class="kw">if </span>file_name.starts_with(<span class="string">'.'</span>) &amp;&amp; (file_name.ends_with(<span class="string">".swp"</span>) || file_name.ends_with(<span class="string">".swx"</span>)) {
         <span class="kw">return </span><span class="bool-val">true</span>; <span class="comment">// Vim
     </span>}
 
@@ -283,20 +294,20 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>src_file_should_not_be_tmp_editor_file() {
-        <span class="macro">assert!</span>(!is_tmp_editor_file(Path::new(<span class="string">&quot;/my/project/src/main.rs&quot;</span>)));
+        <span class="macro">assert!</span>(!is_tmp_editor_file(Path::new(<span class="string">"/my/project/src/main.rs"</span>)));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>intellij_tmp_file_should_be_tmp_editor_file() {
-        <span class="macro">assert!</span>(is_tmp_editor_file(Path::new(<span class="string">&quot;/my/project/src/main.rs~&quot;</span>)));
+        <span class="macro">assert!</span>(is_tmp_editor_file(Path::new(<span class="string">"/my/project/src/main.rs~"</span>)));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>vim_tmp_file_should_be_tmp_editor_file() {
-        <span class="kw">let </span>path = Path::new(<span class="string">&quot;/my/project/src/.main.rs.swp&quot;</span>);
+        <span class="kw">let </span>path = Path::new(<span class="string">"/my/project/src/.main.rs.swp"</span>);
         <span class="macro">assert!</span>(is_tmp_editor_file(path));
 
-        <span class="kw">let </span>path = Path::new(<span class="string">&quot;/my/project/src/.main.rs.swx&quot;</span>);
+        <span class="kw">let </span>path = Path::new(<span class="string">"/my/project/src/.main.rs.swx"</span>);
         <span class="macro">assert!</span>(is_tmp_editor_file(path));
     }
 }

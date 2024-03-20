@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/main.rs`."><title>main.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="zinoma" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/main.rs`."><title>main.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="zinoma" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -127,8 +128,7 @@
 <a href="#127" id="127">127</a>
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
-<a href="#130" id="130">130</a>
-</pre></div><pre class="rust"><code><span class="attr">#![recursion_limit = <span class="string">&quot;1024&quot;</span>]
+</pre></div><pre class="rust"><code><span class="attr">#![recursion_limit = <span class="string">"1024"</span>]
 
 </span><span class="kw">mod </span>async_utils;
 <span class="kw">mod </span>clean;
@@ -149,13 +149,12 @@
 <span class="kw">use </span>config::{ir, yaml};
 <span class="kw">use </span>domain::TargetId;
 <span class="kw">use </span>engine::{incremental::storage::delete_saved_env_state, TargetActors};
-<span class="kw">use </span>std::convert::TryInto;
 <span class="kw">use </span>work_dir::remove_work_dir;
 
-<span class="attr">#[cfg(all(not(target_env = <span class="string">&quot;msvc&quot;</span>), target_pointer_width = <span class="string">&quot;64&quot;</span>))]
+<span class="attr">#[cfg(all(not(target_env = <span class="string">"msvc"</span>), target_pointer_width = <span class="string">"64"</span>))]
 </span><span class="kw">use </span>jemallocator::Jemalloc;
 
-<span class="attr">#[cfg(all(not(target_env = <span class="string">&quot;msvc&quot;</span>), target_pointer_width = <span class="string">&quot;64&quot;</span>))]
+<span class="attr">#[cfg(all(not(target_env = <span class="string">"msvc"</span>), target_pointer_width = <span class="string">"64"</span>))]
 #[global_allocator]
 </span><span class="kw">static </span>GLOBAL: Jemalloc = Jemalloc;
 
@@ -174,7 +173,7 @@
         std::path::PathBuf::from(arg_matches.value_of(cli::arg::PROJECT_DIR).unwrap());
     <span class="kw">let </span>config = yaml::Config::load(<span class="kw-2">&amp;</span>root_project_dir)<span class="question-mark">?</span>;
     <span class="kw">let </span>project_dirs = config.get_project_dirs();
-    <span class="kw">let </span>config: ir::Config = config.try_into()<span class="question-mark">?</span>;
+    <span class="kw">let </span>config: ir::Config = config.into();
     <span class="kw">let </span>all_target_names = config.list_all_available_target_names();
 
     <span class="kw">let </span>arg_matches = cli::get_app()
@@ -246,11 +245,11 @@
 
 <span class="kw">fn </span>terminate_on_ctrlc() -&gt; <span class="prelude-ty">Result</span>&lt;Receiver&lt;TerminationMessage&gt;&gt; {
     <span class="kw">let </span>(termination_sender, termination_events) = channel::bounded(<span class="number">1</span>);
-    <span class="kw">let </span>ctrlc = CtrlC::new().with_context(|| <span class="string">&quot;Failed to set Ctrl-C handler&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>ctrlc = CtrlC::new().with_context(|| <span class="string">"Failed to set Ctrl-C handler"</span>)<span class="question-mark">?</span>;
 
     task::spawn(<span class="kw">async move </span>{
         ctrlc.<span class="kw">await</span>;
-        <span class="macro">log::debug!</span>(<span class="string">&quot;Ctrl-C received&quot;</span>);
+        <span class="macro">log::debug!</span>(<span class="string">"Ctrl-C received"</span>);
         <span class="kw">let _ </span>= termination_sender.send(TerminationMessage).<span class="kw">await</span>;
     });
 
