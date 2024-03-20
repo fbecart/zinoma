@@ -192,9 +192,9 @@ fn input_failure() {
         .assert()
         .success()
         .stdout(contains("Executing target with uncomputable input"))
-        .stderr(contains("INFO - incorrect_input - Build success"))
+        .stderr(contains("INFO incorrect_input - Build success"))
         .stderr(contains(
-            "WARN - incorrect_input - Failed to compute state of inputs and outputs",
+            "WARN incorrect_input - Failed to compute state of inputs and outputs",
         ));
 }
 
