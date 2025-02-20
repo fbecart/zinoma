@@ -7,7 +7,7 @@ use std::{path::Path, process::Command};
 
 #[test]
 fn circular_dependency() {
-    zinoma_command("circular_dependency", &["target_1"])
+    zinoma_command("circular_dependency", ["target_1"])
         .assert()
         .failure()
         .stderr(contains("Circular dependency"));
@@ -15,7 +15,7 @@ fn circular_dependency() {
 
 #[test]
 fn imports() {
-    zinoma_command("imports", &["target_2"])
+    zinoma_command("imports", ["target_2"])
         .assert()
         .success()
         .stdout(contains("This is target 1"));
@@ -23,7 +23,7 @@ fn imports() {
 
 #[test]
 fn named_project() {
-    zinoma_command("named_project", &["target_3", "my_project::target_3"])
+    zinoma_command("named_project", ["target_3", "my_project::target_3"])
         .assert()
         .success()
         .stdout(contains("This is target 1"));
@@ -31,7 +31,7 @@ fn named_project() {
 
 #[test]
 fn non_matching_imported_project_name() {
-    zinoma_command("non_matching_imported_project_name", &["--clean"])
+    zinoma_command("non_matching_imported_project_name", ["--clean"])
         .assert()
         .failure()
         .stderr(contains("Failed to import incorrect_subproject_name"))
@@ -42,7 +42,7 @@ fn non_matching_imported_project_name() {
 
 #[test]
 fn import_project_with_no_name() {
-    zinoma_command("import_project_with_no_name", &["--clean"])
+    zinoma_command("import_project_with_no_name", ["--clean"])
         .assert()
         .failure()
         .stderr(contains("Failed to import noname"))
@@ -51,7 +51,7 @@ fn import_project_with_no_name() {
 
 #[test]
 fn invalid_project_name() {
-    zinoma_command("invalid_project_name", &["--clean"])
+    zinoma_command("invalid_project_name", ["--clean"])
         .assert()
         .failure()
         .stderr(contains(":::: is not a valid project name"));
@@ -59,12 +59,12 @@ fn invalid_project_name() {
 
 #[test]
 fn root_input_path() {
-    zinoma_command("root_input_path", &["--clean", "print_source"])
+    zinoma_command("root_input_path", ["--clean", "print_source"])
         .assert()
         .success()
         .stdout(contains("Content of my source file"));
 
-    zinoma_command("root_input_path", &["print_source"])
+    zinoma_command("root_input_path", ["print_source"])
         .assert()
         .success()
         .stdout(contains("Content of my source file").not())
@@ -81,13 +81,13 @@ fn cmd_stdout_input() {
         "cmd_stdout_input"
     };
 
-    zinoma_command(integ_test_dir_name, &["--clean", "changing", "stable"])
+    zinoma_command(integ_test_dir_name, ["--clean", "changing", "stable"])
         .assert()
         .success()
         .stderr(contains("changing - Build success"))
         .stderr(contains("stable - Build success"));
 
-    zinoma_command(integ_test_dir_name, &["changing", "stable"])
+    zinoma_command(integ_test_dir_name, ["changing", "stable"])
         .assert()
         .success()
         .stderr(contains("changing - Build success"))
@@ -96,7 +96,7 @@ fn cmd_stdout_input() {
 
 #[test]
 fn dependency_output_as_input() {
-    zinoma_command("dependency_output_as_input", &["--clean", "print"])
+    zinoma_command("dependency_output_as_input", ["--clean", "print"])
         .assert()
         .success()
         .stdout(contains("Intermediate build result"));
@@ -106,7 +106,7 @@ fn dependency_output_as_input() {
 fn circular_dependency_in_resources() {
     zinoma_command(
         "circular_dependency_in_resources",
-        &["target_1", "target_2"],
+        ["target_1", "target_2"],
     )
     .assert()
     .failure()
@@ -118,39 +118,39 @@ fn circular_dependency_in_resources() {
 fn incremental_multi_projects_build() {
     zinoma_command(
         "incremental_multi_projects_build",
-        &["--clean", "print_outputs"],
+        ["--clean", "print_outputs"],
     )
     .assert()
     .success()
     .stderr(contains("print_outputs - Build success"));
 
-    zinoma_command("incremental_multi_projects_build", &["print_outputs"])
+    zinoma_command("incremental_multi_projects_build", ["print_outputs"])
         .assert()
         .success()
         .stderr(contains("print_outputs - Build skipped"));
 
     zinoma_command(
         "incremental_multi_projects_build",
-        &["--clean", "cmd_output::build"],
+        ["--clean", "cmd_output::build"],
     )
     .assert()
     .success()
     .stderr(contains("cmd_output::build - Build success"));
 
-    zinoma_command("incremental_multi_projects_build", &["print_outputs"])
+    zinoma_command("incremental_multi_projects_build", ["print_outputs"])
         .assert()
         .success()
         .stderr(contains("print_outputs - Build success"));
 
     zinoma_command(
         "incremental_multi_projects_build",
-        &["--clean", "fs_output::build"],
+        ["--clean", "fs_output::build"],
     )
     .assert()
     .success()
     .stderr(contains("fs_output::build - Build success"));
 
-    zinoma_command("incremental_multi_projects_build", &["print_outputs"])
+    zinoma_command("incremental_multi_projects_build", ["print_outputs"])
         .assert()
         .success()
         .stderr(contains("print_outputs - Build success"));
@@ -158,7 +158,7 @@ fn incremental_multi_projects_build() {
 
 #[test]
 fn input_should_reject_service_output() {
-    zinoma_command("input_should_reject_service_output", &["my_build"])
+    zinoma_command("input_should_reject_service_output", ["my_build"])
         .assert()
         .failure()
         .stderr(contains(
@@ -170,7 +170,7 @@ fn input_should_reject_service_output() {
 /// should not prevent zinoma from exiting after the build is successful.
 #[test]
 fn non_requested_service() {
-    zinoma_command("non_requested_service", &["my_build_target"])
+    zinoma_command("non_requested_service", ["my_build_target"])
         .assert()
         .success()
         .stderr(contains("my_service - Starting service"))
@@ -179,7 +179,7 @@ fn non_requested_service() {
 
 #[test]
 fn build_failure() {
-    zinoma_command("build_failure", &["incorrect_target"])
+    zinoma_command("build_failure", ["incorrect_target"])
         .assert()
         .failure()
         .stderr(contains("An issue occurred with target incorrect_target"))
@@ -188,7 +188,7 @@ fn build_failure() {
 
 #[test]
 fn input_failure() {
-    zinoma_command("input_failure", &["incorrect_input"])
+    zinoma_command("input_failure", ["incorrect_input"])
         .assert()
         .success()
         .stdout(contains("Executing target with uncomputable input"))
@@ -205,7 +205,7 @@ fn invalid_checksums_file() {
     fs::create_dir(checksums_dir_name).ok();
     fs::write(checksums_file_name, "Lorem ipsum").unwrap();
 
-    zinoma_command("invalid_checksums_file", &["invalid_checksums_file", "-v"])
+    zinoma_command("invalid_checksums_file", ["invalid_checksums_file", "-v"])
         .assert()
         .success()
         .stdout(contains("Executing target with invalid checksums file"))
@@ -225,7 +225,7 @@ fn paths_input_resource_with_extensions() {
 
     zinoma_command(
         "paths_input_resource_with_extensions",
-        &["cp_src_csv_to_dist", "--clean"],
+        ["cp_src_csv_to_dist", "--clean"],
     )
     .assert()
     .success()
@@ -235,7 +235,7 @@ fn paths_input_resource_with_extensions() {
 
     zinoma_command(
         "paths_input_resource_with_extensions",
-        &["cp_src_csv_to_dist"],
+        ["cp_src_csv_to_dist"],
     )
     .assert()
     .success()
@@ -245,7 +245,7 @@ fn paths_input_resource_with_extensions() {
 
     zinoma_command(
         "paths_input_resource_with_extensions",
-        &["cp_src_csv_to_dist"],
+        ["cp_src_csv_to_dist"],
     )
     .assert()
     .success()
@@ -261,25 +261,25 @@ fn paths_output_resource_with_extensions() {
 
     fs::write(out_file_name, "").unwrap();
 
-    zinoma_command("paths_output_resource_with_extensions", &["--clean"])
+    zinoma_command("paths_output_resource_with_extensions", ["--clean"])
         .assert()
         .success();
 
-    assert_eq!(false, Path::new(out_file_name).exists());
+    assert!(!Path::new(out_file_name).exists());
 
-    zinoma_command("paths_output_resource_with_extensions", &["cp_in_to_out"])
+    zinoma_command("paths_output_resource_with_extensions", ["cp_in_to_out"])
         .assert()
         .success()
         .stderr(contains("cp_in_to_out - Build success"));
 
-    zinoma_command("paths_output_resource_with_extensions", &["cp_in_to_out"])
+    zinoma_command("paths_output_resource_with_extensions", ["cp_in_to_out"])
         .assert()
         .success()
         .stderr(contains("cp_in_to_out - Build skipped"));
 
     fs::write(out_file_name, "a,b,c").unwrap();
 
-    zinoma_command("paths_output_resource_with_extensions", &["cp_in_to_out"])
+    zinoma_command("paths_output_resource_with_extensions", ["cp_in_to_out"])
         .assert()
         .success()
         .stderr(contains("cp_in_to_out - Build success"));

@@ -24,30 +24,29 @@ mod both_tests {
     #[test]
     fn both_are_true() {
         task::block_on(async {
-            assert_eq!(true, both(future::ready(true), future::ready(true)).await)
+            assert!(both(future::ready(true), future::ready(true)).await)
         })
     }
 
     #[test]
     fn left_is_false() {
         task::block_on(async {
-            assert_eq!(false, both(future::ready(false), future::ready(true)).await)
+            assert!(!(both(future::ready(false), future::ready(true)).await))
         })
     }
 
     #[test]
     fn right_is_false() {
         task::block_on(async {
-            assert_eq!(false, both(future::ready(true), future::ready(false)).await)
+            assert!(!(both(future::ready(true), future::ready(false)).await))
         })
     }
 
     #[test]
     fn both_are_false() {
         task::block_on(async {
-            assert_eq!(
-                false,
-                both(future::ready(false), future::ready(false)).await
+            assert!(
+                !(both(future::ready(false), future::ready(false)).await)
             )
         })
     }
@@ -80,7 +79,7 @@ mod all_tests {
     fn true_for_empty() {
         task::block_on(async {
             let futures = Vec::<Ready<bool>>::new();
-            assert_eq!(true, all(futures).await);
+            assert!(all(futures).await);
         })
     }
 
@@ -88,20 +87,18 @@ mod all_tests {
     fn true_if_all_true() {
         task::block_on(async {
             let futures = vec![future::ready(true), future::ready(true)];
-            assert_eq!(true, all(futures).await);
+            assert!(all(futures).await);
         })
     }
 
     #[test]
     fn false_if_any_false() {
         task::block_on(async {
-            assert_eq!(
-                false,
-                all(vec![future::ready(false), future::ready(true)]).await
+            assert!(
+                !(all(vec![future::ready(false), future::ready(true)]).await)
             );
-            assert_eq!(
-                false,
-                all(vec![future::ready(true), future::ready(false)]).await
+            assert!(
+                !(all(vec![future::ready(true), future::ready(false)]).await)
             );
         })
     }

@@ -171,7 +171,7 @@ pub struct FilesResource {
 pub type FileExtensions = Option<BTreeSet<String>>;
 
 pub fn matches_extensions(file: &std::path::Path, extensions: &FileExtensions) -> bool {
-    extensions.as_ref().map_or(true, |extensions| {
+    extensions.as_ref().is_none_or(|extensions| {
         let file_name = file.file_name().unwrap().to_string_lossy();
         extensions.iter().any(|ext| file_name.ends_with(ext))
     })

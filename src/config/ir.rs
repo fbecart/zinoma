@@ -142,7 +142,7 @@ impl Config {
     }
 
     fn get_project(&self, project_name: &Option<String>) -> &yaml::Project {
-        &self.projects[&project_name].1
+        &self.projects[project_name].1
     }
 }
 
